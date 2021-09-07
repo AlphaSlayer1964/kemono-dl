@@ -11,3 +11,4 @@ WARNINGS!
 If you stop the script while it is downloading what ever file was last being downloaded will probably be broken and skipped next time.
 Also you might get IP banned from kemono party if you use it a lot (though this has not happened to me and I've used this script a lot in testing and actual use just be warned)
 If the site changes the script might break.
+Just notieced some files can be none kemono hosted so they probably won't downlaod (example youtube links)
