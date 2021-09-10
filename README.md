@@ -19,4 +19,5 @@ TO DO:
 Intigrate youtube-dl for downloading videos?
 Create a links.txt file to hold all embeded links in content section.
 Need to look into duplicate names for files and downloads
+Images in content section might not display in Content.html? (maybe new method of saving content is needed) 
 Figure out how to format readme lol!
