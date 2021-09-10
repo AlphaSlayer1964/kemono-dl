@@ -19,3 +19,4 @@ TO DO:
 Intigrate youtube-dl for downloading videos?
 Create a links.txt file to hold all embeded links in content section.
 Need to look into duplicate names for files and downloads
+Figure out how to format readme lol!
