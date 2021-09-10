@@ -34,6 +34,26 @@ archives = []
 for element in archives_temp:
     archives.append(element.strip())
 
+def Download_File(download, folder_location):
+    download_url = "https://kemono.party" + download['href']
+    content_type = requests.head(download_url,allow_redirects=True, cookies=jar).headers['Content-Type'].lower()
+    if content_type == 'text' or content_type == 'html':
+        return 'File Not Downloadable'
+    temp_filename = download_url.split('/')[-1]
+    local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
+    if os.path.exists(folder_location + os.path.sep + local_filename):
+        server_file_length = requests.head(download_url,allow_redirects=True, cookies=jar).headers['Content-Length']
+        local_file_size = os.path.getsize(folder_location + os.path.sep + local_filename)
+        if int(server_file_length) == int(local_file_size):
+            return 'File already Downloaded'
+    print("Downloading: " + local_filename)
+    with requests.get(download_url, stream=True, cookies=jar) as r:
+        r.raise_for_status()
+        with open(folder_location + os.path.sep + local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192): 
+                f.write(chunk) 
+    return ("Downloaded: " + local_filename)    
+
 def Download_Post(link, username):
     if link not in archives:
         page_html = requests.get(link, allow_redirects=True, cookies=jar)
@@ -47,9 +67,9 @@ def Download_Post(link, username):
             os.makedirs(folder_location)
         try:
             content_html = page_soup.find("div", {"class": "post__content"}).prettify()
-            content_file_name = folder_location + os.path.sep + 'Content.html'
-            with open(content_file_name,'wb') as File:
-                File.write(content_html.encode("utf-8"))                           
+            html_file_name = folder_location + os.path.sep + 'Content.html'
+            with open(html_file_name,'w') as File:
+                File.write(content_html)                           
         except:
             pass
         try:
@@ -58,33 +78,19 @@ def Download_Post(link, username):
             with open(comment_file_name,'wb') as File:
                 File.write(comment_html.encode("utf-8"))                           
         except:
-            pass        
+            pass          
         try:
             downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
             for download in downloads:
-                download_url = "https://kemono.party" + download['href']
-                temp_filename = download_url.split('/')[-1]
-                local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
-                print("Downloading: " + local_filename)
-                with requests.get(download_url, stream=True, cookies=jar) as r:
-                    r.raise_for_status()
-                    with open(folder_location + os.path.sep + local_filename, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=8192): 
-                            f.write(chunk)            
+                status = Download_File(download, folder_location)
+                print(status)            
         except:
             pass
         try:
             files = page_soup.find_all("a", {"class": "fileThumb"})
             for file in files:
-                file_url = "https://kemono.party" + file['href']
-                temp_filename = file_url.split('/')[-1]
-                local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
-                print("Downloading: " + local_filename)
-                with requests.get(file_url, stream=True, cookies=jar) as r:
-                    r.raise_for_status()
-                    with open(folder_location + os.path.sep + local_filename, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=8192): 
-                            f.write(chunk)             
+                status = Download_File(file, folder_location)
+                print(status)
         except:
             pass
         with open('archive.txt','a') as File:
