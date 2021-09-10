@@ -27,15 +27,10 @@ def Download_Post(link, username):
         os.makedirs(folder_location)
     try:
         content_html = page_soup.find("div", {"class": "post__content"}).prettify()
-        content_text = page_soup.find("div", {"class": "post__content"}).get_text("\n", strip=True)
-        text_file_name = folder_location + os.path.sep + 'Content.txt'
         html_file_name = folder_location + os.path.sep + 'Content.html'
         if not os.path.exists(html_file_name):
             with open(html_file_name,'w') as File:
-                File.write(content_html)
-        if not os.path.exists(text_file_name):
-            with open(text_file_name,'w') as File:
-                File.write(content_text)                            
+                File.write(content_html)                          
     except:
         pass
     try:
