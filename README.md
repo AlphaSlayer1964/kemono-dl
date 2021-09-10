@@ -15,6 +15,7 @@ Just notieced some files can be none kemono hosted so they probably won't downla
 Also noticed some "download able files" are not even real files so will need to look into that???
 
 TO DO:
-Instead of skipping files based on if a file of the same name exists change to be based on a log file with all saved posts id's recoreded in it.
+[COMPLETED] Instead of skipping files based on if a file of the same name exists change to be based on a log file with all saved posts id's recoreded in it.
 Intigrate youtube-dl for downloading videos?
-Create a links.txt file to hold all embeded links in content section. 
+Create a links.txt file to hold all embeded links in content section.
+Need to look into duplicate names for files and downloads
