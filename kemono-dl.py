@@ -6,7 +6,7 @@ import re
 Downalod_Loaction = 'CHANGE THIS!!!!!!!!!!!!!'
 
 if Downalod_Loaction == 'CHANGE THIS!!!!!!!!!!!!!':
-    print("open this file with a text editor and add your file location at the top and the cookie values!")
+    print("open this file with a text editor and add your file location at the top and edit the cookie values!")
     quit()
 
 jar = requests.cookies.RequestsCookieJar()
@@ -15,84 +15,114 @@ jar.set('__ddg2', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
 jar.set('__ddg1', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
 jar.set('__ddgmark', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
 
+if not os.path.exists('archive.txt'):
+    file = open('archive.txt','w')
+    file.close()
+
+if not os.path.exists('Users.txt'):
+    print('No "Users.txt" file found!')
+    quit()
+
+with open('Users.txt','r') as File:
+    users = File.readlines()
+
+with open('archive.txt','r') as File:
+    archives_temp = File.readlines()
+
+archives = []
+# removes new lines at end of each string in archive_temp
+for element in archives_temp:
+    archives.append(element.strip())
+
 def Download_Post(link, username):
-    page_html = requests.get(link, allow_redirects=True, cookies=jar)
-    page_soup = BeautifulSoup(page_html.text, 'html.parser')
-    title = page_soup.find("h1", {"class": "post__title"}).text.strip()
-    time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"]
-    temp_name = '[' + time_stamp + '] ' + title[:-10]
-    folder_name = re.sub('[\\/:\"*?<>|]+','',temp_name)
-    folder_location = Downalod_Loaction + os.path.sep + username + os.path.sep + folder_name
-    if not os.path.exists(folder_location):
-        os.makedirs(folder_location)
-    try:
-        content_html = page_soup.find("div", {"class": "post__content"}).prettify()
-        html_file_name = folder_location + os.path.sep + 'Content.html'
-        if not os.path.exists(html_file_name):
+    if link not in archives:
+        page_html = requests.get(link, allow_redirects=True, cookies=jar)
+        page_soup = BeautifulSoup(page_html.text, 'html.parser')
+        title = page_soup.find("h1", {"class": "post__title"}).text.strip()
+        time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"]
+        temp_name = '[' + time_stamp + '] ' + title[:-10]
+        folder_name = re.sub('[\\/:\"*?<>|]+','',temp_name)
+        folder_location = Downalod_Loaction + os.path.sep + username + os.path.sep + folder_name
+        if not os.path.exists(folder_location):
+            os.makedirs(folder_location)
+        try:
+            content_html = page_soup.find("div", {"class": "post__content"}).prettify()
+            html_file_name = folder_location + os.path.sep + 'Content.html'
             with open(html_file_name,'w') as File:
-                File.write(content_html)                          
-    except:
-        pass
-    try:
-        downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
-        for download in downloads:
-            download_url = "https://kemono.party" + download['href']
-            temp_filename = download_url.split('/')[-1]
-            local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
-            if not os.path.exists(folder_location + os.path.sep + local_filename):
-                print("Downloading " + local_filename)
+                File.write(content_html)                           
+        except:
+            pass
+        try:
+            downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
+            for download in downloads:
+                download_url = "https://kemono.party" + download['href']
+                temp_filename = download_url.split('/')[-1]
+                local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
+                print("Downloading: " + local_filename)
                 with requests.get(download_url, stream=True, cookies=jar) as r:
                     r.raise_for_status()
                     with open(folder_location + os.path.sep + local_filename, 'wb') as f:
                         for chunk in r.iter_content(chunk_size=8192): 
                             f.write(chunk)            
-    except:
-        pass
-    try:
-        files = page_soup.find_all("a", {"class": "fileThumb"})
-        for file in files:
-            file_url = "https://kemono.party" + file['href']
-            temp_filename = download_url.split('/')[-1]
-            local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
-            if not os.path.exists(folder_location + os.path.sep + local_filename):
-                print("Downloading " + local_filename)
+        except:
+            pass
+        try:
+            files = page_soup.find_all("a", {"class": "fileThumb"})
+            for file in files:
+                file_url = "https://kemono.party" + file['href']
+                temp_filename = file_url.split('/')[-1]
+                local_filename = re.sub('[\\/:\"*?<>|]+','',temp_filename)
+                print("Downloading: " + local_filename)
                 with requests.get(file_url, stream=True, cookies=jar) as r:
                     r.raise_for_status()
                     with open(folder_location + os.path.sep + local_filename, 'wb') as f:
                         for chunk in r.iter_content(chunk_size=8192): 
                             f.write(chunk)             
-    except:
-        pass    
+        except:
+            pass
+        with open('archive.txt','a') as File:
+            File.write(link + '\n')
+        print("Completed Downloading Post: " + link)
+    else:
+        print("Post Already Archived : " + link)
 
-
-with open('Users.txt','r') as File:
-    users = File.readlines()
-
-post_links = []
-username = ''
 for user in users:
-    result = re.match('https://kemono\.party/patreon/user/[^/]+', user.strip())
-    if result:    
+    skip = 0
+    username = ''
+    post_links = []
+    kemono_user_profile = re.match('https://kemono\.party/patreon/user/[^/]+', user.strip())
+    kemono_user_post = re.search('(https://kemono\.party/patreon/user/[^/]+)/post/[^/]+', user.strip())
+    if kemono_user_post:
+        page_html = requests.get(kemono_user_post.group(1), allow_redirects=True, cookies=jar)
+        page_soup = BeautifulSoup(page_html.text, 'html.parser')
+        if username == '':
+            username = page_soup.find("span", {"itemprop": "name"}).text        
+        Download_Post(user.strip(), username)           
+        skip = 1    
+    if kemono_user_profile and skip == 0:    
         page_html = requests.get(user.strip(), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         if username == '':
             username = page_soup.find("span", {"itemprop": "name"}).text
         posts = page_soup.find_all("article")
         for post in posts:
-            post_links.append("https://kemono.party/" + post.find('a')["href"])
+            post_links.append("https://kemono.party" + post.find('a')["href"])
+        # Looking for next page 
         try:
-            next_page = "https://kemono.party/" + page_soup.find("a", {"title": "Next page"})["href"]
+            next_page = "https://kemono.party" + page_soup.find("a", {"title": "Next page"})["href"]
         except:
             next_page = 'none'
             pass
+        # Loop till there are no new pages
         while not next_page == 'none':
             page_html = requests.get(next_page, allow_redirects=True, cookies=jar)
             page_soup = BeautifulSoup(page_html.text, 'html.parser')
             posts = page_soup.find_all("article")
             for post in posts:
                 post_links.append("https://kemono.party" + post.find('a')["href"])
+            # Looking for next page        
             try:
-                next_page = "https://kemono.party/" + page_soup.find("a", {"title": "Next page"})["href"]
+                next_page = "https://kemono.party" + page_soup.find("a", {"title": "Next page"})["href"]
             except:
                 next_page = 'none'
                 pass
