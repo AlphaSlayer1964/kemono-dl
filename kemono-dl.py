@@ -54,7 +54,6 @@ def Download_Post(link, username):
             pass
         try:
             comment_html = page_soup.find("div", {"class": "post__comments"}).prettify()
-            print(comment_html)
             comment_file_name = folder_location + os.path.sep + 'Comments.html'
             with open(comment_file_name,'wb') as File:
                 File.write(comment_html.encode("utf-8"))                           
