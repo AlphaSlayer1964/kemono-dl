@@ -47,11 +47,19 @@ def Download_Post(link, username):
             os.makedirs(folder_location)
         try:
             content_html = page_soup.find("div", {"class": "post__content"}).prettify()
-            html_file_name = folder_location + os.path.sep + 'Content.html'
-            with open(html_file_name,'w') as File:
-                File.write(content_html)                           
+            content_file_name = folder_location + os.path.sep + 'Content.html'
+            with open(content_file_name,'wb') as File:
+                File.write(content_html.encode("utf-8"))                           
         except:
             pass
+        # try:
+        comment_html = page_soup.find("div", {"class": "post__comments"}).prettify()
+        print(comment_html)
+        comment_file_name = folder_location + os.path.sep + 'Comments.html'
+        with open(comment_file_name,'wb') as File:
+            File.write(comment_html.encode("utf-8"))                           
+        # except:
+        #     pass        
         try:
             downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
             for download in downloads:
