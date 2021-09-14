@@ -42,7 +42,6 @@ with open('archive.txt','r') as File:
     archives_temp = File.readlines()
 
 archives = []
-# removes new lines at end of each string in archive_temp
 for element in archives_temp:
     archives.append(element.strip())
 
@@ -132,20 +131,17 @@ for user in users:
         posts = page_soup.find_all("article")
         for post in posts:
             post_links.append("https://kemono.party" + post.find('a')["href"])
-        # Looking for next page 
         try:
             next_page = "https://kemono.party" + page_soup.find("a", {"title": "Next page"})["href"]
         except:
             next_page = 'none'
             pass
-        # Loop till there are no new pages
         while not next_page == 'none':
             page_html = requests.get(next_page, allow_redirects=True, cookies=jar)
             page_soup = BeautifulSoup(page_html.text, 'html.parser')
             posts = page_soup.find_all("article")
             for post in posts:
-                post_links.append("https://kemono.party" + post.find('a')["href"])
-            # Looking for next page        
+                post_links.append("https://kemono.party" + post.find('a')["href"])       
             try:
                 next_page = "https://kemono.party" + page_soup.find("a", {"title": "Next page"})["href"]
             except:
