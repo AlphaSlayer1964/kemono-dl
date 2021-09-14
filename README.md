@@ -1,7 +1,7 @@
 # Kemono.party-Downloader
 This is a quick and dirty kemono.party downloader using python.
 
-## How to use
+## How to use:
 1. Install python
 2. Install bs4 using the command ```pip install bs4``` 
 3. Edit kemono-dl.py and change all four of the cookie values for kemonoparty
@@ -21,7 +21,7 @@ This is a quick and dirty kemono.party downloader using python.
 - [X] Allow file location to be set in command line
 - [ ] Allow a cookie.txt file to be read in 
 
-## Keep in mind
+## Keep in mind:
 - Using this might get you IP banned from kemono party.
   - This has not happened to me but is a possibility 
 - If the site changes the script might break.
