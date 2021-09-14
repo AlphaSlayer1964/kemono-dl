@@ -3,9 +3,9 @@ from bs4 import BeautifulSoup
 import os
 import re
 
-Downalod_Loaction = 'CHANGE THIS!!!!!!!!!!!!!'
+Download_Location = 'CHANGE THIS!!!!!!!!!!!!!'
 
-if Downalod_Loaction == 'CHANGE THIS!!!!!!!!!!!!!':
+if Download_Location == 'CHANGE THIS!!!!!!!!!!!!!':
     print("open this file with a text editor and add your file location at the top and edit the cookie values!")
     quit()
 
@@ -62,7 +62,7 @@ def Download_Post(link, username):
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"]
         temp_name = '[' + time_stamp + '] ' + title[:-10]
         folder_name = re.sub('[\\/:\"*?<>|]+','',temp_name)
-        folder_location = Downalod_Loaction + os.path.sep + username + os.path.sep + folder_name
+        folder_location = Download_Location + os.path.sep + username + os.path.sep + folder_name
         if not os.path.exists(folder_location):
             os.makedirs(folder_location)
         try:
