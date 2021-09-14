@@ -1,22 +1,31 @@
 # Kemono.party-Downloader
 This is a quick and dirty kemono.party downloader using python.
-You will need to install bs4 by using the command "pip install bs4".
-Ypu will aslo need to chnage the Download_Location variable at the top and all four of the cookie values for kemonoparty.
-You can get the cookie values from using a chrome or firefox extention.
-They are needed so requests can get past their ddos protection.
-Then place the users main page link in the Users.txt file (one user per line).
-links should look like: https://kemono.party/patreon/user/*******
 
-WARNINGS!
-If you stop the script while it is downloading what ever file was last being downloaded will probably be broken and skipped next time.
-Also you might get IP banned from kemono party if you use it a lot (though this has not happened to me and I've used this script a lot in testing and actual use just be warned)
-If the site changes the script might break.
-Just notieced some files can be none kemono hosted so they probably won't downlaod (example youtube links)
-Also noticed some "download able files" are not even real files so will need to look into that???
+## How to use
+1. Install python
+2. Install bs4 using the command ```pip install bs4```
+3. Edit kemono-dl.py and chnage the Download_Location variable 
+4. Edit kemono-dl.py and change all four of the cookie values for kemonoparty
+   - You can get the cookie values from using a chrome or firefox extention
+   - You must pass a cookie value or their ddos protection won't let the script access the site 
+5. Place users main page link or post link in the Users.txt file
+   - One entry per line
+   - links should look like: https://kemono.party/patreon/user/*****
+6. Run ```python kemono-dl.py```
 
-TO DO:
-Intigrate youtube-dl for downloading videos?
-Create a links.txt file to hold all embeded links in content section.
-Need to look into duplicate names for files and downloads
-Images in content section might not display in Content.html? (maybe new method of saving content is needed) 
-Figure out how to format readme lol!
+## To do:
+- [ ] Intigrate youtube-dl for downloading external video links
+- [ ] Extract all external links to a single file
+- [ ] Duplicate names for files and downloads
+- [ ] Images in content section might not display in Content.html? (maybe new method of saving content is needed)
+- [ ] Allow file structer to be changed in command line
+- [ ] Allow file location to be set in command line
+- [ ] Allow a cookie.txt file to be read in 
+
+## Keep in mind
+- Using this might get you IP banned from kemono party.
+  - This has not happened to me but is a possibility 
+- If the site changes the script might break.
+- Kemono party places some external links as "files" currently they will not be downloaded.
+- Kemono party seems to have files in the download section that are broken.
+  - ie the file isn't actually a file
