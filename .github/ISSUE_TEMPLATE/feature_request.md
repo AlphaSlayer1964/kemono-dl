@@ -8,7 +8,7 @@ labels: "feature request"
 **Describe the feature you'd like**
 A description of what you want the feature to do.
 
-**Examples of where it's needed**
+**Poster and Post ID**
 Please provide the poster ID and post ID and do not link to kemono party directly
 Poster ID: 
 Post ID: 
