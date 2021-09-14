@@ -9,7 +9,7 @@ This is a quick and dirty kemono.party downloader using python.
    - You must pass a cookie value or their ddos protection won't let the script access the site 
 4. Place users main page link or post link in the Users.txt file
    - One entry per line
-   - links should look like: https://<span></span>kemono.party/patreon/user/***** or https://<span></span>kemono.party/patreon/user/*****/post/*****
+   - links should look like: https://<span></span>kemono.party/patreon/user/USERID or https://<span></span>kemono.party/patreon/user/USERID/post/POSTID
 5. Run ```python kemono-dl.py``` or with a download location ```python kemono-dl.py "C:\Users\User\Downloads"```
    - If no download location is passed then file will be download to the current working directory
 
