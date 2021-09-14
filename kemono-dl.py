@@ -2,18 +2,30 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import re
+import sys
 
-Download_Location = 'CHANGE THIS!!!!!!!!!!!!!'
+# Change the 0000000000000000 to your values
+jar = requests.cookies.RequestsCookieJar()
+jar.set('__ddgid', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddg2', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddg1', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddgmark', '0000000000000000', domain='.kemono.party', path='/')
 
-if Download_Location == 'CHANGE THIS!!!!!!!!!!!!!':
-    print("open this file with a text editor and add your file location at the top and edit the cookie values!")
+# change this value to a 1 when you chnage the cookie values above
+I_changed_the_cookies = 0
+
+if I_changed_the_cookies == 0:
+    print("You did not change the cookies value the script will not work!")
     quit()
 
-jar = requests.cookies.RequestsCookieJar()
-jar.set('__ddgid', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
-jar.set('__ddg2', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
-jar.set('__ddg1', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
-jar.set('__ddgmark', 'CHANGE THIS!!!!!!!!!!!!!', domain='.kemono.party', path='/')
+try:
+    DL = sys.argv[1]
+    if not os.path.exists(DL):
+        print('Invalid Download Location:' + DL)
+        quit()
+    Download_Location = DL
+except:
+    Download_Location = os.getcwd()
 
 if not os.path.exists('archive.txt'):
     file = open('archive.txt','w')
