@@ -11,7 +11,7 @@ This is a quick and dirty kemono.party downloader using python.
    - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
 5. Run ```python kemono-dl.py "cookie.txt"``` or with a download location ```python kemono-dl.py "cookie.txt" "C:\Users\User\Downloads"```
    - If no cookie.txt is passed in the script will quit
-   - If no download location is passed then file will be download to the current working directory
+   - If no download location is passed then files will be saved to a Downloads folder in the current working directory
    
 ## Notes:
 - Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title```
