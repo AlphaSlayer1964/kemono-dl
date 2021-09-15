@@ -4,24 +4,40 @@ import os
 import re
 import sys
 from http.cookiejar import MozillaCookieJar
+import argparse
+
+version = '2021.09.14a'
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--Version", action='store_true', help="prints version")
+ap.add_argument("-o", "--output", help="path to download posts")
+ap.add_argument("--cookies", required=True, help="path to cookies.txt")
+args = vars(ap.parse_args())
 
 try:
-    cookie_location = sys.argv[1]
+    if args['Version']:
+        print(version)
+except:
+    pass
+
+try:
+    cookie_location = args['cookies']
     if not os.path.exists(cookie_location):
         print('Invalid Cookie Location:' + cookie_location)
-        quit()
+        sys.exit()
     jar = MozillaCookieJar(cookie_location)
     jar.load()
-except:
-    print('No cookie file passed!')
-    quit()
+except SystemExit:
+   sys.exit()     
 
 try:
-    DL = sys.argv[2]
+    DL = args['output']
     if not os.path.exists(DL):
         print('Invalid Download Location:' + DL)
-        quit()
+        sys.exit()
     Download_Location = DL
+except SystemExit:
+   sys.exit()     
 except:
     Download_Location = os.getcwd() + os.path.sep + 'Downloads'
 
