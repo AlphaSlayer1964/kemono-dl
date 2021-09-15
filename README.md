@@ -1,4 +1,4 @@
-# Kemono.party-Downloader
+# kemono-dl
 This is a quick and dirty kemono.party downloader using python. This is in very alpha state so many changes will happen over a short period of time.
 
 ## How to use:
