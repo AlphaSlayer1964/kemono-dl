@@ -4,7 +4,7 @@ This is a quick and dirty kemono.party downloader using python.
 ## How to use:
 1. Install python
 2. Install bs4 using the command ```pip install bs4``` 
-3. Edit kemono-dl.py and change all four of the cookie values for kemonoparty
+3. Edit kemono-dl.py and change all four of the cookie values for kemonoparty and change the flag ```I_changed_the_cookies``` from a 0 to a 1 
    - You can get the cookie values from using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - You must pass a cookie value or their ddos protection won't let the script access the site 
 4. Place users main page link or post link in the Users.txt file with one entry per line
