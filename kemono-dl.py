@@ -23,7 +23,7 @@ try:
         quit()
     Download_Location = DL
 except:
-    Download_Location = os.getcwd()
+    Download_Location = os.getcwd() + os.path.sep + 'Downloads'
 
 if not os.path.exists('archive.txt'):
     file = open('archive.txt','w')
