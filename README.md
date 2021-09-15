@@ -8,7 +8,7 @@ This is a quick and dirty kemono.party downloader using python.
    - You can get the cookie values from using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - You must pass a cookie value or their ddos protection won't let the script access the site 
 4. Place users main page link or post link in the Users.txt file with one entry per line
-   - links should look like: https://<span></span>kemono.party/patreon/user/USERID or https://<span></span>kemono.party/patreon/user/USERID/post/POSTID
+   - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
 5. Run ```python kemono-dl.py``` or with a download location ```python kemono-dl.py "C:\Users\User\Downloads"```
    - If no download location is passed then file will be download to the current working directory
 
@@ -19,7 +19,8 @@ This is a quick and dirty kemono.party downloader using python.
 - [ ] Images in content section might not display in Content.html
 - [ ] Allow file structure to be changed in command line
 - [X] Allow file location to be set in command line
-- [ ] Allow a cookie.txt file to be read in 
+- [ ] Allow a cookie.txt file to be read in
+- [ ] Add Discord service 
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
