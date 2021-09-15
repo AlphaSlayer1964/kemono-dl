@@ -15,7 +15,7 @@ This is a quick and dirty kemono.party downloader using python.
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Extract all external links to a single file
-- [ ] Duplicate names for files and downloads
+- [ ] Duplicate files and downloads (Seems to be a problem on kemonos end)
 - [ ] Images in content section might not display in Content.html
 - [ ] Allow file structure to be changed in command line
 - [X] Allow file location to be set in command line
