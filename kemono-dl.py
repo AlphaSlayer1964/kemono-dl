@@ -80,34 +80,27 @@ def Download_Post(link, username, service):
         folder_location = Download_Location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name
         if not os.path.exists(folder_location):
             os.makedirs(folder_location)
-        try:
-            content_html = page_soup.find("div", {"class": "post__content"}).prettify()
+        content_html = page_soup.find("div", {"class": "post__content"})
+        if not content_html == None:
             html_file_name = folder_location + os.path.sep + 'Content.html'
             with open(html_file_name,'wb') as File:
-                File.write(content_html.encode("utf-16"))                           
-        except:
-            pass
-        try:
-            comment_html = page_soup.find("div", {"class": "post__comments"}).prettify()
+                File.write(content_html.prettify().encode("utf-16"))                           
+        comment_html = page_soup.find("div", {"class": "post__comments"})
+        if not comment_html == None:
             comment_file_name = folder_location + os.path.sep + 'Comments.html'
             with open(comment_file_name,'wb') as File:
-                File.write(comment_html.encode("utf-16"))                           
-        except:
-            pass          
-        try:
+                File.write(comment_html.prettify().encode("utf-16"))                           
+        downloads = page_soup.find_all("a", {"class": "post__attachment-link"}) 
+        if not downloads == []:
             downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
             for download in downloads:
                 status = Download_File(download, folder_location)
                 print(status)            
-        except:
-            pass
-        try:
-            files = page_soup.find_all("a", {"class": "fileThumb"})
+        files = page_soup.find_all("a", {"class": "fileThumb"})
+        if not files == []:
             for file in files:
                 status = Download_File(file, folder_location)
                 print(status)
-        except:
-            pass
         with open('archive.txt','a') as File:
             File.write(link + '\n')
         print("Completed Downloading Post: " + link)
@@ -117,7 +110,6 @@ def Download_Post(link, username, service):
 for user in users:
     skip = 0
     username = ''
-    service = ''
     post_links = []
     kemono_user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+', user.strip())
     kemono_user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', user.strip())
