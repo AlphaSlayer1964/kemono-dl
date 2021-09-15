@@ -18,14 +18,14 @@ This is a quick and dirty kemono.party downloader using python.
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Extract all external links to a single file
-- [ ] Duplicate files and downloads (Seems to be a problem on kemonos end)
+- [ ] Duplicate files and downloads (Seems to be a problem on kemonos end with patreon)
 - [ ] Images in content section might not display in Content.html
 - [ ] Allow file naming structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [ ] Allow a cookie.txt file to be read in
 - [ ] Add Discord service
 - [ ] Stop comment.html from being made when there are no comments
-- [ ] fix encoding issue with content.html
+- [X] fix encoding issue with content.html and comment.html
 - [ ] gumroad does not lod dates and time (remove from folder name) 
 
 ## Keep in mind:
