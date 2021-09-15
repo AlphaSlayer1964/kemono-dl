@@ -17,6 +17,9 @@ args = vars(ap.parse_args())
 try:
     if args['Version']:
         print(version)
+        sys.exit()
+except SystemExit:
+   sys.exit()        
 except:
     pass
 
