@@ -6,13 +6,13 @@ import sys
 
 # Change the 0000000000000000 to your values
 jar = requests.cookies.RequestsCookieJar()
-jar.set('__ddgid', 'wiMspsaC8eBziBQQ', domain='.kemono.party', path='/')
-jar.set('__ddg2', '5yADuhcOahsq0n3B', domain='.kemono.party', path='/')
-jar.set('__ddg1', '5z8tQNNq5X3Ei5N3mNbN', domain='.kemono.party', path='/')
-jar.set('__ddgmark', '9u8WgrocddfnY1et', domain='.kemono.party', path='/')
+jar.set('__ddgid', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddg2', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddg1', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddgmark', '0000000000000000', domain='.kemono.party', path='/')
 
 # change this value to a 1 when you change the cookie values above
-I_changed_the_cookies = 1
+I_changed_the_cookies = 0
 
 if I_changed_the_cookies == 0:
     print("You did not change the cookies value the script will not work!")
