@@ -65,7 +65,7 @@ def Download_File(download, folder_location):
                 f.write(chunk) 
     return ("Downloaded: " + local_filename)    
 
-def Download_Post(link, username):
+def Download_Post(link, username, service):
     if link not in archives:
         page_html = requests.get(link, allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
@@ -73,7 +73,7 @@ def Download_Post(link, username):
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"]
         temp_name = '[' + time_stamp + '] ' + title[:-10]
         folder_name = re.sub('[\\/:\"*?<>|]+','',temp_name)
-        folder_location = Download_Location + os.path.sep + username + os.path.sep + folder_name
+        folder_location = Download_Location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name
         if not os.path.exists(folder_location):
             os.makedirs(folder_location)
         try:
@@ -113,24 +113,27 @@ def Download_Post(link, username):
 for user in users:
     skip = 0
     username = ''
+    service = ''
     post_links = []
-    kemono_user_profile = re.match('https://kemono\.party/patreon/user/[^/]+', user.strip())
-    kemono_user_post = re.search('(https://kemono\.party/patreon/user/[^/]+)/post/[^/]+', user.strip())
+    kemono_user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+', user.strip())
+    kemono_user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', user.strip())
     if kemono_user_post:
+        service = kemono_user_post.group(2)
         page_html = requests.get(kemono_user_post.group(1), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         if username == '':
             username = page_soup.find("span", {"itemprop": "name"}).text        
-        Download_Post(user.strip(), username)           
+        Download_Post(user.strip(), username, service)           
         skip = 1    
-    if kemono_user_profile and skip == 0:    
+    if kemono_user_profile and skip == 0:
+        service = kemono_user_profile.group(1)    
         page_html = requests.get(user.strip(), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         if username == '':
             username = page_soup.find("span", {"itemprop": "name"}).text
         posts = page_soup.find_all("article")
         for post in posts:
-            post_links.append("https://kemono.party" + post.find('a')["href"])
+            post_links.append("https://kemono.party" + post.find('a')["href"]) 
         try:
             next_page = "https://kemono.party" + page_soup.find("a", {"title": "Next page"})["href"]
         except:
@@ -148,4 +151,4 @@ for user in users:
                 next_page = 'none'
                 pass
         for post in post_links:
-            Download_Post(post, username)
+            Download_Post(post, username, service)
