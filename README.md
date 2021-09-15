@@ -9,10 +9,19 @@ This is a quick and dirty kemono.party downloader using python. This is in very 
    - You must pass a cookie file or kemono.party's ddos protection won't let the script access the site 
 4. Place users main page link or post link in the Users.txt file with one entry per line
    - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
-5. Run ```python kemono-dl.py "cookie.txt"``` or with a download location ```python kemono-dl.py "cookie.txt" "C:\Users\User\Downloads"```
+5. Run ```python kemono-dl.py --cookies "cookie.txt"```
    - If no cookie.txt is passed in the script will quit
    - If no download location is passed then files will be saved to a Downloads folder in the current working directory
-   
+
+## Options:
+- ```-h, --help``` Prints help test then exits
+- ```--Verion``` Displays the current version then exits
+- ```-o, --output``` Set path to download posts
+- **REQUIRED** ```--cookies``` Set path to cookie.txt 
+
+## Examples:
+- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads"```
+
 ## Notes:
 - Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title```
 
