@@ -76,21 +76,22 @@ def Download_Post(link, username, service):
         temp_name2 = re.sub('[\\/:\"*?<>|]+','',temp_name)
         temp_name3 = re.sub('\\n',' ',temp_name2)
         folder_name = re.sub('\\t',' ',temp_name3)
+        folder_name = folder_name.strip('.').strip()
         folder_location = Download_Location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name
         if not os.path.exists(folder_location):
             os.makedirs(folder_location)
         try:
             content_html = page_soup.find("div", {"class": "post__content"}).prettify()
             html_file_name = folder_location + os.path.sep + 'Content.html'
-            with open(html_file_name,'w') as File:
-                File.write(content_html)                           
+            with open(html_file_name,'wb') as File:
+                File.write(content_html.encode("utf-16"))                           
         except:
             pass
         try:
             comment_html = page_soup.find("div", {"class": "post__comments"}).prettify()
             comment_file_name = folder_location + os.path.sep + 'Comments.html'
             with open(comment_file_name,'wb') as File:
-                File.write(comment_html.encode("utf-8"))                           
+                File.write(comment_html.encode("utf-16"))                           
         except:
             pass          
         try:
