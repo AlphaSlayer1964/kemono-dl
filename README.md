@@ -23,7 +23,10 @@ This is a quick and dirty kemono.party downloader using python.
 - [ ] Allow file naming structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [ ] Allow a cookie.txt file to be read in
-- [ ] Add Discord service 
+- [ ] Add Discord service
+- [ ] Stop comment.html from being made when there are no comments
+- [ ] fix encoding issue with content.html
+- [ ] gumroad does not lod dates and time (remove from folder name) 
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
