@@ -11,13 +11,16 @@ This is a quick and dirty kemono.party downloader using python.
    - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
 5. Run ```python kemono-dl.py``` or with a download location ```python kemono-dl.py "C:\Users\User\Downloads"```
    - If no download location is passed then file will be download to the current working directory
+   
+## Notes:
+- Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title```
 
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Extract all external links to a single file
 - [ ] Duplicate files and downloads (Seems to be a problem on kemonos end)
 - [ ] Images in content section might not display in Content.html
-- [ ] Allow file structure to be changed in command line
+- [ ] Allow file naming structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [ ] Allow a cookie.txt file to be read in
 - [ ] Add Discord service 
