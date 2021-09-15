@@ -11,7 +11,7 @@ jar.set('__ddg2', '0000000000000000', domain='.kemono.party', path='/')
 jar.set('__ddg1', '0000000000000000', domain='.kemono.party', path='/')
 jar.set('__ddgmark', '0000000000000000', domain='.kemono.party', path='/')
 
-# change this value to a 1 when you chnage the cookie values above
+# change this value to a 1 when you change the cookie values above
 I_changed_the_cookies = 0
 
 if I_changed_the_cookies == 0:
