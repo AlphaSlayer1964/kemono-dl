@@ -6,13 +6,13 @@ import sys
 
 # Change the 0000000000000000 to your values
 jar = requests.cookies.RequestsCookieJar()
-jar.set('__ddgid', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddg2', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddg1', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddgmark', '0000000000000000', domain='.kemono.party', path='/')
+jar.set('__ddgid', 'wiMspsaC8eBziBQQ', domain='.kemono.party', path='/')
+jar.set('__ddg2', '5yADuhcOahsq0n3B', domain='.kemono.party', path='/')
+jar.set('__ddg1', '5z8tQNNq5X3Ei5N3mNbN', domain='.kemono.party', path='/')
+jar.set('__ddgmark', '9u8WgrocddfnY1et', domain='.kemono.party', path='/')
 
 # change this value to a 1 when you change the cookie values above
-I_changed_the_cookies = 0
+I_changed_the_cookies = 1
 
 if I_changed_the_cookies == 0:
     print("You did not change the cookies value the script will not work!")
@@ -71,8 +71,11 @@ def Download_Post(link, username, service):
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         title = page_soup.find("h1", {"class": "post__title"}).text.strip()
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"]
-        temp_name = '[' + time_stamp + '] ' + title[:-10]
-        folder_name = re.sub('[\\/:\"*?<>|]+','',temp_name)
+        offset = len(service)+3
+        temp_name = '[' + time_stamp + '] ' + title[:-offset]
+        temp_name2 = re.sub('[\\/:\"*?<>|]+','',temp_name)
+        temp_name3 = re.sub('\\n',' ',temp_name2)
+        folder_name = re.sub('\\t',' ',temp_name3)
         folder_location = Download_Location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name
         if not os.path.exists(folder_location):
             os.makedirs(folder_location)
@@ -119,6 +122,8 @@ for user in users:
     kemono_user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', user.strip())
     if kemono_user_post:
         service = kemono_user_post.group(2)
+        if service == 'fanbox':
+            service = 'pixiv fanbox'
         page_html = requests.get(kemono_user_post.group(1), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         if username == '':
@@ -126,7 +131,9 @@ for user in users:
         Download_Post(user.strip(), username, service)           
         skip = 1    
     if kemono_user_profile and skip == 0:
-        service = kemono_user_profile.group(1)    
+        service = kemono_user_profile.group(1)
+        if service == 'fanbox':
+            service = 'pixiv fanbox'            
         page_html = requests.get(user.strip(), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         if username == '':
