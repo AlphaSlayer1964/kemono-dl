@@ -3,23 +3,21 @@ from bs4 import BeautifulSoup
 import os
 import re
 import sys
+from http.cookiejar import MozillaCookieJar
 
-# Change the 0000000000000000 to your values
-jar = requests.cookies.RequestsCookieJar()
-jar.set('__ddgid', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddg2', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddg1', '0000000000000000', domain='.kemono.party', path='/')
-jar.set('__ddgmark', '0000000000000000', domain='.kemono.party', path='/')
-
-# change this value to a 1 when you change the cookie values above
-I_changed_the_cookies = 0
-
-if I_changed_the_cookies == 0:
-    print("You did not change the cookies value the script will not work!")
+try:
+    cookie_location = sys.argv[1]
+    if not os.path.exists(cookie_location):
+        print('Invalid Cookie Location:' + cookie_location)
+        quit()
+    jar = MozillaCookieJar(cookie_location)
+    jar.load()
+except:
+    print('No cookie file passed!')
     quit()
 
 try:
-    DL = sys.argv[1]
+    DL = sys.argv[2]
     if not os.path.exists(DL):
         print('Invalid Download Location:' + DL)
         quit()
