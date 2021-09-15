@@ -1,5 +1,5 @@
 # Kemono.party-Downloader
-This is a quick and dirty kemono.party downloader using python.
+This is a quick and dirty kemono.party downloader using python. This is in very alpha state so many changes might happen over a short period of time. Will work on adding releases soon.
 
 ## How to use:
 1. Install python
