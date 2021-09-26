@@ -5,7 +5,7 @@ import re
 from http.cookiejar import MozillaCookieJar
 import argparse
 
-version = '2021.09.25'
+version = '2021.09.26'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--Version", action='store_true', help="prints version")
@@ -53,16 +53,16 @@ def Download_Status(dl_status):
     '''
     if dl_status[0] == 0: # download completed
         print('Download Complete: ' + dl_status[1])
-        return
+        return True
     elif dl_status[0] == 1: # file already downloaded
         print('Already Downloaded: ' + dl_status[1])
-        return
+        return True
     elif dl_status[0] == 2: # wrong content type
         print('File type incorrect: ' + dl_status[1])
-        return
+        return False
     # other error
     print('Error occurred downloading from: ' + dl_status[1])
-    return    
+    return False    
     
 def Download_File(download_url, folder_path):
     try:
@@ -124,9 +124,11 @@ def Download_Post(link, username, service):
             inline_images = content_html.find_all('img')
             if not inline_images == []:
                 for inline_image in inline_images:
-                    download_url = "https://kemono.party" + inline_image['src']
-                    Download_Status(Download_File(download_url, content_path + os.path.sep + 'inline'))
-                    inline_image['src'] = inline_image['src'][1:]
+                    found = re.search('/inline/[^*]+', inline_image['src'])
+                    if found:
+                        download_url = "https://kemono.party" + inline_image['src']
+                        if Download_Status(Download_File(download_url, content_path + os.path.sep + 'inline')):
+                            inline_image['src'] = inline_image['src'][1:]
                 
             content_external_links = content_html.find_all('a', href=True)
             if not content_external_links == []:
