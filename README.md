@@ -43,6 +43,7 @@ This is a simple kemono.party downloader using python.
 - [ ] Stop comment.html from being made when there are no comments
 - [X] fix encoding issue with content.html and comment.html
 - [X] gumroad does not lod dates and time (remove from folder name) 
+   - [ ] duplicate post name from same creator might cause error
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
