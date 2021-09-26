@@ -24,20 +24,25 @@ This is a simple kemono.party downloader using python. This is in very alpha sta
 - ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads"```
 
 ## Notes:
-- Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title```
+- Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title/Type/Files```
+   - Type refers to ```Downloads```, ```Content```, ```Files```
+- In the ```Contents``` folder a folder called ```inline``` will be created to store any images that were embedded in the content section
+- External links will be placed in two locations
+  - Content_External_Links.txt in the Content folder
+  - Files_External_Links.txt in the Files folder 
 
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
-- [ ] Extract all external links to a single file
+- [X] Extract all external links to a single file
 - [ ] Duplicate files and downloads (Seems to be a problem on kemonos end with patreon)
-- [ ] Images in content section aren't actually downloaded and might not display in Content.html
+- [X] Images in content section aren't actually downloaded and might not display in Content.html
 - [ ] Allow file naming structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [X] Allow a cookie.txt file to be read in
 - [ ] Add Discord service
 - [ ] Stop comment.html from being made when there are no comments
 - [X] fix encoding issue with content.html and comment.html
-- [ ] gumroad does not lod dates and time (remove from folder name) 
+- [X] gumroad does not lod dates and time (remove from folder name) 
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
