@@ -36,6 +36,7 @@ This is a simple kemono.party downloader using python.
 - [X] Extract all external links to a single file
 - [X] Duplicate files and downloads (Seems to be a problem on kemonos end with patreon)
 - [X] Images in content section aren't actually downloaded and might not display in Content.html
+   - [ ] Some images are not hosted on kemono.party and are not downloaded properly
 - [ ] Allow file naming structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [X] Allow a cookie.txt file to be read in
