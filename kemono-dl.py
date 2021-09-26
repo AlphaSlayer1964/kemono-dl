@@ -7,7 +7,7 @@ import argparse
 import sys
 import time
 
-version = '2021.09.26b'
+version = '2021.09.26.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--Version", action='store_true', help="prints version")
