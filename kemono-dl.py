@@ -7,7 +7,7 @@ import argparse
 import sys
 import time
 
-version = '2021.09.27'
+version = '2021.09.27.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--Version", action='store_true', help="prints version")
@@ -100,13 +100,13 @@ def Download_Post(link, username, service):
         title = page_soup.find("h1", {"class": "post__title"}).text.strip() # get post title            
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"] # get post timestamp
         offset = len(service)+3 # remove service name at end of title
-        if time_stamp == None:
+        if time_stamp == '':
             folder_name_temp = title[:-offset]
         else:
             folder_name_temp = '[' + time_stamp + '] ' + title[:-offset]   
         folder_name_temp = re.sub('[\\/:\"*?<>|]+','',folder_name_temp) # remove illegal windows characters
         folder_name_temp = re.sub('[\\n\\t]+',' ',folder_name_temp) # remove possible newlines or tabs in post title      
-        folder_name = folder_name_temp.strip('.').strip() # remove trailing '.' because windows will remove them from folder names        
+        folder_name = folder_name_temp.strip('.').strip() # remove trailing '.' and whitespaces because windows will remove them from folder names        
         folder_path = Download_Location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name # post folder path
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -140,16 +140,21 @@ def Download_Post(link, username, service):
         # save comments to html file to keep formatting (considered part of the content section)                                   
         comment_html = page_soup.find("div", {"class": "post__comments"})
         if not comment_html == None:
-            if not os.path.exists(content_path):
-                os.makedirs(content_path)
-            with open(content_path + os.path.sep + 'Comments.html','wb') as File:
-                File.write(comment_html.prettify().encode("utf-16")) 
+            not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
+            if not not_supported:
+                if not os.path.exists(content_path):
+                    os.makedirs(content_path)
+                with open(content_path + os.path.sep + 'Comments.html','wb') as File:
+                    File.write(comment_html.prettify().encode("utf-16")) 
         # download downloads                                  
         downloads = page_soup.find_all("a", {"class": "post__attachment-link"}) 
         if not downloads == []:
             downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
             for download in downloads:
+                direct_link = re.search('https:\/\/kemono\.party',download['href'])
                 download_url = "https://kemono.party" + download['href']
+                if direct_link:
+                    download_url = download['href']
                 Download_Status(Download_File(download_url, downloads_path))
         # download files 
         files = page_soup.find("div", {"class": "post__files"})
