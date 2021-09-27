@@ -7,7 +7,7 @@ import argparse
 import sys
 import time
 
-version = '2021.09.26.1'
+version = '2021.09.27'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--Version", action='store_true', help="prints version")
@@ -35,7 +35,8 @@ if args['output']:
         print('Invalid Download Location:' + DL)
         quit()
     Download_Location = DL
-    
+  
+# re work this in the future 
 def Download_Status(dl_status):
     if dl_status[0] == 0: # download completed
         return True
@@ -199,7 +200,7 @@ for user in users:
             service = 'pixiv fanbox'
         page_html = requests.get(user_post.group(1), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
-        username = page_soup.find("span", {"itemprop": "name"}).text        
+        username = page_soup.find("span", {"itemprop": "name"}).text.strip()        
         Download_Post(user.strip(), username, service)
                    
     user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', user.strip())        
@@ -210,7 +211,7 @@ for user in users:
             service = 'pixiv fanbox'            
         page_html = requests.get(user.strip(), allow_redirects=True, cookies=jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
-        username = page_soup.find("span", {"itemprop": "name"}).text
+        username = page_soup.find("span", {"itemprop": "name"}).text.strip() 
         posts = page_soup.find_all("article")
         for post in posts:
             post_links.append("https://kemono.party" + post.find('a')["href"])
