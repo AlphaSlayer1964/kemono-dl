@@ -38,6 +38,7 @@ This is a simple kemono.party downloader using python.
 - [X] Images in content section aren't actually downloaded and might not display in Content.html
    - [ ] Some images are not hosted on kemono.party and are not downloaded properly
 - [ ] Allow file naming structure to be changed in command line
+   - [ ] Allow file path structure to be changed in command line
 - [X] Allow file location to be set in command line
 - [X] Allow a cookie.txt file to be read in
 - [ ] Add Discord service
