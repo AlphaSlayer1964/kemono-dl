@@ -32,6 +32,7 @@ This is a simple kemono.party downloader using python.
   - Files_External_Links.txt in the Files folder 
 
 ## To do:
+- [ ] Some Patreon downloads file names are broken! (change from kemono.party)
 - [ ] Integrate youtube-dl for downloading external video links
 - [X] Extract all external links to a single file
 - [X] Duplicate files and downloads (Seems to be a problem on kemonos end with patreon)
