@@ -213,29 +213,27 @@ def main():
         
     for link in links:
         
-        user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', link)
-        if user_post:
-            post_link = link
-            service = user_post.group(2)
+        post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', link)
+        if post:
+            service = post.group(2)
             if service == 'fanbox': service = 'pixiv fanbox'
-            username = get_username(user_post.group(1))
-            download_post(post_link, username, service)
+            username = get_username(post.group(1))
+            download_post(link, username, service)
                         
-        user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', link)        
-        if user_profile:
-            profile_link = link
+        profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', link)        
+        if profile:
             post_links = []
-            service = user_profile.group(1)
+            service = profile.group(1)
             if service == 'fanbox': service = 'pixiv fanbox'            
-            username = get_username(profile_link)
-            while not profile_link == 'none':
-                profile_link, post_links_temp = get_posts(profile_link)
+            username = get_username(link)
+            while not link == 'none':
+                link, post_links_temp = get_posts(link)
                 post_links += post_links_temp
             for post_link in post_links:
                 download_post(post_link, username, service)
                             
-        if not user_post and not user_profile:
-            print('Invalid link: {}'.format(link))
+        if not post and not profile:
+            print('Error invalid link: {}'.format(link))
             
 if __name__ == '__main__':
     main()
