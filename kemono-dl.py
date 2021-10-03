@@ -9,16 +9,39 @@ import time
 
 version = '2021.09.27.2'
 
-def Download_File(download_url, folder_path, cookie_jar):
-    """
-    Args:
-        download_url (str):             Url of file to download.
-        folder_path (str):              Location file should be downloaded to.
-        cookie_jar (MozillaCookieJar):  A cookie jar to get past ddos protection.
+ap = argparse.ArgumentParser()
+ap.add_argument("--Version", action='store_true', help="prints version")
+ap.add_argument("-o", "--output", help="path to download posts")
+ap.add_argument("--cookies", required=True, help="path to cookies.txt")
+# ap.add_argument("-s","--simulate", action='store_true', help="lists post links that would be downloaded.")
+ap.add_argument("-a","--archive", action='store_true', help="Saves downloaded posts to an archive file")
+args = vars(ap.parse_args())
 
-    Returns:
-        (Boolean): True if download was successful returns False if not
-    """
+if args['Version']:
+    print(version), quit()
+
+if args['cookies']:
+    if not os.path.exists(args['cookies']):
+        print('Invalid Cookie Location: {}'.format(args['cookies'])), quit()
+    cookie_jar = MozillaCookieJar(args['cookies'])
+    cookie_jar.load()
+
+download_location = os.getcwd() + os.path.sep + 'Downloads' # default download location 
+if args['output']:
+    if not os.path.exists(args['output']):
+        print('Invalid Download Location: {}'.format(args['output'])), quit()
+    download_location = args['output'] 
+
+# simulate_flag = args['simulate']  
+
+archive_flag = False
+if args['archive']:
+    archive_flag = args['archive']
+    # create archive file if none
+    if not os.path.exists('archive.txt'): 
+        with open('archive.txt','w') as f: pass
+
+def download_file(download_url, folder_path):
     try:
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
@@ -57,43 +80,34 @@ def Download_File(download_url, folder_path, cookie_jar):
         print(e)
         return False
 
-def Download_Post(link, username, service, download_location, cookie_jar):
-    """
-    Args:
-        link (str):                     Link to the post that should be downloaded.
-        username (str):                 Username of the poster.
-        service (str):                  Service type of the post.
-        download_location (str):        Base location where files are downloaded to.
-        cookie_jar (MozillaCookieJar):  A cookie jar to get past ddos protection.
-    """
-    error_flag = 0
+def download_post(link, username, service):
     
-    with open('archive.txt','r') as File:
-        archives_temp = File.readlines()
-    archives = []
-    for element in archives_temp:
-        archives.append(element.strip())    
-    
-    if link not in archives:
+    archived = []
+    if archive_flag:
+        with open('archive.txt','r') as f:
+            archived = f.read().splitlines()
+                    
+    if not link in archived:
+        error_flag = 0
         page_html = requests.get(link, allow_redirects=True, cookies=cookie_jar)
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         title = page_soup.find("h1", {"class": "post__title"}).text.strip() # get post title            
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"] # get post timestamp
         offset = len(service)+3 # remove service name at end of title
         if time_stamp == '':
-            folder_name_temp = title[:-offset]
+            post_folder_name = title[:-offset]
         else:
-            folder_name_temp = '[' + time_stamp + '] ' + title[:-offset]   
-        folder_name_temp = re.sub('[\\/:\"*?<>|]+','',folder_name_temp) # remove illegal windows characters
-        folder_name_temp = re.sub('[\\n\\t]+',' ',folder_name_temp) # remove possible newlines or tabs in post title      
-        folder_name = folder_name_temp.strip('.').strip() # remove trailing '.' and whitespaces because windows will remove them from folder names        
-        folder_path = download_location + os.path.sep + service + os.path.sep + username + os.path.sep + folder_name # post folder path
+            post_folder_name = '[' + time_stamp + '] ' + title[:-offset]  
+        # remove illegal windows characters
+        # remove possible newlines or tabs in post title      
+        # remove trailing '.' and whitespaces because windows will remove them from folder names             
+        post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','',post_folder_name)).strip('.').strip()  
+        folder_path = download_location + os.path.sep + service + os.path.sep + username + os.path.sep + post_folder_name # post folder path
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        content_path = folder_path + os.path.sep + 'Content'
-        files_path = folder_path + os.path.sep + 'Files'
-        downloads_path = folder_path + os.path.sep + 'Downloads'
+        
         # saving content
+        content_path = folder_path + os.path.sep + 'Content'
         content_html = page_soup.find("div", {"class": "post__content"})
         if not content_html == None:
             if not os.path.exists(content_path):
@@ -102,10 +116,10 @@ def Download_Post(link, username, service, download_location, cookie_jar):
             inline_images = content_html.find_all('img')
             if not inline_images == []:
                 for inline_image in inline_images:
-                    found = re.search('/inline/[^*]+', inline_image['src'])
-                    if found:
+                    kemono_hosted = re.search('^/[^*]+', inline_image['src'])
+                    if kemono_hosted:
                         download_url = "https://kemono.party" + inline_image['src']
-                        if Download_File(download_url, content_path + os.path.sep + 'inline', cookie_jar):
+                        if download_file(download_url, content_path + os.path.sep + 'inline'):
                             inline_image['src'] = inline_image['src'][1:]
                         else:
                             error_flag += 1
@@ -131,134 +145,97 @@ def Download_Post(link, username, service, download_location, cookie_jar):
         # download downloads                                  
         downloads = page_soup.find_all("a", {"class": "post__attachment-link"}) 
         if not downloads == []:
-            downloads = page_soup.find_all("a", {"class": "post__attachment-link"})
             for download in downloads:
-                direct_link = re.search('https:\/\/kemono\.party',download['href'])
-                download_url = "https://kemono.party" + download['href']
-                if direct_link:
-                    download_url = download['href']
-                if not Download_File(download_url, downloads_path, cookie_jar):
-                    error_flag += 1
+                kemono_hosted = re.search('^/[^*]+', download['href'])
+                if kemono_hosted:
+                    if not download_file("https://kemono.party" + download['href'], folder_path + os.path.sep + 'Downloads'):
+                        error_flag += 1
         # download files
         files = page_soup.find("div", {"class": "post__files"})
         if not files == None:
-            if not os.path.exists(files_path):
-                os.makedirs(files_path)
+            files_path = folder_path + os.path.sep + 'Files'
             # download images in files                            
             image_files = files.find_all("a", {"class": "fileThumb"})
             if not image_files == []:
-                for file in image_files:
-                    direct_link = re.search('https:\/\/kemono\.party',file['href'])
-                    download_url = "https://kemono.party" + file['href']
-                    if direct_link:
-                        download_url = file['href']
-                    if not Download_File(download_url, files_path, cookie_jar):
-                        error_flag += 1
+                for image_file in image_files:
+                    kemono_hosted = re.search('^/[^*]+', image_file['href'])
+                    if kemono_hosted:
+                        if not download_file("https://kemono.party" + image_file['href'], files_path):
+                            error_flag += 1
             # save external links in files
             file_external_links = files.find_all("a", {"target": "_blank"})
             if not file_external_links == []:
+                if not os.path.exists(files_path):
+                    os.makedirs(files_path)
                 with open(files_path + os.path.sep + 'File_External_Links.txt', 'w') as File:
                     for file_external_link in file_external_links:
                         File.write(file_external_link['href'] + '\n')
-        
-        if error_flag == 0:        
-            with open('archive.txt','a') as File: # archive post link
-                File.write(link + '\n')
-            print("Completed Downloading Post: " + link)
+        if error_flag == 0:
+            if archive_flag:
+                with open('archive.txt','a') as f:
+                    f.write(link + '\n')
+            print("Post completed downloading: {}".format(link))
             return
-        print('{} Error(s) occurred while downloading post: {}\nPost will not be saved to archive.txt'.format(error_flag, link))
-    else:
-        print("Post Already Archived : " + link)
+        print('{} Error(s) encountered downloading post: {}'.format(error_flag, link))
         return
+    else:
+        print("Post already archived : {}".format(link))
+        return
+
+def get_username(link):
+        page_html = requests.get(link, allow_redirects=True, cookies=cookie_jar)
+        page_soup = BeautifulSoup(page_html.text, 'html.parser')
+        return page_soup.find("span", {"itemprop": "name"}).text.strip() 
+    
+def get_posts(page):
+        post_links = []
+        page_html = requests.get(page, allow_redirects=True, cookies=cookie_jar)
+        page_soup = BeautifulSoup(page_html.text, 'html.parser')
+        posts = page_soup.find_all("article")
+        for post in posts:
+            post_links.append("https://kemono.party" + post.find('a')["href"])       
+        next_page = 'none' 
+        next_page_element = page_soup.find("a", {"title": "Next page"})
+        if not next_page_element == None:
+            next_page = "https://kemono.party" + next_page_element["href"]
+        return (next_page, post_links)
 
 def main():
     
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--Version", action='store_true', help="prints version")
-    ap.add_argument("-o", "--output", help="path to download posts")
-    ap.add_argument("--cookies", required=True, help="path to cookies.txt")
-    args = vars(ap.parse_args())
-
-    if args['Version']:
-        print(version)
-        quit()
-
-    if args['cookies']:
-        cookie_location = args['cookies']
-        if not os.path.exists(cookie_location):
-            print('Invalid Cookie Location: {}'.format(cookie_location))
-            quit()
-        cookie_jar = MozillaCookieJar(cookie_location)
-        cookie_jar.load()
-
-    download_location = os.getcwd() + os.path.sep + 'Downloads' # default download location 
-    if args['output']:
-        download_location = args['output']
-        if not os.path.exists(download_location):
-            print('Invalid Download Location: {}'.format(download_location))
-            quit()    
-
-    # create archive file if none
-    if not os.path.exists('archive.txt'):
-        file = open('archive.txt','w')
-        file.close()
-
     if not os.path.exists('Users.txt'):
-        print('No "Users.txt" file found.')
-        quit()
-
-    with open('Users.txt','r') as File:
-        user_links = File.readlines()
+        print('No "Users.txt" file found.'), quit()
         
-    if len(user_links) == 0:
-        print('"Users.txt" is empty.')
-        quit()
+    with open('Users.txt','r') as f:
+        links = f.read().splitlines() 
+            
+    if len(links) == 0:
+        print('"Users.txt" is empty.'), quit()
         
-    for user_link in user_links:
-        user_link = user_link.strip()
-
-        user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', user_link)
+    for link in links:
+        
+        user_post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', link)
         if user_post:
+            post_link = link
             service = user_post.group(2)
-            if service == 'fanbox':
-                service = 'pixiv fanbox'
-            page_html = requests.get(user_post.group(1), allow_redirects=True, cookies=cookie_jar)
-            page_soup = BeautifulSoup(page_html.text, 'html.parser')
-            username = page_soup.find("span", {"itemprop": "name"}).text.strip()        
-            Download_Post(user_link, username, service, download_location, cookie_jar)
-                    
-        user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', user_link)        
+            if service == 'fanbox': service = 'pixiv fanbox'
+            username = get_username(user_post.group(1))
+            download_post(post_link, username, service)
+                        
+        user_profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', link)        
         if user_profile:
+            profile_link = link
             post_links = []
             service = user_profile.group(1)
-            if service == 'fanbox':
-                service = 'pixiv fanbox'            
-            page_html = requests.get(user_link, allow_redirects=True, cookies=cookie_jar)
-            page_soup = BeautifulSoup(page_html.text, 'html.parser')
-            username = page_soup.find("span", {"itemprop": "name"}).text.strip() 
-            posts = page_soup.find_all("article")
-            for post in posts:
-                post_links.append("https://kemono.party" + post.find('a')["href"])
-            next_page = 'none' 
-            next_page_element = page_soup.find("a", {"title": "Next page"})
-            if not next_page_element == None:
-                next_page = "https://kemono.party" + next_page_element["href"]
-                
-            while not next_page == 'none':
-                page_html = requests.get(next_page, allow_redirects=True, cookies=cookie_jar)
-                page_soup = BeautifulSoup(page_html.text, 'html.parser')
-                posts = page_soup.find_all("article")
-                for post in posts:
-                    post_links.append("https://kemono.party" + post.find('a')["href"])       
-                next_page = 'none' 
-                next_page_element = page_soup.find("a", {"title": "Next page"})
-                if not next_page_element == None:
-                    next_page = "https://kemono.party" + next_page_element["href"]
-            for post in post_links:
-                Download_Post(post, username, service, download_location, cookie_jar)
-                
+            if service == 'fanbox': service = 'pixiv fanbox'            
+            username = get_username(profile_link)
+            while not profile_link == 'none':
+                profile_link, post_links_temp = get_posts(profile_link)
+                post_links += post_links_temp
+            for post_link in post_links:
+                download_post(post_link, username, service)
+                            
         if not user_post and not user_profile:
-            print('Invalid user or post link: {}'.format(user_link))
+            print('Invalid link: {}'.format(link))
             
 if __name__ == '__main__':
     main()
