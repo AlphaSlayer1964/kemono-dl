@@ -15,13 +15,14 @@ This is a simple kemono.party downloader using python.
    - If no download location is passed then files will be saved to a Downloads folder in the current working directory
 
 ## Options:
-- ```-h, --help``` Prints help test then exits
+- ```-h, --help``` Prints help text then exits
 - ```--Verion``` Displays the current version then exits
 - ```-o, --output``` Set path to download posts
+- ```-a, --archive``` Skips archived posts and saves successfully downloaded posts to archive.txt 
 - **REQUIRED** ```--cookies``` Set path to cookie.txt 
 
 ## Examples:
-- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads"```
+- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive```
 
 ## Notes:
 - Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title/Type/Files```
@@ -32,26 +33,14 @@ This is a simple kemono.party downloader using python.
   - Files_External_Links.txt in the Files folder 
 
 ## To do:
-- [ ] Some Patreon downloads file names are broken! (change from kemono.party)
 - [ ] Integrate youtube-dl for downloading external video links
-- [X] Extract all external links to a single file
-- [X] Duplicate files and downloads (Seems to be a problem on kemonos end with patreon)
-- [X] Images in content section aren't actually downloaded and might not display in Content.html
-   - [ ] Some images are not hosted on kemono.party and are not downloaded properly
 - [ ] Allow file naming structure to be changed in command line
    - [ ] Allow file path structure to be changed in command line
-- [X] Allow file location to be set in command line
-- [X] Allow a cookie.txt file to be read in
+   - [ ] Add file nameing options such as user or post id
 - [ ] Add Discord service
-- [ ] Stop comment.html from being made when there are no comments
-- [X] fix encoding issue with content.html and comment.html
-- [X] gumroad does not lod dates and time (remove from folder name) 
-   - [ ] duplicate post name from same creator might cause error
+- [ ] Duplicate post name for gumroad might cause error
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
-  - This has not happened to me but is a possibility 
+  - This has not happened to me but is a possibility.
 - If the site changes the script might break.
-- Kemono party places some external links as "files" currently they will not be downloaded.
-- Kemono party seems to have files in the download section that are broken.
-  - ie the file isn't actually a file
