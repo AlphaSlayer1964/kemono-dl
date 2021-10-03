@@ -36,7 +36,6 @@ This is a simple kemono.party downloader using python.
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Allow file naming structure to be changed in command line
    - [ ] Allow file path structure to be changed in command line
-   - [ ] Add file nameing options such as user or post id
 - [ ] Add Discord service
 - [ ] Duplicate post name for gumroad might cause error
 
