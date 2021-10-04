@@ -16,10 +16,13 @@ This is a simple kemono.party downloader using python.
 
 ## Options:
 - ```-h, --help``` Prints help text then exits
-- ```--Version``` Displays the current version then exits
+- ```--version``` Displays the current version then exits
 - ```-o, --output``` Set path to download posts
 - ```-a, --archive``` Downloads only posts that are not in archive.txt 
-- **REQUIRED** ```--cookies``` Set path to cookie.txt 
+-  ```--cookies``` Set path to cookie.txt (**REQUIRED**)
+- ```--date``` Only download posts from this date
+- ```--datebefore``` Only download posts from this date and before
+- ```--dateafter``` Only download posts from this date and after
 
 ## Examples:
 - ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive```
@@ -30,7 +33,8 @@ This is a simple kemono.party downloader using python.
 - In the ```Contents``` folder a folder called ```inline``` will be created to store any images that were embedded in the content section
 - External links will be placed in two locations
   - Content_External_Links.txt in the Content folder
-  - Files_External_Links.txt in the Files folder 
+  - Files_External_Links.txt in the Files folder
+- date fromat is YYYYMMDD 
 
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
