@@ -10,13 +10,15 @@ This is a simple kemono.party downloader using python.
    - You must pass a cookie file or kemono.party's ddos protection won't let the script access the site 
 5. Place users main page link or post link in the Users.txt file with one entry per line
    - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
-6. Run ```python kemono-dl.py --cookies "cookie.txt"```
-   - If no cookie.txt is passed in the script will quit
-   - If no download location is passed then files will be saved to a Downloads folder in the current working directory
+6. Run ```python kemono-dl.py --cookies "cookie.txt" --user https://kemono.party/SERVICE/user/USERID```
+
 
 ## Options:
 - ```-h, --help``` Prints help text then exits
 - ```--version``` Displays the current version then exits
+- ```--user LINK``` Download user posts
+- ```--post LINK``` Download post
+- ```--fromfile FILE``` Download users and posts from a file seperated by a newline
 - ```-o, --output FOLDER``` Set path to download posts
 - ```-a, --archive``` Downloads only posts that are not in archive.txt 
 -  ```--cookies FILE``` Set path to cookie.txt (**REQUIRED**)
@@ -25,9 +27,13 @@ This is a simple kemono.party downloader using python.
 - ```--dateafter YYYYMMDD``` Only download posts from this date and after
 
 ## Examples:
-- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive```
+- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive --fromfile Users.txt```
+- ```python kemono-dl.py --cookies "cookie.txt" --date 20210101 --user https://kemono.party/SERVICE/user/USERID```
+- ```python kemono-dl.py --cookies "cookie.txt" --post https://kemono.party/SERVICE/user/USERID/post/POSTID```
 
 ## Notes:
+- If no cookie.txt is passed in the script will quit
+- If no download location is passed then files will be saved to a ```Downloads``` folder in the current working directory
 - Current file format is ```/Serivce_Name/User_name/[Posts date and time] post title/Type/Files```
    - Type refers to ```Downloads```, ```Content```, ```Files```
 - In the ```Contents``` folder a folder called ```inline``` will be created to store any images that were embedded in the content section
