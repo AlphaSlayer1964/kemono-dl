@@ -7,14 +7,19 @@ import argparse
 import sys
 import time
 
-version = '2021.10.03'
+version = '2021.10.04'
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--Version", action='store_true', help="prints version")
-ap.add_argument("-o", "--output", help="path to download posts")
-ap.add_argument("--cookies", required=True, help="path to cookies.txt")
+ap.add_argument("--Version", action='store_true', help="Displays the current version then exits")
+ap.add_argument("--cookies", required=True, help="Set path to cookie.txt")
+ap.add_argument("--output", help="Set path to download posts")
+ap.add_argument("--archive", action='store_true', help="Downloads only posts that are not in archive.txt")
+# ap.add_argument("--min-filesize", help="Do not download files smaller than this")
+# ap.add_argument("--max-filesize", help="Do not download files larger than this")
+# ap.add_argument("--date", help="Only download posts from this date")
+# ap.add_argument("--datebefore", help="Only download posts before this date")
+# ap.add_argument("--dateafter", help="Only download posts after this date")
 # ap.add_argument("-s","--simulate", action='store_true', help="lists post links that would be downloaded.")
-ap.add_argument("-a","--archive", action='store_true', help="Saves downloaded posts to an archive file")
 args = vars(ap.parse_args())
 
 if args['Version']:
@@ -30,9 +35,7 @@ download_location = os.getcwd() + os.path.sep + 'Downloads' # default download l
 if args['output']:
     if not os.path.exists(args['output']):
         print('Invalid Download Location: {}'.format(args['output'])), quit()
-    download_location = args['output'] 
-
-# simulate_flag = args['simulate']  
+    download_location = args['output']  
 
 archive_flag = False
 if args['archive']:
@@ -50,7 +53,7 @@ def download_file(download_url, folder_path):
         if content_type == 'text' or content_type == 'html':
             print('Error Downloading: {}'.format(download_url))
             return False
-        temp_file_name = download_url.split('/')[-1] # get file name from url. might want to find a better method
+        temp_file_name = download_url.split('/')[-1] # get file name from url. file extention needs to be in url!
         file_name = re.sub('[\\/:\"*?<>|]+','',temp_file_name) # remove illegal windows characters
         # duplication checking
         if os.path.exists(folder_path + os.path.sep + file_name):
