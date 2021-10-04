@@ -43,6 +43,7 @@ This is a simple kemono.party downloader using python.
 - Using any date option will not downlaod any gumroad posts because they have no dates
 
 ## To do:
+- [ ] Switch to using kemono.part api instead of html!
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Allow file naming structure to be changed in command line
    - [ ] Allow file path structure to be changed in command line
