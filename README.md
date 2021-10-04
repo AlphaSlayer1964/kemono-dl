@@ -16,7 +16,7 @@ This is a simple kemono.party downloader using python.
 
 ## Options:
 - ```-h, --help``` Prints help text then exits
-- ```--Verion``` Displays the current version then exits
+- ```--Version``` Displays the current version then exits
 - ```-o, --output``` Set path to download posts
 - ```-a, --archive``` Downloads only posts that are not in archive.txt 
 - **REQUIRED** ```--cookies``` Set path to cookie.txt 
