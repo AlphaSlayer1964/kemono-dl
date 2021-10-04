@@ -17,12 +17,12 @@ This is a simple kemono.party downloader using python.
 ## Options:
 - ```-h, --help``` Prints help text then exits
 - ```--version``` Displays the current version then exits
-- ```-o, --output``` Set path to download posts
+- ```-o, --output FOLDER``` Set path to download posts
 - ```-a, --archive``` Downloads only posts that are not in archive.txt 
--  ```--cookies``` Set path to cookie.txt (**REQUIRED**)
-- ```--date``` Only download posts from this date
-- ```--datebefore``` Only download posts from this date and before
-- ```--dateafter``` Only download posts from this date and after
+-  ```--cookies FILE``` Set path to cookie.txt (**REQUIRED**)
+- ```--date YYYYMMDD``` Only download posts from this date
+- ```--datebefore YYYYMMDD``` Only download posts from this date and before
+- ```--dateafter YYYYMMDD``` Only download posts from this date and after
 
 ## Examples:
 - ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive```
@@ -34,7 +34,6 @@ This is a simple kemono.party downloader using python.
 - External links will be placed in two locations
   - Content_External_Links.txt in the Content folder
   - Files_External_Links.txt in the Files folder
-- Date fromat is YYYYMMDD
 - Using any date option will not downlaod any gumroad posts because they have no dates
 
 ## To do:
