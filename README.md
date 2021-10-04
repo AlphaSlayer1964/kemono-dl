@@ -35,7 +35,7 @@ This is a simple kemono.party downloader using python.
   - Content_External_Links.txt in the Content folder
   - Files_External_Links.txt in the Files folder
 - Date fromat is YYYYMMDD
-- Using any date option will not downlaod any gumroad posts because they have not dates
+- Using any date option will not downlaod any gumroad posts because they have no dates
 
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
