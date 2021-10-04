@@ -6,19 +6,20 @@ from http.cookiejar import MozillaCookieJar
 import argparse
 import sys
 import time
+import datetime
 
 version = '2021.10.04'
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--Version", action='store_true', help="Displays the current version then exits")
+ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
 ap.add_argument("--cookies", required=True, help="Set path to cookie.txt")
 ap.add_argument("--output", help="Set path to download posts")
 ap.add_argument("--archive", action='store_true', help="Downloads only posts that are not in archive.txt")
 # ap.add_argument("--min-filesize", help="Do not download files smaller than this")
 # ap.add_argument("--max-filesize", help="Do not download files larger than this")
-# ap.add_argument("--date", help="Only download posts from this date")
-# ap.add_argument("--datebefore", help="Only download posts before this date")
-# ap.add_argument("--dateafter", help="Only download posts after this date")
+ap.add_argument("--date", help="Only download posts from this date")
+ap.add_argument("--datebefore", help="Only download posts from this date and before")
+ap.add_argument("--dateafter", help="Only download posts from this date and after")
 # ap.add_argument("-s","--simulate", action='store_true', help="lists post links that would be downloaded.")
 args = vars(ap.parse_args())
 
@@ -44,6 +45,43 @@ if args['archive']:
     if not os.path.exists('archive.txt'): 
         with open('archive.txt','w') as f: pass
 
+def validate_date(date):
+    try: datetime.datetime.strptime(date, '%Y%m%d')
+    except: print("Incorrect data format, should be YYYYMMDD"), quit()   
+      
+if args['date']:
+    validate_date(args['date'])
+    check_date_flag = True
+
+date_before = '00000000'
+if args['datebefore']:
+    validate_date(args['datebefore'])
+    date_before = args['datebefore']
+    check_date_flag = True
+
+date_after = '99999999'
+if args['dateafter']:
+    validate_date(args['dateafter'])
+    date_after = args['dateafter']
+    check_date_flag = True
+    
+def date_check(time_stamp):
+    if time_stamp == '':
+        return False
+    post_date = re.sub('-','',time_stamp[:-9])
+    if args['date'] and (args['datebefore'] or args['dateafter']):
+        if int(post_date) == int(args['date']) or int(post_date) <= int(date_before) or int(post_date) >= int(date_after):
+            return True
+        return False
+    elif args['date']:
+        if int(post_date) == int(args['date']):
+            return True
+        return False
+    elif args['datebefore'] or args['dateafter']:
+        if int(post_date) <= int(date_before) or int(post_date) >= int(date_after):
+            return True
+        return False                 
+
 def download_file(download_url, folder_path):
     try:
         if not os.path.exists(folder_path):
@@ -51,7 +89,7 @@ def download_file(download_url, folder_path):
         # checking content type    
         content_type = requests.head(download_url,allow_redirects=True, cookies=cookie_jar).headers['Content-Type'].lower()
         if content_type == 'text' or content_type == 'html':
-            print('Error Downloading: {}'.format(download_url))
+            print('Error downloading: {}'.format(download_url))
             return False
         temp_file_name = download_url.split('/')[-1] # get file name from url. file extention needs to be in url!
         file_name = re.sub('[\\/:\"*?<>|]+','',temp_file_name) # remove illegal windows characters
@@ -60,7 +98,7 @@ def download_file(download_url, folder_path):
             server_file_length = requests.head(download_url,allow_redirects=True, cookies=cookie_jar).headers['Content-Length']
             local_file_size = os.path.getsize(folder_path + os.path.sep + file_name)
             if int(server_file_length) == int(local_file_size):
-                print('Already Downloaded: {}'.format(file_name))
+                print('Already downloaded: {}'.format(file_name))
                 return True
         print('Downloading: {}'.format(file_name))
         # downloading the file     
@@ -79,7 +117,7 @@ def download_file(download_url, folder_path):
             sys.stdout.write('\n')
         return True
     except Exception as e:
-        print('Error Downloading: {}'.format(download_url))
+        print('Error downloading: {}'.format(download_url))
         print(e)
         return False
 
@@ -96,6 +134,11 @@ def download_post(link, username, service):
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         title = page_soup.find("h1", {"class": "post__title"}).text.strip() # get post title            
         time_stamp = page_soup.find("time", {"class": "timestamp"})["datetime"] # get post timestamp
+        # need to recheck date flag for individual posts
+        if check_date_flag:
+            if not date_check(time_stamp):
+                print('Post date out of range skipping: {}'.format(link))
+                return
         offset = len(service)+3 # remove service name at end of title
         if time_stamp == '':
             post_folder_name = title[:-offset]
@@ -177,12 +220,12 @@ def download_post(link, username, service):
             if archive_flag:
                 with open('archive.txt','a') as f:
                     f.write(link + '\n')
-            print("Post completed downloading: {}".format(link))
+            print("Completed downloading post: {}".format(link))
             return
         print('{} Error(s) encountered downloading post: {}'.format(error_flag, link))
         return
     else:
-        print("Post already archived : {}".format(link))
+        print("Already archived post: {}".format(link))
         return
 
 def get_username(link):
@@ -196,7 +239,15 @@ def get_posts(page):
         page_soup = BeautifulSoup(page_html.text, 'html.parser')
         posts = page_soup.find_all("article")
         for post in posts:
-            post_links.append("https://kemono.party" + post.find('a')["href"])       
+            time_stamp = post.find("time", {"class": "timestamp"})["datetime"]
+            post_link = "https://kemono.party{}".format(post.find('a')["href"])
+            if check_date_flag:
+                if not date_check(time_stamp):
+                    print('Post date out of range skipping: {}'.format(post_link))
+                else:
+                    post_links.append(post_link)
+            else:
+                post_links.append(post_link)       
         next_page = 'none' 
         next_page_element = page_soup.find("a", {"title": "Next page"})
         if not next_page_element == None:
