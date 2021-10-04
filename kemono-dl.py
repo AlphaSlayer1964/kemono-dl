@@ -8,22 +8,25 @@ import sys
 import time
 import datetime
 
-version = '2021.10.04'
+version = '2021.10.04.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
 ap.add_argument("--cookies", required=True, help="Set path to cookie.txt")
 ap.add_argument("--output", help="Set path to download posts")
-ap.add_argument("--archive", action='store_true', help="Downloads only posts that are not in archive.txt")
-# ap.add_argument("--min-filesize", help="Do not download files smaller than this")
-# ap.add_argument("--max-filesize", help="Do not download files larger than this")
+ap.add_argument("--archive", action='store_true', help="Downloads only posts that are not in archive.txt") # make so take in file
 ap.add_argument("--date", help="Only download posts from this date")
 ap.add_argument("--datebefore", help="Only download posts from this date and before")
 ap.add_argument("--dateafter", help="Only download posts from this date and after")
-# ap.add_argument("-s","--simulate", action='store_true', help="lists post links that would be downloaded.")
+# ap.add_argument("--min-filesize", help="Do not download files smaller than this")
+# ap.add_argument("--max-filesize", help="Do not download files larger than this")
+ap.add_argument("--user", help="Download user posts")
+ap.add_argument("--post", help="Download post")
+ap.add_argument("--fromfile", help="Download users and posts from a file")
+# ap.add_argument("--simulate", action='store_true', help="lists post links and files that would be downloaded.")
 args = vars(ap.parse_args())
 
-if args['Version']:
+if args['version']:
     print(version), quit()
 
 if args['cookies']:
@@ -254,40 +257,54 @@ def get_posts(page):
             next_page = "https://kemono.party" + next_page_element["href"]
         return (next_page, post_links)
 
+def user(link):    
+    profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', link)        
+    if profile:
+        link = link.split('?')[0]
+        post_links = []
+        service = profile.group(1)
+        if service == 'fanbox': service = 'pixiv fanbox'            
+        username = get_username(link)
+        while not link == 'none':
+            link, post_links_temp = get_posts(link)
+            post_links += post_links_temp
+        for post_link in post_links:
+            download_post(post_link, username, service)
+        return True
+    return False
+
+def post(link):
+    post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+$', link)
+    if post:
+        service = post.group(2)
+        if service == 'fanbox': service = 'pixiv fanbox'
+        username = get_username(post.group(1))
+        download_post(link, username, service)
+        return True
+    return False    
+
 def main():
     
-    if not os.path.exists('Users.txt'):
-        print('No "Users.txt" file found.'), quit()
-        
-    with open('Users.txt','r') as f:
-        links = f.read().splitlines() 
+    if args['user']:
+        if not user(args['user']):
+            print('Error invalid link: {}'.format(args['user']))
+    
+    if args['post']:    
+        if not post(args['post']):
+            print('Error invalid link: {}'.format(args['post']))
+    
+    if args['fromfile']:
+        from_file = args['fromfile']  
+        if not os.path.exists(from_file):
+            print('No file found: {}'.format(from_file)), quit()
+        with open(from_file,'r') as f:
+            links = f.read().splitlines() 
+        if len(links) == 0:
+            print('{} is empty.'.format(from_file)), quit()       
+        for link in links:
+            if not post(link) and not user(link):
+                print('Error invalid link: {}'.format(link))
             
-    if len(links) == 0:
-        print('"Users.txt" is empty.'), quit()
-        
-    for link in links:
-        
-        post = re.search('(https://kemono\.party/([^/]+)/user/[^/]+)/post/[^/]+', link)
-        if post:
-            service = post.group(2)
-            if service == 'fanbox': service = 'pixiv fanbox'
-            username = get_username(post.group(1))
-            download_post(link, username, service)
-                        
-        profile = re.search('https://kemono\.party/([^/]+)/user/[^/]+$', link)        
-        if profile:
-            post_links = []
-            service = profile.group(1)
-            if service == 'fanbox': service = 'pixiv fanbox'            
-            username = get_username(link)
-            while not link == 'none':
-                link, post_links_temp = get_posts(link)
-                post_links += post_links_temp
-            for post_link in post_links:
-                download_post(post_link, username, service)
-                            
-        if not post and not profile:
-            print('Error invalid link: {}'.format(link))
             
 if __name__ == '__main__':
     main()
