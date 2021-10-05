@@ -8,7 +8,7 @@ import time
 import datetime
 import json
 
-version = '2021.10.05.3'
+version = '2021.10.05.4'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -205,7 +205,7 @@ def extract_post(link):
             download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path) 
         
         if post['embed']:
-            with open(folder_path + os.path.sep + 'external_links.tct','wb') as File:
+            with open(folder_path + os.path.sep + 'external_links.txt','wb') as File:
                 File.write('{subject}:\t{url}\t{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']).encode("utf-16"))  
     return
 
