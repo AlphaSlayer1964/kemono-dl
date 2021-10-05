@@ -9,7 +9,7 @@ The downsides are no comments.
 3. Download ```kemono-dl.py``` from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases)
 4. Get a cookie.txt file from kemono.party 
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
-   - You must pass a cookie file or kemono.party's ddos protection won't let the script access the site 
+   - A cookie.txt file is needed to download files 
 5. Run ```python kemono-dl.py --cookies "cookie.txt" --user https://kemono.party/SERVICE/user/USERID```
 
 
