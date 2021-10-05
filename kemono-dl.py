@@ -8,7 +8,7 @@ import time
 import datetime
 import json
 
-version = '2021.10.05.4'
+version = '2021.10.05.5'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -33,7 +33,7 @@ if args['version']:
 simulation_flag = False
 if args['cookies']:
     if not os.path.exists(args['cookies']):
-        print('Invalid cookie location: {}'.format(args['cookies'])), quit()
+        print('Invalid cookie location: {path}'.format(path=args['cookies'])), quit()
     cookie_jar = MozillaCookieJar(args['cookies'])
     cookie_jar.load()
 else:
@@ -45,13 +45,13 @@ if args['simulate']:
 download_location = os.getcwd() + os.path.sep + 'Downloads' # default download location 
 if args['output']:
     if not os.path.exists(args['output']):
-        print('Invalid download location: {}'.format(args['output'])), quit()
+        print('Invalid download location: {path}'.format(path=args['output'])), quit()
     download_location = args['output']  
 
 archive_flag = False
 if args['archive']:
     if not os.path.exists(os.path.dirname(os.path.abspath(args['archive']))):
-        print('Invalid archive location: {}'.format(os.path.dirname(os.path.abspath(args['archive'])))), quit()
+        print('Invalid archive location: {path}'.format(path=os.path.dirname(os.path.abspath(args['archive'])))), quit()
     archive_flag = True
     archive_file = args['archive']
     # create archive file if none
@@ -60,7 +60,7 @@ if args['archive']:
             pass
 
 def validate_date(date):
-    try: datetime.datetime.strptime(date, '%Y%m%d')
+    try: datetime.datetime.strptime(date, r'%Y%m%d')
     except: print("Incorrect data format, should be YYYYMMDD"), quit()   
 
 check_date_flag = False      
@@ -157,8 +157,16 @@ def simulate(post):
 def extract_post(link):
     api_responce = requests.get(link, allow_redirects=True)  
     data = json.loads(api_responce.text)
+    
+    if not data:
+        return False
+    
+    archived = []
+    if archive_flag:
+        with open('archive.txt','r') as f:
+            archived = f.read().splitlines()    
+    
     for post in data:
-        
         # post['title'] # post title
         # post['added'] # added to kemono
         # post['edited'] # last updated by kemono 
@@ -171,51 +179,70 @@ def extract_post(link):
         # post['shared_file'] # I have no idea what this holds
         # post['embed']: # dictionary for external link ['description'], ['subject'], ['url']
         
-        try: 
-            published_date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(r'%Y%m%d')
-            post_folder_name =  '[{time}] [{post_id}] {title}'.format(time=published_date,post_id=post['id'],title=post['title'])
-        except: 
-            published_date = ''
-            post_folder_name =  '[{post_id}] {title}'.format(post_id=post['id'],title=post['title'])
-            
-        if check_date_flag:
-            if not date_check(published_date):
-                print('Date out of range skipping post id: {id}'.format(id=post['id']))
-                continue        
-        
         if simulation_flag:
             simulate(post)
             continue
-       
-        post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post_folder_name )).strip('.').strip() 
-        folder_path = download_location + os.path.sep + post['service'] + os.path.sep + post['user'] + os.path.sep + post_folder_name
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        
+        if not post['id'] in archived:
+            error_flag = 0
             
-        # need to look into how inline images are handled also no comments with api :/
-        if not post['content'] == '':           
-            with open(folder_path + os.path.sep + 'Content.html','wb') as File:
-                File.write(post['content'].encode("utf-16"))
+            try: 
+                published_date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(r'%Y%m%d')
+                post_folder_name =  '[{time}] [{post_id}] {title}'.format(time=published_date,post_id=post['id'],title=post['title'])
+            except: 
+                published_date = ''
+                post_folder_name =  '[{post_id}] {title}'.format(post_id=post['id'],title=post['title'])
+                
+            if check_date_flag:
+                if not date_check(published_date):
+                    print('Date out of range skipping post id: {id}'.format(id=post['id']))
+                    continue        
         
-        if post['attachments']:
-            for item in post['attachments']:
-                download_file(item['name'], 'https://kemono.party/data{path}'.format(path=item['path']), folder_path + os.path.sep + 'attachments')
-        
-        if post['file']:
-            download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path) 
-        
-        if post['embed']:
-            with open(folder_path + os.path.sep + 'external_links.txt','wb') as File:
-                File.write('{subject}:\t{url}\t{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']).encode("utf-16"))  
-    return
+            post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post_folder_name )).strip('.').strip() 
+            folder_path = download_location + os.path.sep + post['service'] + os.path.sep + post['user'] + os.path.sep + post_folder_name
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+                
+            # need to look into how inline images are handled also no comments with api :/
+            if not post['content'] == '':           
+                with open(folder_path + os.path.sep + 'Content.html','wb') as File:
+                    File.write(post['content'].encode("utf-16"))
+            
+            if post['attachments']:
+                for item in post['attachments']:
+                    if not download_file(item['name'], 'https://kemono.party/data{path}'.format(path=item['path']), folder_path + os.path.sep + 'attachments'):
+                        error_flag += 1
+            
+            if post['file']:
+                if not download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path):
+                    error_flag += 1 
+            
+            if post['embed']:
+                with open(folder_path + os.path.sep + 'external_links.txt','wb') as File:
+                    File.write('{subject}:\n{url}\n{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']).encode("utf-16"))
+                      
+            if error_flag == 0:
+                if archive_flag:
+                    with open('archive.txt','a') as f:
+                        f.write('{id}\n'.format(id=post['id']))
+                print("Completed downloading post id: {id}".format(id=post['id']))
+            else:    
+                print('{errors} Error(s) encountered downloading post id: {id}'.format(errors=error_flag, id=post['id']))
+        else:
+            print("Already archived post id: {id}".format(id=post['id']))
+    return True
 
 def user(link): 
     # /api/<service>/user/<id>   
     profile = re.search('https://kemono\.party/([^/]+)/user/([^/]+)$', link)        
     if profile:
         # user_link = link # will be need to get patreon user name?
-        api_link = 'https://kemono.party/api/{service}/user/{user_id}'.format(service=profile.group(1), user_id=profile.group(2))
-        extract_post(api_link)
+        next_call = True
+        page_count = 0
+        while next_call == True:
+            api_link = 'https://kemono.party/api/{service}/user/{user_id}?o={num}'.format(service=profile.group(1), user_id=profile.group(2),num=page_count)
+            next_call = extract_post(api_link)
+            page_count += 25
         return True
     return False
 
