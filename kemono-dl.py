@@ -30,6 +30,7 @@ args = vars(ap.parse_args())
 if args['version']:
     print(version), quit()
 
+simulation_flag = False
 if args['cookies']:
     if not os.path.exists(args['cookies']):
         print('Invalid cookie location: {}'.format(args['cookies'])), quit()
@@ -61,7 +62,8 @@ if args['archive']:
 def validate_date(date):
     try: datetime.datetime.strptime(date, '%Y%m%d')
     except: print("Incorrect data format, should be YYYYMMDD"), quit()   
-      
+
+check_date_flag = False      
 if args['date']:
     validate_date(args['date'])
     check_date_flag = True
