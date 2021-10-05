@@ -105,7 +105,7 @@ def download_file(file_name, file_link, file_path):
         file_name = re.sub('[\\/:\"*?<>|]+','',file_name) 
         # duplication checking
         if os.path.exists(file_path + os.path.sep + file_name):
-            server_file_length = requests.head(file_path,allow_redirects=True, cookies=cookie_jar).headers['Content-Length']
+            server_file_length = requests.head(file_link,allow_redirects=True, cookies=cookie_jar).headers['Content-Length']
             local_file_size = os.path.getsize(file_path + os.path.sep + file_name)
             if int(server_file_length) == int(local_file_size):
                 print('Already downloaded: {}'.format(file_name))
