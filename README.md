@@ -40,6 +40,7 @@ The downsides are no comments and patreon usernames are just their patreon id.
 - External links will be placed in external_links.txt
 - Using any date option will not downlaod any gumroad posts because they have no dates
 - For right now if you want multiple users and posts at once you must use ```-f, --fromfile```
+- using ```--ignore-erros``` posts with errors will not be archived
 
 ## Default File Output Format:
 ```
