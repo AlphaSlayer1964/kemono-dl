@@ -8,7 +8,7 @@ import time
 import datetime
 import json
 
-version = '2021.10.05'
+version = '2021.10.05.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
