@@ -1,17 +1,16 @@
 # kemono-dl
 This is a simple kemono.party downloader using python.
 I have decided to switch to using kemono.party's API instead of tones of http requests.
-The downsides are no comments and patreon usernames are just their patreon id.
+The downsides are no comments.
 
 ## How to use:
 1. Install python
+2. Install BeautifulSoup with ```pip insatll bs4```
 3. Download ```kemono-dl.py``` from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases)
 4. Get a cookie.txt file from kemono.party 
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - You must pass a cookie file or kemono.party's ddos protection won't let the script access the site 
-5. Place users main page link or post link in the Users.txt file with one entry per line
-   - links should look like: https://<span></span>kemono.party/SERVICE/user/USERID or https://<span></span>kemono.party/SERVICE/user/USERID/post/POSTID
-6. Run ```python kemono-dl.py --cookies "cookie.txt" --user https://kemono.party/SERVICE/user/USERID```
+5. Run ```python kemono-dl.py --cookies "cookie.txt" --user https://kemono.party/SERVICE/user/USERID```
 
 
 ## Options:
@@ -37,6 +36,7 @@ The downsides are no comments and patreon usernames are just their patreon id.
 ## Notes:
 - If ```--cookie cookie.txt``` is not passed script will run as if ```--simulation``` was passed
 - Default download location is a ```Downloads``` folder in the current working directory (will be created automatically)
+- Input link format: ```https://kemono.party/{service}/user/{user_id}``` or ```https://kemono.party/{service}/user/{user_id}/post/{post_is}```
 - External links will be placed in external_links.txt
 - Using any date option will not downlaod any gumroad posts because they have no dates
 - For right now if you want multiple users and posts at once you must use ```-f, --fromfile```
@@ -45,23 +45,16 @@ The downsides are no comments and patreon usernames are just their patreon id.
 ## Default File Output Format:
 ```
 CWD
- ├── kemono-dl.py
- └── Downloads
-     ├── patreon
-     │   ├── User1
-     │   │   └── [date] [postid] post title
-     │   │        ├── attachments
-     │   │        │   └── attachment.ext
-     │   │        ├── content.html
-     │   │        ├── external_links.txt
-     │   │        └── file.ext
-     │   ├── User2
-     │   └── User3
-     ├── fanbox
-     ├── gumroad
-     ├── subscribestars
-     ├── dlsite
-     └── fantia
+├── kemono-dl.py
+└── Downloads
+    └── {service}
+        └── {username} [{user_id}]
+            └── [{date}] [{post_id}] {post_title}
+                ├── attachments
+                │   └── attachment.ext
+                ├── content.html
+                ├── external_links.txt
+                └── file.ext
 ```
 
 ## To do:
@@ -69,10 +62,8 @@ CWD
 - [ ] Allow file naming structure to be changed in command line
 - [ ] Allow file path structure to be changed in command line
 - [ ] Add Discord service
-- [ ] Duplicate post name for gumroad might cause error
 - [ ] Have ```-u, --user LINK``` take as many users seperated by ```,```
 - [ ] Have ```-p, --post LINK``` take as many posts seperated by ```,```
-- [ ] Convert patreon id's to usernames
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
