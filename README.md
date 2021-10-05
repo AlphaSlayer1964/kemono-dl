@@ -48,11 +48,12 @@ CWD
  └── Downloads
      ├── patreon
      │   ├── User1
-     │   │   ├── attachments
-     │   │   │   └── attachment.ext
-     │   │   ├── content.html
-     │   │   ├── external_links.txt
-     │   │   └── file.ext
+     │   │   └── [date] [postid] post title
+     │   │        ├── attachments
+     │   │        │   └── attachment.ext
+     │   │        ├── content.html
+     │   │        ├── external_links.txt
+     │   │        └── file.ext
      │   ├── User2
      │   └── User3
      ├── fanbox
