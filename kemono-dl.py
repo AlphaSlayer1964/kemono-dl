@@ -205,8 +205,8 @@ def extract_post(link):
             download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path) 
         
         if post['embed']:
-            with open(folder_path + os.path.sep + 'external_links.tct','w') as File:
-                File.write('{subject}:\t{url}\t{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']))  
+            with open(folder_path + os.path.sep + 'external_links.tct','wb') as File:
+                File.write('{subject}:\t{url}\t{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']).encode("utf-16"))  
     return
 
 def user(link): 
