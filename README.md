@@ -52,6 +52,8 @@ CWD
             └── [{date}] [{post_id}] {post_title}
                 ├── attachments
                 │   └── attachment.ext
+                ├── inline
+                │   └── image.ext
                 ├── content.html
                 ├── external_links.txt
                 └── file.ext
