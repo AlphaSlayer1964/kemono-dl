@@ -179,10 +179,6 @@ def extract_post(link):
         # post['shared_file'] # I have no idea what this holds
         # post['embed']: # dictionary for external link ['description'], ['subject'], ['url']
         
-        if simulation_flag:
-            simulate(post)
-            continue
-        
         if not post['id'] in archived:
             error_flag = 0
             
@@ -197,6 +193,10 @@ def extract_post(link):
                 if not date_check(published_date):
                     print('Date out of range skipping post id: {id}'.format(id=post['id']))
                     continue        
+        
+            if simulation_flag:
+                simulate(post)
+                continue
         
             post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post_folder_name )).strip('.').strip() 
             folder_path = download_location + os.path.sep + post['service'] + os.path.sep + post['user'] + os.path.sep + post_folder_name
