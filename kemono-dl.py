@@ -1,21 +1,23 @@
 import requests
+from bs4 import BeautifulSoup
+from http.cookiejar import MozillaCookieJar
 import os
 import re
-from http.cookiejar import MozillaCookieJar
 import argparse
 import sys
 import time
 import datetime
 import json
+from PIL import Image
+import io
 
-version = '2021.10.05.6'
+version = '2021.10.06'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
-ap.add_argument("--cookies", help="Set path to cookie.txt")
-ap.add_argument("-u", "--user", help="Download user posts")
-ap.add_argument("-p", "--post", help="Download post")
-ap.add_argument("-f", "--fromfile", help="Download users and posts from a file")
+ap.add_argument("--cookies", help="Set path to cookie.txt (REQUIRED TO DOWNLOAD FILES)")
+ap.add_argument("-l", "--links", help="Downloads user or post links seperated by a comma (,)")
+ap.add_argument("-f", "--fromfile", help="Download users and posts from a file seperated by a newline")
 ap.add_argument("-o", "--output", help="Set path to download posts")
 ap.add_argument("-a", "--archive", help="Downloads only posts that are not in provided archive file")
 ap.add_argument("-i", "--ignore-errors", action='store_true', help="Continue to download post(s) when an error occurs")
@@ -25,6 +27,7 @@ ap.add_argument("--datebefore", help="Only download posts from this date and bef
 ap.add_argument("--dateafter", help="Only download posts from this date and after")
 # ap.add_argument("--min-filesize", help="Do not download files smaller than this")
 # ap.add_argument("--max-filesize", help="Do not download files larger than this")
+# ap.add_argument("-up", "--update", action='store_true', help="Redownloads any post that has been updated (ignores --archive)")
 args = vars(ap.parse_args())
 
 if args['version']:
@@ -61,40 +64,32 @@ if args['archive']:
 
 def validate_date(date):
     try: datetime.datetime.strptime(date, r'%Y%m%d')
-    except: print("Incorrect data format, should be YYYYMMDD"), quit()   
+    except: print("Error incorrect data format, should be YYYYMMDD"), quit()   
 
 check_date_flag = False      
 if args['date']:
     validate_date(args['date'])
     check_date_flag = True
 
-date_before = '00000000'
 if args['datebefore']:
     validate_date(args['datebefore'])
     date_before = args['datebefore']
     check_date_flag = True
 
-date_after = '99999999'
 if args['dateafter']:
     validate_date(args['dateafter'])
     date_after = args['dateafter']
     check_date_flag = True
     
-def date_check(post_date):
-    if post_date == '':
+def date_check(post_date, date = '', date_before = '00000000', date_after = '99999999'):
+    if post_date == '00000000':
         return False
-    if args['date'] and (args['datebefore'] or args['dateafter']):
-        if int(post_date) == int(args['date']) or int(post_date) <= int(date_before) or int(post_date) >= int(date_after):
-            return True
-        return False
-    elif args['date']:
-        if int(post_date) == int(args['date']):
-            return True
-        return False
-    elif args['datebefore'] or args['dateafter']:
-        if int(post_date) <= int(date_before) or int(post_date) >= int(date_after):
-            return True
-        return False
+    if date and (date_before or date_after):
+        return True if int(post_date) == int(date) or int(post_date) <= int(date_before) or int(post_date) >= int(date_after) else False
+    elif date:
+        return True if int(post_date) == int(date) else False
+    elif date_before or date_after:
+        return True if int(post_date) <= int(date_before) or int(post_date) >= int(date_after) else False
                 
 def download_file(file_name, file_link, file_path):
     try:
@@ -103,16 +98,16 @@ def download_file(file_name, file_link, file_path):
             os.makedirs(file_path)
         # remove illegal windows characters from file name    
         file_name = re.sub('[\\/:\"*?<>|]+','',file_name) 
-        # duplication checking
+        # duplication checking, maybe change to take hash but would have to download file again.
         if os.path.exists(file_path + os.path.sep + file_name):
-            server_file_length = requests.head(file_link,allow_redirects=True, cookies=cookie_jar).headers['Content-Length']
+            server_file_length = requests.head(file_link,allow_redirects=True,cookies=cookie_jar).headers['Content-Length']
             local_file_size = os.path.getsize(file_path + os.path.sep + file_name)
             if int(server_file_length) == int(local_file_size):
                 print('Already downloaded: {}'.format(file_name))
                 return True
         print('Downloading: {}'.format(file_name))
         # downloading the file     
-        with requests.get(file_link, stream=True, cookies=cookie_jar) as r:
+        with requests.get(file_link,stream=True,cookies=cookie_jar) as r:
             r.raise_for_status()
             downloaded = 0
             total = int(r.headers.get('content-length'))
@@ -127,157 +122,213 @@ def download_file(file_name, file_link, file_path):
             sys.stdout.write('\n')
         return True
     except Exception as e:
-        print('Error downloading: {}'.format(file_link))
+        print('{cstart}Error downloading: {}{cstop}'.format(file_link),cstart='\033[91m',cstop='\033[0m')
         print(e)
         if args['ignore_errors']:
             return False
         quit()
 
-def get_username(link):
-    # using api patron posts don't have a username but a user id
-    # https://www.patreon.com/user?u=
-    pass
-
-def simulate(post):
-    print('Post Title: {title}\nPost ID: {id}\nUsername or User ID: {user}\nPublished Date: {published}\nContent: {content}'
-            .format(title=post['title'],id=post['id'],user=post['user'],published=post['published'],content=post['content']))
+def simulate(post, username):
+    print('Post Title: {title}\nPost ID: {id}\nUsername: {username}\nUser ID: {user}\nPublished Date: {published}\nContent: {content}\n'.format(title=post['title'],id=post['id'],username=username,user=post['user'],published=post['published'],content=post['content']))
     if post['embed']:
-        print('Embedded:\n\tTitle: {title}\n\tURL: {url}\n\tDescription: {desc}'
-                .format(title=post['embed']['subject'],url=post['embed']['url'],desc=post['embed']['description']))
-    print('Number of attachments: {num_attachments}'.format(num_attachments=len(post['attachments'])))
+        print('Embedded:\n\tTitle: {title}\n\tURL: {url}\n\tDescription: {desc}'.format(title=post['embed']['subject'],url=post['embed']['url'],desc=post['embed']['description']))
     if post['attachments']:
+        print('Attachments: {len}'.format(len=len(post['attachments'])))
         for item in post['attachments']:
-            print('\tFile name: {name}\n\tFile path: https://kemono.party/data/{path}'
-                    .format(name=item['name'],path=item['path']))
+            print('\tFile name: {name}\n\tFile path: https://kemono.party/data/{path}'.format(name=item['name'],path=item['path']))
     if post['file']:
-        print('Files:\n\tFile name: {name}\n\tFile Path: https://kemono.party/data/{path}'
-              .format(name=post['file']['name'],path=post['file']['path']))
+        print('Files:\n\tFile name: {name}\n\tFile Path: https://kemono.party/data/{path}'.format(name=post['file']['name'],path=post['file']['path']))
     print('{}'.format('-' * 50))    
 
-def extract_post(link):
-    api_responce = requests.get(link, allow_redirects=True)  
-    data = json.loads(api_responce.text)
-    
-    if not data:
-        return False
-    
+def extract_post(post, username):
+    """        
+    post['title']         # str, post title
+    post['added']         # str, date added
+    post['edited']        # str, date last editied
+    post['id']            # str, post id
+    post['user']          # str, user id
+    post['published']     # str, date published
+    post['attachments']   # list of dict, {"name": str, "path": str}
+    post['file']          # dict, {"name": str, "path": str} 
+    post['content']       # str, html of content
+    post['shared_file']   # bool, 
+    post['embed']:        # dict, {"description": str, "subject": str, "url": str}, external link
+    """
     archived = []
     if archive_flag:
         with open('archive.txt','r') as f:
             archived = f.read().splitlines()    
+            
+    if not '{user_id} {post_id}'.format(user_id=post['user'],post_id=post['id']) in archived:
+        error_flag = 0
+        
+        # convert date and time from API to YYYYMMDD
+        try: date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(r'%Y%m%d')   
+        except: date = '00000000'
+        post_folder_name =  '[{date}] [{post_id}] {title}'.format(date=date, post_id=post['id'], title=post['title'])
+        
+        if check_date_flag:
+            if not date_check(date, args['date'], args['datebefore'], args['dateafter']):
+                print('Date out of range: {date} skipping post id: {id}'.format(date=date, id=post['id']))
+                return        
     
+        if simulation_flag:
+            simulate(post, username)
+            return
+    
+        post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post_folder_name )).strip('.').strip() # removing illegal windows characters
+        folder_path = download_location + os.path.sep + post['service'] + os.path.sep + username + ' [{user_id}]'.format(user_id=post['user']) + os.path.sep + post_folder_name
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)    
+        if not post['content'] == '':
+            # Getting all inline images
+            content_soup = BeautifulSoup(post['content'], 'html.parser')
+            inline_images = content_soup.find_all('img')
+            if inline_images:
+                file_names = []
+                for inline_image in inline_images:
+                    kemono_hosted = re.search('^/[^*]+', inline_image['src'])
+                    if kemono_hosted:
+                        file_name = inline_image['src'].split('/')[-1]
+                        link = "https://kemono.party/data{path}".format(path=inline_image['src'])
+                    else:
+                        # auto renamer for duplicate image names (for non kemono.party hosted images) might not be best in long run
+                        file_name = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers['Content-Disposition'])[0]
+                        if file_name in file_names:
+                            count = 1
+                            while re.sub("\.","({num}).".format(num=count), file_name) in file_names:
+                                count += 1
+                            file_name = re.sub("\.","({num}).".format(num=count), file_name)
+                        file_names.append(file_name)
+                        link = inline_image['src']
+                    if download_file(file_name, link, folder_path + os.path.sep + 'inline'):
+                        inline_image['src'] = folder_path + os.path.sep + 'inline' + os.path.sep + file_name
+                    else:
+                        error_flag += 1       
+            # write content to file        
+            with open(folder_path + os.path.sep + 'content.html','wb') as File:
+                File.write(content_soup.prettify().encode("utf-16"))
+        # download post attachments
+        if post['attachments']:
+            for item in post['attachments']:
+                if not download_file(item['name'], 'https://kemono.party/data{path}'.format(path=item['path']),folder_path + os.path.sep + 'attachments'):
+                    error_flag += 1
+        # download post file
+        if post['file']:
+            if not download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path):
+                error_flag += 1 
+        # save embedded links
+        if post['embed']:
+            with open(folder_path + os.path.sep + 'external_links.txt','wb') as File:
+                File.write('{subject}\n{url}\n{description}'.format(subject=post['embed']['subject'],url=post['embed']['url'],description=post['embed']['description']).encode("utf-16"))
+        # check total errors            
+        if error_flag == 0:
+            if archive_flag:
+                with open('archive.txt','a') as f:
+                    f.write('{user_id} {post_id}\n'.format(user_id=post['user'],post_id=post['id']))
+            print("Completed downloading post id: {post_id}".format(post_id=post['id']))
+            return    
+        print('{cstart}{errors} Error(s) encountered downloading post id: {post_id}{cstop}'.format(errors=error_flag,post_id=post['id'],cstart='\033[91m',cstop='\033[0m'))
+        return
+    else:
+        print("Already archived post id: {post_id}".format(post_id=post['id']))
+        return    
+    
+def get_posts(link, username):
+    api_responce = requests.get(link)  
+    data = json.loads(api_responce.text)
+    if not data:
+        return False
     for post in data:
-        # post['title'] # post title
-        # post['added'] # added to kemono
-        # post['edited'] # last updated by kemono 
-        # post['id'] # post id   
-        # post['user'] # username or user id
-        # post['published'] # published date (from service)
-        # post['attachments'] # list of dictionaries each with a ['name'] and ['path']
-        # post['file'] # dictionary of attached file ['name'] and ['path'] 
-        # post['content'] # text content in html
-        # post['shared_file'] # I have no idea what this holds
-        # post['embed']: # dictionary for external link ['description'], ['subject'], ['url']
-        
-        if not post['id'] in archived:
-            error_flag = 0
-            
-            try: 
-                published_date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(r'%Y%m%d')
-                post_folder_name =  '[{time}] [{post_id}] {title}'.format(time=published_date,post_id=post['id'],title=post['title'])
-            except: 
-                published_date = ''
-                post_folder_name =  '[{post_id}] {title}'.format(post_id=post['id'],title=post['title'])
-                
-            if check_date_flag:
-                if not date_check(published_date):
-                    print('Date out of range skipping post id: {id}'.format(id=post['id']))
-                    continue        
-        
-            if simulation_flag:
-                simulate(post)
-                continue
-        
-            post_folder_name = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post_folder_name )).strip('.').strip() 
-            folder_path = download_location + os.path.sep + post['service'] + os.path.sep + post['user'] + os.path.sep + post_folder_name
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
-                
-            # need to look into how inline images are handled also no comments with api :/
-            if not post['content'] == '':           
-                with open(folder_path + os.path.sep + 'Content.html','wb') as File:
-                    File.write(post['content'].encode("utf-16"))
-            
-            if post['attachments']:
-                for item in post['attachments']:
-                    if not download_file(item['name'], 'https://kemono.party/data{path}'.format(path=item['path']), folder_path + os.path.sep + 'attachments'):
-                        error_flag += 1
-            
-            if post['file']:
-                if not download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(path=post['file']['path']), folder_path):
-                    error_flag += 1 
-            
-            if post['embed']:
-                with open(folder_path + os.path.sep + 'external_links.txt','wb') as File:
-                    File.write('{subject}:\n{url}\n{description}'.format(subject=post['embed']['subject'], url=post['embed']['url'], description=post['embed']['description']).encode("utf-16"))
-                      
-            if error_flag == 0:
-                if archive_flag:
-                    with open('archive.txt','a') as f:
-                        f.write('{id}\n'.format(id=post['id']))
-                print("Completed downloading post id: {id}".format(id=post['id']))
-            else:    
-                print('{errors} Error(s) encountered downloading post id: {id}'.format(errors=error_flag, id=post['id']))
-        else:
-            print("Already archived post id: {id}".format(id=post['id']))
+        extract_post(post, username)
     return True
 
-def user(link): 
-    # /api/<service>/user/<id>   
-    profile = re.search('https://kemono\.party/([^/]+)/user/([^/]+)$', link)        
-    if profile:
-        # user_link = link # will be need to get patreon user name?
-        next_call = True
-        page_count = 0
-        while next_call == True:
-            api_link = 'https://kemono.party/api/{service}/user/{user_id}?o={num}'.format(service=profile.group(1), user_id=profile.group(2),num=page_count)
-            next_call = extract_post(api_link)
-            page_count += 25
-        return True
-    return False
+def get_username(user_id, service):
+    api_creators = 'https://kemono.party/api/creators/'
+    api_responce = requests.get(api_creators)
+    data = json.loads(api_responce.text)
+    for creator in data:
+        """
+        creator['id']         # str
+        creator['indexed']    # str 
+        creator['name']       # str
+        creator['service']    # str
+        creator['updated']    # str
+        """
+        if creator['id'] == user_id and creator['service'] == service:
+            return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
-def post(link):
-    # /api/<service>/user/<id>/post/<id>
-    post = re.search('(https://kemono\.party/([^/]+)/user/([^/]+))/post/([^/]+)$', link)
-    if post:
-        # user_link = post.group(1) # will be need to get patreon user name?
-        api_link = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(service=post.group(2), user_id=post.group(3),post_id=post.group(4))
-        extract_post(api_link)
-        return True
+def get_pfp_banner(user_id, service, username):
+    # can not use normal downloader
+    # need to use PIL on content to get format
+    # this is kind of a bad way but also the only way I can think of doing it. Luckily the images are so small holding them in memory shouldn't be a problem
+    api_icon = 'https://kemono.party/icons/{service}/{user_id}'.format(service=service,user_id=user_id) # /icons/{service}/{creator_id}
+    api_banner = 'https://kemono.party/banners/{service}/{user_id}'.format(service=service,user_id=user_id) # /banners/{service}/{creator_id}
+    folder_path = download_location + os.path.sep + service + os.path.sep + username + ' [{user_id}]'.format(user_id=user_id)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    for index, api_call in enumerate([api_icon, api_banner]):    
+        api_responce = requests.get(api_call,allow_redirects=True,cookies=cookie_jar)     
+        image = Image.open(io.BytesIO(api_responce.content))
+        item = 'banner' if index else 'icon'
+        file_path = "{directory}{username} [{user_id}] {item}.{ext}".format(directory=folder_path + os.path.sep,username=username,user_id=user_id,item=item,ext=image.format.lower())
+        # for right now it won't re save over even if it updated
+        if not os.path.exists(file_path):
+            image.save(file_path,format=image.format)
+    return
+
+def get_discord():
+    print('Discord is currently not supported by this downloader. (in progress)')
+    # /discord/server/{serverId}
+    # serverId is same as creator id for getting username
+    # how to get channel id(s) from server id with api?
+    # api_channel = 'https://kemono.party/api/discord/channel/{channelId}?skip={skip}'
+    # skip starts at 0 increments by 10
+    pass
+
+def extract_link(link):
+    found = re.search('https://kemono\.party/([^/]+)/(server|user)/([^/]+)($|/post/([^/]+)$)',link)
+    if found:
+        service = found.group(1)
+        user_id = found.group(3)
+        post_id = found.group(5)
+        username = get_username(user_id, service)
+        if not simulation_flag:
+            get_pfp_banner(user_id, service, username)
+        if service == 'discord':
+            get_discord()
+            return True
+        else:
+            chunk = 0
+            next_chunk = True
+            while next_chunk:
+                api_link = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(service=service,user_id=user_id,post_id=post_id) # /api/<service>/user/<id>/post/<id>
+                if post_id == None:
+                    api_link = 'https://kemono.party/api/{service}/user/{user_id}?o={chunk}'.format(service=service,user_id=user_id,chunk=chunk) # /api/<service>/user/<id>
+                next_chunk = True if get_posts(api_link, username) and post_id == None else False
+                chunk += 25 
+            return True
     return False    
 
 def main():
-    
-    if args['user']:
-        if not user(args['user']):
-            print('Error invalid link: {}'.format(args['user']))
-    
-    if args['post']:    
-        if not post(args['post']):
-            print('Error invalid link: {}'.format(args['post']))
+    if args['links']:
+        links = args['links'].split(",")
+        for link in links:
+            if not extract_link(link.lstrip()):
+                print('{cstart}Error invalid link: {link}{cstop}'.format(link=link),cstart='\033[91m',cstop='\033[0m')
     
     if args['fromfile']:
-        from_file = args['fromfile']  
-        if not os.path.exists(from_file):
-            print('No file found: {}'.format(from_file)), quit()
-        with open(from_file,'r') as f:
-            links = f.read().splitlines() 
-        if len(links) == 0:
-            print('{} is empty.'.format(from_file)), quit()       
-        for link in links:
-            if not post(link) and not user(link):
-                print('Error invalid link: {}'.format(link))
+        if not os.path.exists(args['fromfile']):
+            print('{cstart}Error no file found: {file}{cstop}'.format(file=args['fromfile'],cstart='\033[91m',cstop='\033[0m')), quit()
             
+        with open(args['fromfile'],'r') as f:
+            links = f.readlines()
+        if not links:
+            print('{cstart}Error {file} is empty.{cstop}'.format(file=args['fromfile'],cstart='\033[91m',cstop='\033[0m')), quit()       
+        
+        for link in links:
+            if not extract_link(link.strip()):
+                print('{cstart}Error invalid link: {link}{cstop}'.format(link=link.strip(),cstart='\033[91m',cstop='\033[0m'))
             
 if __name__ == '__main__':
     main()
