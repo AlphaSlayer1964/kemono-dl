@@ -4,11 +4,12 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 ## How to use:
 1. Install python
 2. Install BeautifulSoup with ```pip insatll bs4```
-3. Download ```kemono-dl.py``` from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases)
-4. Get a cookie.txt file from kemono.party 
+3. Download source code from [releases] and extract it(https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases)
+4. then install requirements with  ```pip install -r requirements.txt```
+5. Get a cookie.txt file from kemono.party 
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - A cookie.txt file is needed to download files 
-5. Run ```python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID```
+6. Run ```python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID```
 
 
 ## Options:
