@@ -8,7 +8,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 4. Get a cookie.txt file from kemono.party 
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - A cookie.txt file is needed to download files 
-5. Run ```python kemono-dl.py --cookies "cookie.txt" --user https://kemono.party/SERVICE/user/USERID```
+5. Run ```python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID```
 
 
 ## Options:
