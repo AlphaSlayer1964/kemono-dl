@@ -11,7 +11,7 @@ import json
 from PIL import Image
 import io
 
-version = '2021.10.07.1'
+version = '2021.10.07.2'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
