@@ -122,7 +122,7 @@ def download_file(file_name, file_link, file_path):
             sys.stdout.write('\n')
         return True
     except Exception as e:
-        print('{cstart}Error downloading: {}{cstop}'.format(file_link),cstart='\033[91m',cstop='\033[0m')
+        print('{cstart}Error downloading: {link}{cstop}'.format(link=file_link,cstart='\033[91m',cstop='\033[0m'))
         print(e)
         if args['ignore_errors']:
             return False
@@ -193,14 +193,22 @@ def extract_post(post, username):
                         link = "https://kemono.party/data{path}".format(path=inline_image['src'])
                     else:
                         # auto renamer for duplicate image names (for non kemono.party hosted images) might not be best in long run
-                        file_name = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers['Content-Disposition'])[0]
-                        if file_name in file_names:
-                            count = 1
-                            while re.sub("\.","({num}).".format(num=count), file_name) in file_names:
-                                count += 1
-                            file_name = re.sub("\.","({num}).".format(num=count), file_name)
-                        file_names.append(file_name)
-                        link = inline_image['src']
+                        try:
+                            file_name = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers['Content-Disposition'])[0]
+                            if file_name in file_names:
+                                count = 1
+                                while re.sub("\.","({num}).".format(num=count), file_name) in file_names:
+                                    count += 1
+                                file_name = re.sub("\.","({num}).".format(num=count), file_name)
+                            file_names.append(file_name)
+                            link = inline_image['src']
+                        except Exception as e:
+                            print('{cstart}Error downloading: {link}{cstop}'.format(link=inline_image['src'],cstart='\033[91m',cstop='\033[0m'))
+                            print(e)
+                            if not args['ignore_errors']:
+                                quit()
+                            error_flag += 1    
+                            continue
                     if download_file(file_name, link, folder_path + os.path.sep + 'inline'):
                         inline_image['src'] = folder_path + os.path.sep + 'inline' + os.path.sep + file_name
                     else:
