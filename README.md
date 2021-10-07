@@ -21,7 +21,7 @@ The downsides are no comments.
 - ```-p, --post LINK``` Download post (only one post)
 - ```-f, --fromfile FILE``` Download users and posts from a file seperated by a newline
 - ```-o, --output FOLDER``` Set path to download posts
-- ```-a, --archive FILE``` Downloads only posts that are not in archive.txt 
+- ```-a, --archive FILE``` Downloads only posts that are not in provided archive file 
 - ```-i, --ignore-errors``` Continue to download post(s) when an error occurs
 - ```-s, --simulate``` Print post(s) info and does not download
 - ```--date YYYYMMDD``` Only download posts from this date
