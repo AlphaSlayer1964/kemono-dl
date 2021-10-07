@@ -1,7 +1,5 @@
 # kemono-dl
-This is a simple kemono.party downloader using python.
-I have decided to switch to using kemono.party's API instead of tones of http requests.
-The downsides are no comments.
+This is a simple kemono.party downloader using python and kemono.party's API.
 
 ## How to use:
 1. Install python
@@ -17,8 +15,7 @@ The downsides are no comments.
 - ```-h, --help``` Prints help text then exits
 - ```--version``` Displays the current version then exits
 -  ```--cookies FILE``` Set path to cookie.txt (**REQUIRED TO DOWNLOAD FILES**)
-- ```-u, --user LINK``` Download user posts (only one user)
-- ```-p, --post LINK``` Download post (only one post)
+- ```-l, --links LINK(s)``` Downloads user or post links seperated by a comma (,)
 - ```-f, --fromfile FILE``` Download users and posts from a file seperated by a newline
 - ```-o, --output FOLDER``` Set path to download posts
 - ```-a, --archive FILE``` Downloads only posts that are not in provided archive file 
@@ -27,11 +24,6 @@ The downsides are no comments.
 - ```--date YYYYMMDD``` Only download posts from this date
 - ```--datebefore YYYYMMDD``` Only download posts from this date and before
 - ```--dateafter YYYYMMDD``` Only download posts from this date and after
-
-## Examples:
-- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive archive.txt --fromfile Users.txt```
-- ```python kemono-dl.py --cookies "cookie.txt" --date 20210101 --user https://kemono.party/SERVICE/user/USERID```
-- ```python kemono-dl.py --cookies "cookie.txt" -i -p https://kemono.party/SERVICE/user/USERID/post/POSTID```
 
 ## Notes:
 - If ```--cookie cookie.txt``` is not passed script will run as if ```--simulation``` was passed
@@ -49,6 +41,8 @@ CWD
 └── Downloads
     └── {service}
         └── {username} [{user_id}]
+            ├── {username} [{user_id}] icon.ext
+            ├── {username} [{user_id}] banner.ext
             └── [{date}] [{post_id}] {post_title}
                 ├── attachments
                 │   └── attachment.ext
@@ -59,13 +53,17 @@ CWD
                 └── file.ext
 ```
 
+## Examples:
+- ```python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archive archive.txt --fromfile Users.txt```
+- ```python kemono-dl.py --cookies "cookie.txt" --date 20210101 --links https://kemono.party/SERVICE/user/USERID```
+- ```python kemono-dl.py --cookies "cookie.txt" -i -l https://kemono.party/SERVICE/user/USERID/post/POSTID,https://kemono.party/SERVICE/user/USERID```
+
 ## To do:
 - [ ] Integrate youtube-dl for downloading external video links
 - [ ] Allow file naming structure to be changed in command line
 - [ ] Allow file path structure to be changed in command line
-- [ ] Add Discord service
-- [ ] Have ```-u, --user LINK``` take as many users seperated by ```,```
-- [ ] Have ```-p, --post LINK``` take as many posts seperated by ```,```
+- [ ] Add Discord service (in progress)
+- [ ] Download comments using API (if possible, might not be)
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
