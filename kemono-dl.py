@@ -58,8 +58,8 @@ if args['archive']:
     archive_flag = True
     archive_file = args['archive']
     # create archive file if none
-    if not os.path.exists(args['archive']): 
-        with open(args['archive'],'w') as f: 
+    if not os.path.exists(archive_file): 
+        with open(archive_file,'w') as f: 
             pass
 
 def validate_date(date):
@@ -186,7 +186,7 @@ def extract_post(post, username):
     """
     archived = []
     if archive_flag:
-        with open('archive.txt','r') as f:
+        with open(archive_file,'r') as f:
             archived = f.read().splitlines()    
             
     if not '{user_id} {post_id}'.format(user_id=post['user'],post_id=post['id']) in archived:
@@ -230,7 +230,7 @@ def extract_post(post, username):
         # check total errors            
         if not error_flag:
             if archive_flag:
-                with open('archive.txt','a') as f:
+                with open(archive_file,'a') as f:
                     f.write('{user_id} {post_id}\n'.format(user_id=post['user'],post_id=post['id']))
             print("Completed downloading post id: {post_id} user id: {user_id}".format(post_id=post['id'],user_id=post['user']))
             return    
