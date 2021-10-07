@@ -169,7 +169,7 @@ def extract_post(post, username):
         
         if check_date_flag:
             if not date_check(date, args['date'], args['datebefore'], args['dateafter']):
-                print('Date out of range: {date} skipping post id: {id}'.format(date=date, id=post['id']))
+                print('Date out of range: {date} skipping post id: {pos_id} user id: {user_id}'.format(date=date,pos_id=post['id'],user_id=post['user']))
                 return        
     
         if simulation_flag:
@@ -234,12 +234,12 @@ def extract_post(post, username):
             if archive_flag:
                 with open('archive.txt','a') as f:
                     f.write('{user_id} {post_id}\n'.format(user_id=post['user'],post_id=post['id']))
-            print("Completed downloading post id: {post_id}".format(post_id=post['id']))
+            print("Completed downloading post id: {post_id} user id: {user_id}".format(post_id=post['id'],user_id=post['user']))
             return    
-        print('{cstart}{errors} Error(s) encountered downloading post id: {post_id}{cstop}'.format(errors=error_flag,post_id=post['id'],cstart='\033[91m',cstop='\033[0m'))
+        print('{cstart}{errors} Error(s) encountered downloading post id: {post_id} user id: {user_id}{cstop}'.format(errors=error_flag,post_id=post['id'],user_id=post['user'],cstart='\033[91m',cstop='\033[0m'))
         return
     else:
-        print("Already archived post id: {post_id}".format(post_id=post['id']))
+        print("Already archived post id: {post_id} user id: {user_id}".format(post_id=post['id'],user_id=post['user']))
         return    
     
 def get_posts(link, username):
@@ -267,23 +267,29 @@ def get_username(user_id, service):
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
 def get_pfp_banner(user_id, service, username):
-    # can not use normal downloader
-    # need to use PIL on content to get format
-    # this is kind of a bad way but also the only way I can think of doing it. Luckily the images are so small holding them in memory shouldn't be a problem
-    api_icon = 'https://kemono.party/icons/{service}/{user_id}'.format(service=service,user_id=user_id) # /icons/{service}/{creator_id}
-    api_banner = 'https://kemono.party/banners/{service}/{user_id}'.format(service=service,user_id=user_id) # /banners/{service}/{creator_id}
-    folder_path = download_location + os.path.sep + service + os.path.sep + username + ' [{user_id}]'.format(user_id=user_id)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-    for index, api_call in enumerate([api_icon, api_banner]):    
-        api_responce = requests.get(api_call,allow_redirects=True,cookies=cookie_jar)     
-        image = Image.open(io.BytesIO(api_responce.content))
-        item = 'banner' if index else 'icon'
-        file_path = "{directory}{username} [{user_id}] {item}.{ext}".format(directory=folder_path + os.path.sep,username=username,user_id=user_id,item=item,ext=image.format.lower())
-        # for right now it won't re save over even if it updated
-        if not os.path.exists(file_path):
-            image.save(file_path,format=image.format)
-    return
+    try:
+        # can not use normal downloader
+        # need to use PIL on content to get format
+        # this is kind of a bad way but also the only way I can think of doing it. Luckily the images are so small holding them in memory shouldn't be a problem
+        api_icon = 'https://kemono.party/icons/{service}/{user_id}'.format(service=service,user_id=user_id) # /icons/{service}/{creator_id}
+        api_banner = 'https://kemono.party/banners/{service}/{user_id}'.format(service=service,user_id=user_id) # /banners/{service}/{creator_id}
+        folder_path = download_location + os.path.sep + service + os.path.sep + username + ' [{user_id}]'.format(user_id=user_id)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        for index, api_call in enumerate([api_icon, api_banner]):    
+            api_responce = requests.get(api_call,allow_redirects=True,cookies=cookie_jar)     
+            image = Image.open(io.BytesIO(api_responce.content))
+            item = 'banner' if index else 'icon'
+            file_path = "{directory}{username} [{user_id}] {item}.{ext}".format(directory=folder_path + os.path.sep,username=username,user_id=user_id,item=item,ext=image.format.lower())
+            # for right now it won't re save over even if it updated
+            if not os.path.exists(file_path):
+                image.save(file_path,format=image.format)
+        return
+    except Exception as e:
+        print('{cstart}Error downloading: {link}{cstop}'.format(link=api_call,cstart='\033[91m',cstop='\033[0m'))
+        print(e)
+        if not args['ignore_errors']:
+            quit()    
 
 def get_discord():
     print('Discord is currently not supported by this downloader. (in progress)')
