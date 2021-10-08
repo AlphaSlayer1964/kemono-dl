@@ -25,6 +25,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - ```--date YYYYMMDD``` Only download posts from this date
 - ```--datebefore YYYYMMDD``` Only download posts from this date and before
 - ```--dateafter YYYYMMDD``` Only download posts from this date and after
+- ```--force-inline``` Force download all external inline images found in post content
 
 ## Notes:
 - If ```--cookie cookie.txt``` is not passed script will run as if ```--simulation``` was passed
