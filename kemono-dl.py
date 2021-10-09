@@ -225,7 +225,7 @@ def extract_post(post, info):
         # save embedded links
         if post['embed']:
             with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
-                f.write('{subject}\n{url}\n{}'.format(post['embed']['description']).encode("utf-16"), **post['embed'])
+                f.write('{subject}\n{url}\n{}'.format(post['embed']['description'].encode("utf-16"), **post['embed']))
                 
         # check total errors            
         if not errors:
