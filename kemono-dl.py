@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.08'
+version = '2021.10.08.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -156,7 +156,7 @@ def download_inline(html, file_path, external):
 def simulate(post):
     print('Post Title: {title}\nPost ID: {id}\nUser ID: {user}\nService: {service}\nPublished Date: {published}\nContent: {content}\n'.format(**post))
     if post['embed']:
-        print('Embedded:\n\tTitle: {title}\n\tURL: {url}\n\tDescription: {desc}'.format(**post['embed']))
+        print('Embedded:\n\tSubject: {subject}\n\tURL: {url}\n\tDescription: {description}'.format(**post['embed']))
     if post['attachments']:
         print('Attachments: {}'.format(len(post['attachments'])))
         for attachment in post['attachments']:
@@ -251,7 +251,7 @@ def get_posts(info):
         if not data:
             break
         for post in data:
-            extract_post(post, info) 
+            extract_post(post, dict(info)) 
         if not info['post_id'] == None:
             break
         chunk += 25
