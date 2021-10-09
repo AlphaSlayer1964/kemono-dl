@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.08.1'
+version = '2021.10.08.2'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -225,7 +225,7 @@ def extract_post(post, info):
         # save embedded links
         if post['embed']:
             with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
-                f.write('{subject}\n{url}\n{}'.format(post['embed']['description'].encode("utf-16"), **post['embed']))
+                f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16"))
                 
         # check total errors            
         if not errors:
@@ -236,7 +236,7 @@ def extract_post(post, info):
             return    
         print('{} Error(s) encountered downloading post. service: {service} user id: {user_id} post id: {post_id}'.format(errors, **info))
         return
-    print("Already archived post. service: {service} user id: {user_id} post id: {pos_id}".format(**info))
+    print("Already archived post. service: {service} user id: {user_id} post id: {post_id}".format(**info))
     return    
     
 def get_posts(info):
