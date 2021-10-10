@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.09'
+version = '2021.10.10'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -266,13 +266,13 @@ def get_pfp_banner(info):
         # /icons/{service}/{creator_id} 
         # /banners/{service}/{creator_id}
         file_name = '{username} [{user_id}] {}'.format(item, **info)
-        download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path)
-        try:
-            image = Image.open(os.path.join(folder_path, file_name))
-            image.save(os.path.join(folder_path, '{}.{}'.format(file_name, image.format.lower())), format=image.format)
-            os.remove(os.path.join(folder_path, file_name)) 
-        except:
-            os.remove(os.path.join(folder_path, file_name)) # site might return garbage data if no icon or banner is found
+        if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path):
+            try:
+                image = Image.open(os.path.join(folder_path, file_name))
+                image.save(os.path.join(folder_path, '{}.{}'.format(file_name, image.format.lower())), format=image.format)
+                os.remove(os.path.join(folder_path, file_name)) 
+            except:
+                os.remove(os.path.join(folder_path, file_name)) # site might return garbage data if no icon or banner is found
 
 def get_discord():
     print('Discord is not currently supported by this downloader. (in progress)')
