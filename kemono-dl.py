@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.10'
+version = '2021.10.11'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -133,9 +133,7 @@ def download_inline(html, file_path, external):
                     file_name = Content_Disposition[0]
                 extention = re.search('([^.]+)\.([^*]+)', file_name)
                 if not extention:
-                    print('Error downloading inline image: {}'.format(inline_image['src']))
-                    # if not args['ignore_errors']:
-                    #     quit()
+                    print('Error downloading inline image: {}'.format(inline_image['src'])) # these errors will always be skipped
                     errors += 1
                     break
                 if file_name in file_names:
@@ -221,7 +219,6 @@ def extract_post(post, info):
         if post['file']:
             errors += 1 if not download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(**post['file']), post_path) else 0
                  
-                
         # save embedded links
         if post['embed']:
             with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
@@ -246,7 +243,7 @@ def get_posts(info):
         api_link = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info) # /api/<service>/user/<id>/post/<id>
         if info['post_id'] == None:
             api_link = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info) # /api/<service>/user/<id>
-        api_responce = requests.get(api_link)  
+        api_responce = requests.get(api_link) 
         data = json.loads(api_responce.text)
         if not data:
             break
@@ -268,8 +265,8 @@ def get_pfp_banner(info):
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path):
             try:
-                image = Image.open(os.path.join(folder_path, file_name))
-                image.save(os.path.join(folder_path, '{}.{}'.format(file_name, image.format.lower())), format=image.format)
+                with Image.open(os.path.join(folder_path, file_name)) as image:
+                    image.save(os.path.join(folder_path, '{}.{}'.format(file_name, image.format.lower())), format=image.format)
                 os.remove(os.path.join(folder_path, file_name)) 
             except:
                 os.remove(os.path.join(folder_path, file_name)) # site might return garbage data if no icon or banner is found
