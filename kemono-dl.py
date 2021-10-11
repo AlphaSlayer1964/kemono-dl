@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.11'
+version = '2021.10.11.0'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -302,7 +302,7 @@ def extract_link(link):
         if info['service'] == 'discord':
             get_discord(info)
             return True
-        if not simulation_flag:
+        if not simulation_flag and not info['post_id'] == None:
             get_pfp_banner(info)
         get_posts(info)
         return True
