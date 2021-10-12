@@ -10,7 +10,7 @@ import datetime
 import json
 from PIL import Image
 
-version = '2021.10.11.0'
+version = '2021.10.11.1'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -55,11 +55,8 @@ if args['archive']:
         print('Invalid archive location: {}'.format(os.path.dirname(os.path.abspath(args['archive'])))), quit()
     archive_flag = True
     archive_file = args['archive']
-    if not os.path.exists(archive_file): 
-        with open(archive_file,'w') as f: 
-            pass
 
-def validate_date(date):
+def validate_date(date:str):
     try: 
         datetime.datetime.strptime(date, r'%Y%m%d')
         return True
@@ -73,7 +70,7 @@ if args['datebefore']: check_date_flag = validate_date(args['datebefore'])
 
 if args['dateafter']: check_date_flag = validate_date(args['dateafter'])
     
-def check_date(post_date, date, date_before, date_after):
+def check_date(post_date:str, date:str, date_before:str, date_after:str):
     if post_date == '00000000': return False
     if date_before == None: date_before = '00000000'
     if date_after == None: date_after = '99999999'
@@ -84,7 +81,7 @@ def check_date(post_date, date, date_before, date_after):
     elif date_before or date_after:
         return True if int(post_date) <= int(date_before) or int(post_date) >= int(date_after) else False
                 
-def download_file(file_name, url, file_path):
+def download_file(file_name:str, url:str, file_path:str):
     try:
         if not os.path.exists(file_path):
             os.makedirs(file_path)
@@ -107,13 +104,13 @@ def download_file(file_name, url, file_path):
                 sys.stdout.write('\n')
         return True
     except Exception as e:
-        print('Error downloading: {link}'.format(link=url))
+        print('Error downloading: {}'.format(url))
         print(e)
         if not args['ignore_errors']:
             quit()
         return False
 
-def download_inline(html, file_path, external):
+def download_inline(html:str, file_path:str, external:bool):
     errors = 0
     content_soup = BeautifulSoup(html, 'html.parser')
     inline_images = content_soup.find_all('img')
@@ -151,8 +148,9 @@ def download_inline(html, file_path, external):
             errors += 1
     return  (content_soup, errors)      
     
-def simulate(post):
-    print('Post Title: {title}\nPost ID: {id}\nUser ID: {user}\nService: {service}\nPublished Date: {published}\nContent: {content}\n'.format(**post))
+def print_post_data(post:dict):
+    print('Post Link: https://kemono.party/{service}/user/{user}/{id}'.format(**post))
+    print('Post Title: {title}\nPost ID: {id}\nUser ID: {user}\nService: {service}\nPublished Date: {published}\nAdded Date: {added}\nEdited Date: {edited}'.format(**post))
     if post['embed']:
         print('Embedded:\n\tSubject: {subject}\n\tURL: {url}\n\tDescription: {description}'.format(**post['embed']))
     if post['attachments']:
@@ -161,26 +159,42 @@ def simulate(post):
             print('\tFile name: {name}\n\tFile path: https://kemono.party/data/{path}'.format(**attachment))
     if post['file']:
         print('Files:\n\tFile name: {name}\n\tFile Path: https://kemono.party/data/{path}'.format(**post['file']))
-    print('-' * 50)   
+    print('Content:\n{}'.format(BeautifulSoup(post['content'], 'html.parser').getText(separator="\n")))
+    print('-' * 50)
+    
+def print_channel_post_data(post:dict):
+    for key, value in post.items():
+        print(key, ' : ', value)
+    print('-' * 50)
+    return       
 
-def extract_post(post, info):
-    """        
-    post['title']         # str, post title
-    post['added']         # str, date added
-    post['edited']        # str, date last editied
-    post['id']            # str, post id
-    post['user']          # str, user id
-    post['published']     # str, date published
-    post['attachments']   # list of dict, {"name": str, "path": str}
-    post['file']          # dict, {"name": str, "path": str} 
-    post['content']       # str, html of content
-    post['shared_file']   # bool, 
-    post['embed']:        # dict, {"description": str, "subject": str, "url": str}, external link
+def extract_post(post:dict, info:dict):
+    """
+    post                    # dict      
+        ['title']           # str 
+        ['added']           # str, datetime object
+        ['edited']          # str, datetime object
+        ['id']              # str
+        ['user']            # str
+        ['published']       # str, datetime object
+        ['attachments']     # list of dict
+            ['name']        # str
+            ['path']        # str
+        ['file']            # dict
+            ['name']        # str
+            ['path']        # str 
+        ['content']         # str, html
+        ['shared_file']     # bool 
+        ['embed']:          # dict
+            ['description'] # str
+            ['subject']     # str
+            ['url']         # str
     """
     archived = []
     if archive_flag:
-        with open(archive_file,'r') as f:
-            archived = f.read().splitlines() 
+        if os.path.exists(archive_file):
+            with open(archive_file,'r') as f:
+                archived = f.read().splitlines() 
                
     errors = 0
     info['post_id'] = post['id']
@@ -192,11 +206,11 @@ def extract_post(post, info):
         
         if check_date_flag:
             if not check_date(date, args['date'], args['datebefore'], args['dateafter']):
-                print('Date out of range: {date} service: {service} user id: {user_id} post id: {pos_id}'.format(**info, date=date))
+                print('Date out of range: {} service: [{service}] user_id: [{user_id}] post_id: [{pos_id}]'.format(date, **info))
                 return        
     
         if simulation_flag:
-            simulate(post)
+            print_post_data(post)
             return
     
         post_title = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post['title'] )).strip('.').strip() # removing illegal windows characters
@@ -229,39 +243,97 @@ def extract_post(post, info):
             if archive_flag:
                 with open(archive_file,'a') as f:
                     f.write('{service} {user_id} {post_id}\n'.format(**info))
-            print("Completed downloading post. service: {service} user id: {user_id} post id: {post_id}".format(**info))
+            print("Completed downloading post. service: [{service}] user_id: [{user_id}] post_id: [{post_id}]".format(**info))
             return    
-        print('{} Error(s) encountered downloading post. service: {service} user id: {user_id} post id: {post_id}'.format(errors, **info))
+        print('{} Error(s) encountered downloading post. service: [{service}] user_id: [{user_id}] post_id: [{post_id}]'.format(errors, **info))
         return
-    print("Already archived post. service: {service} user id: {user_id} post id: {post_id}".format(**info))
+    print("Already archived post. service: [{service}] user_id: [{user_id}] post_id: [{post_id}]".format(**info))
     return    
-    
-def get_posts(info):
-    chunk = 0
-    next_chunk = True
-    while next_chunk:
-        api_link = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info) # /api/<service>/user/<id>/post/<id>
-        if info['post_id'] == None:
-            api_link = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info) # /api/<service>/user/<id>
-        api_responce = requests.get(api_link) 
-        data = json.loads(api_responce.text)
-        if not data:
-            break
-        for post in data:
-            extract_post(post, dict(info)) 
-        if not info['post_id'] == None:
-            break
-        chunk += 25
+
+def extract_channel_post(post:dict, info:dict, channel:dict):
+    """
+    channel                     # dict
+        ['id']                  # str
+        ['name']                # str
+        
+    post                        # dict
+        ['added']               # str, datetime object
+        ['attachments']         # list of dict
+            ['isImage']         # str
+            ['name']            # str
+            ['path']            # str
+        ['author']              # dict   
+            ['avatar']          # str
+            ['discriminator']   # str
+            ['id']              # str
+            ['public_flags']    # int
+            ['username']        # str
+        ['channel']             # str
+        ['content']             # str, html
+        ['edited']              # ???
+        ['embeds']              # list of dict
+            ['description']     # str
+            ['thumbnail']       # dict
+                ['height']      # int
+                ['proxy_url']   # str
+                ['url']         # str
+                ['width']       # int
+            ['title']           # str
+            ['type']            # str
+            ['url']             # str
+        ['id']                  # str
+        ['mentions']            # list of dict
+            ['avatar']          # str
+            ['discriminator']   # str
+            ['id']              # str
+            ['public_flags']    # int
+            ['username']        # str    
+        ['published']           # str, datetime object
+        ['server]               # str
+    """
+    if simulation_flag:
+        print_channel_post_data(post)
+        return
+    # format into html file    
     return
 
-def get_pfp_banner(info):
+def get_discord_chanels(info:dict):
+    api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
+    api_responce = requests.get(api_call) 
+    return json.loads(api_responce.text)
+
+def get_posts(info:dict):
+    channels = get_discord_chanels(dict(info)) if info['service'] == 'discord' else [0]
+    for channel in channels:
+        chunk = 0
+        while True:
+            api_call = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
+            if info['post_id'] == None:
+                api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
+                if info['service'] == 'discord':
+                    api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
+            api_responce = requests.get(api_call) 
+            data = json.loads(api_responce.text)
+            if not data:
+                break
+            for post in data:
+                if info['service'] == 'discord':
+                    extract_channel_post(dict(post), dict(info), dict(channel))
+                else:
+                    extract_post(dict(post), dict(info))
+            if not info['post_id'] == None and not info['service'] == 'discord':
+                break
+            chunk += 10 if info['service'] == 'discord' else 25    
+    return
+
+def get_pfp_banner(info:dict):
     list = ['icon', 'banner']
     if info['service'] == 'gumroad': # gumroad does not have banners and when calling /baners/ you just get the icon again
-        list = ['icon'] 
+        list = ['icon']
+    elif info['service'] == 'discord':
+        list = [] 
     folder_path = os.path.join(download_location, info['service'], '{username} [{user_id}]'.format(**info))    
     for item in list:
-        # /icons/{service}/{creator_id} 
-        # /banners/{service}/{creator_id}
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path):
             try:
@@ -270,41 +342,34 @@ def get_pfp_banner(info):
                 os.remove(os.path.join(folder_path, file_name)) 
             except:
                 os.remove(os.path.join(folder_path, file_name)) # site might return garbage data if no icon or banner is found
+    return
 
-def get_discord():
-    print('Discord is not currently supported by this downloader. (in progress)')
-    # /discord/server/{serverId}
-    # serverId is same as creator id for getting username
-    # how to get channel id(s) from server id with api?
-    # api_channel = 'https://kemono.party/api/discord/channel/{channelId}?skip={skip}'
-    # skip starts at 0 increments by 10
-    pass
-
-def get_username(service, user_id):
+def get_username(service:str, user_id:str):
     api_creators = 'https://kemono.party/api/creators/'
     api_responce = requests.get(api_creators)
     data = json.loads(api_responce.text)
     for creator in data:
         """
-        creator['id']         # str
-        creator['indexed']    # str 
-        creator['name']       # str
-        creator['service']    # str
-        creator['updated']    # str
+        creator            # dict
+            ['id']         # str
+            ['indexed']    # str 
+            ['name']       # str
+            ['service']    # str
+            ['updated']    # str
         """
         if creator['id'] == user_id and creator['service'] == service:
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
-def extract_link(link):
+def extract_link(link:str):
     found = re.search('https://kemono\.party/([^/]+)/(server|user)/([^/]+)($|/post/([^/]+)$)',link)
     if found:
-        info = {'service':found.group(1), 'user_id':found.group(3), 'post_id':found.group(5), 'username': get_username(found.group(1), found.group(3))}
-        if info['service'] == 'discord':
-            get_discord(info)
-            return True
+        info = {'service':found.group(1),
+                'user_id':found.group(3),
+                'post_id':found.group(5),
+                'username': get_username(found.group(1), found.group(3))}
         if not simulation_flag and not info['post_id'] == None:
-            get_pfp_banner(info)
-        get_posts(info)
+            get_pfp_banner(dict(info))
+        get_posts(dict(info))
         return True
     return False    
 
@@ -314,6 +379,7 @@ def main():
         for link in links:
             if not extract_link(link.lstrip()):
                 print('Error invalid link: {}'.format(link))
+                
     if args['fromfile']:
         if not os.path.exists(args['fromfile']):
             print('Error no file found: {}'.format(args['fromfile'])), quit()
