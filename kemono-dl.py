@@ -367,7 +367,7 @@ def extract_link(link:str):
                 'user_id':found.group(3),
                 'post_id':found.group(5),
                 'username': get_username(found.group(1), found.group(3))}
-        if not simulation_flag and not info['post_id'] == None:
+        if not simulation_flag and info['post_id'] == None:
             get_pfp_banner(dict(info))
         get_posts(dict(info))
         return True
