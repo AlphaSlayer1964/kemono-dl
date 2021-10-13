@@ -20,7 +20,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - ```-o, --output FOLDER``` Set path to download posts
 - ```-a, --archive FILE``` Downloads only posts that are not in provided archive file 
 - ```-i, --ignore-errors``` Continue to download post(s) when an error occurs
-- ```-s, --simulate``` Print post(s) info and does not download
+- ```-s, --simulate``` Do not download users or posts and do not write to disk
 - ```--date YYYYMMDD``` Only download posts from this date. (Format: YYYYMMDD)
 - ```--datebefore YYYYMMDD``` Only download posts from this date and before. (Format: YYYYMMDD)
 - ```--dateafter YYYYMMDD``` Only download posts from this date and after. (Format: YYYYMMDD)
