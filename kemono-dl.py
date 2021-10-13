@@ -10,7 +10,7 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 
-version = '2021.10.13.1'
+version = '2021.10.13.2'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -36,29 +36,23 @@ args = vars(ap.parse_args())
 
 if args['version']: print(version), quit()
 
-simulation_flag = False
 if args['cookies']:
     if not os.path.exists(args['cookies']):
         print('Invalid cookie location: {}'.format(args['cookies'])), quit()
     cookie_jar = MozillaCookieJar(args['cookies'])
     cookie_jar.load()
 else:
-    simulation_flag = True
-    
-if args['simulate']: simulation_flag = True     
+    args['simulate'] = True    
 
-download_location = os.path.join(os.getcwd(), 'Downloads') # default download location 
 if args['output']:
     if not os.path.exists(args['output']):
         print('Invalid download location: {}'.format(args['output'])), quit()
-    download_location = args['output']  
+else:
+    args['output'] = os.path.join(os.getcwd(), 'Downloads') # default download location
 
-archive_flag = False
 if args['archive']:
     if not os.path.exists(os.path.dirname(os.path.abspath(args['archive']))):
         print('Invalid archive location: {}'.format(os.path.dirname(os.path.abspath(args['archive'])))), quit()
-    archive_flag = True
-    archive_file = args['archive']
 
 def valid_date(date:str):
     try: datetime.datetime.strptime(date, r'%Y%m%d')  
@@ -74,10 +68,10 @@ def valid_size(size:str):
     mega = re.search('([0-9]+)MB', size)
     kilo = re.search('([0-9]+)KB', size)
     byte = re.search('([0-9]+)B', size)
-    if giga: return int(giga.group(1)) * 10**9
-    elif mega: return int(mega.group(1)) * 10**6
-    elif kilo: return int(kilo.group(1)) * 10**2
-    elif byte: return int(byte.group(1))
+    if giga: return str(int(giga.group(1)) * 10**9)
+    elif mega: return str(int(mega.group(1)) * 10**6)
+    elif kilo: return str(int(kilo.group(1)) * 10**2)
+    elif byte: return str(int(byte.group(1)))
     else: print("Error incorrect size format, should be 1GB, 1MB, 1KB, 1B"), quit()
 
 if args['max_filesize']: args['max_filesize'] = valid_size(args['max_filesize'])
@@ -87,7 +81,7 @@ def check_date(date:str):
     if not args['date'] and not args['datebefore'] and not args['dateafter']: return True
     if date == '00000000': return False
     if not args['datebefore']: args['datebefore'] = '0'
-    if not args['dateafter']: args['dateafter'] = float('inf')
+    if not args['dateafter']: args['dateafter'] = 'inf'
     if not args['date']: args['date'] = '0'
     return True if int(date) == int(args['date']) or int(date) <= int(args['datebefore']) or int(date) >= float(args['dateafter']) else False
     
@@ -95,44 +89,41 @@ def check_size(size:int):
     if not args['min_filesize'] and not args['max_filesize']: return True
     if size == 0: return False
     if not args['min_filesize']: args['min_filesize'] = '0'
-    if not args['max_filesize']: args['max_filesize'] = float('inf')
+    if not args['max_filesize']: args['max_filesize'] = 'inf'
     return True if size <= float(args['max_filesize']) and size >= int(args['min_filesize']) else False    
            
 def download_file(file_name:str, url:str, file_path:str):
-    try:
-        file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name
-        print('Downloading: {}'.format(file_name))
-        with requests.get(url,stream=True,cookies=cookie_jar) as r:
-            r.raise_for_status()
-            downloaded = 0
-            total = int(r.headers.get('content-length', '0'))
-            if not check_size(total):
-                print('File size out of range: {} bytes'.format(total))
-                return True
-            if simulation_flag:
-                if total:
-                    print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1)))
-                return True
-            if not os.path.exists(file_path):
-                os.makedirs(file_path)
-            with open(os.path.join(file_path, file_name), 'wb') as f:
-                start = time.time()
-                for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
-                    downloaded += len(chunk)
-                    f.write(chunk)
-                    if total:
-                        done = int(50*downloaded/total)
-                        sys.stdout.write('\r[{}{}] {}/{} MB, {} Mbps'.format('='*done, ' '*(50-done), round(downloaded/1000000,1), round(total/1000000,1), round(downloaded//(time.time() - start) / 100000,1)))
-                        sys.stdout.flush() 
-            if total:
-                sys.stdout.write('\n')
-        return True
-    except Exception as e:
-        print('Error downloading: {}'.format(url))
-        print(e)
-        if not args['ignore_errors']:
+    file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name
+    print('Downloading: {}'.format(file_name))
+    with requests.get(url,stream=True,cookies=cookie_jar) as r:
+        if not r.ok:
+            print('{} Error downloading: {}'.format(r.status_code, url))
+            if args['ignore_errors']:
+                return False
             quit()
-        return False
+        downloaded = 0
+        total = int(r.headers.get('content-length', '0'))
+        if not check_size(total):
+            print('File size out of range: {} bytes'.format(total))
+            return True
+        if args['simulate']:
+            if total:
+                print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1)))
+            return True
+        if not os.path.exists(file_path):
+            os.makedirs(file_path)
+        with open(os.path.join(file_path, file_name), 'wb') as f:
+            start = time.time()
+            for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
+                downloaded += len(chunk)
+                f.write(chunk)
+                if total:
+                    done = int(50*downloaded/total)
+                    sys.stdout.write('\r[{}{}] {}/{} MB, {} Mbps'.format('='*done, ' '*(50-done), round(downloaded/1000000,1), round(total/1000000,1), round(downloaded//(time.time() - start) / 100000,1)))
+                    sys.stdout.flush() 
+        if total:
+            sys.stdout.write('\n')
+    return True
 
 def download_inline(html:str, file_path:str, external:bool):
     errors = 0
@@ -142,13 +133,11 @@ def download_inline(html:str, file_path:str, external:bool):
     for inline_image in inline_images:
         kemono_hosted = re.search('^/[^*]+', inline_image['src'])
         if kemono_hosted:
-            file_name = inline_image['src'].split('/')[-1]
+            file_name = inline_image['src'].split('/')[-1] # might want to check content-disposition
             link = "https://kemono.party/data{}".format(inline_image['src'])
         else:
-            if external:
-                # auto renamer for duplicate inline image names (for non kemono.party hosted images)
-                try: Content_Disposition = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers.get('Content-Disposition', ''))
-                except: Content_Disposition = ''
+            if external: # can't think of a better way of doing this!
+                Content_Disposition = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers.get('Content-Disposition', ''))
                 file_name = link.split('?')[0].split('/')[-1]
                 if Content_Disposition:
                     file_name = Content_Disposition[0]
@@ -156,8 +145,8 @@ def download_inline(html:str, file_path:str, external:bool):
                 if not extention:
                     print('Error downloading inline image: {}'.format(inline_image['src'])) # these errors will always be skipped
                     errors += 1
-                    break
-                if file_name in file_names:
+                    break   
+                if file_name in file_names: # auto rename duplicate image names
                     count = 1
                     while re.sub("\.","({}).".format(count), file_name) in file_names:
                         count += 1
@@ -173,33 +162,12 @@ def download_inline(html:str, file_path:str, external:bool):
     return  (content_soup, errors)          
 
 def extract_post(post:dict, info:dict):
-    """
-    post                    # dict      
-        ['title']           # str 
-        ['added']           # str, datetime object
-        ['edited']          # str, datetime object
-        ['id']              # str
-        ['user']            # str
-        ['published']       # str, datetime object
-        ['attachments']     # list of dict
-            ['name']        # str
-            ['path']        # str
-        ['file']            # dict
-            ['name']        # str
-            ['path']        # str 
-        ['content']         # str, html
-        ['shared_file']     # bool 
-        ['embed']:          # dict
-            ['description'] # str
-            ['subject']     # str
-            ['url']         # str
-    """
     errors = 0
     info['post_id'] = post['id']
     
     archived = []
-    if archive_flag and os.path.exists(archive_file):
-        with open(archive_file,'r') as f:
+    if args['archive'] and os.path.exists(args['archive']):
+        with open(args['archive'],'r') as f:
             archived = f.read().splitlines() 
                
     if not '{service} {user_id} {post_id}'.format(**info) in archived:
@@ -213,13 +181,13 @@ def extract_post(post:dict, info:dict):
             return        
     
         post_title = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post['title'] )).strip('.').strip() # removing illegal windows characters
-        post_path = os.path.join(download_location, info['service'], '{username} [{user_id}]'.format(**info), '[{}] [{post_id}] {}'.format(date, post_title, **info))
+        post_path = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info), '[{}] [{post_id}] {}'.format(date, post_title, **info))
         
         if post['content'] and not args['skip_content']:
             print('Saving content to content.html')
             result = download_inline(post['content'], post_path, args['force_inline'])
             errors += result[1]
-            if not simulation_flag:   
+            if not args['simulate']:   
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)                
                 with open(os.path.join(post_path, 'content.html'),'wb') as File:
@@ -233,15 +201,15 @@ def extract_post(post:dict, info:dict):
                  
         if post['embed'] and not args['skip_embeds']:
             print('Saving embeds to external_links.txt')
-            if not simulation_flag:
+            if not args['simulate']:
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)
                 with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
                     f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16"))
                            
         if not errors:
-            if archive_flag and not simulation_flag:
-                with open(archive_file,'a') as f:
+            if args['archive'] and not args['simulate']:
+                with open(args['archive'],'a') as f:
                     f.write('{service} {user_id} {post_id}\n'.format(**info))
             print('Completed downloading post: {title}'.format(**post)) 
             print('service: [{service}] user_id: [{user_id}] post_id: [{post_id}]\n{}'.format('-'*100, **info))
@@ -254,50 +222,12 @@ def extract_post(post:dict, info:dict):
     return    
 
 def extract_channel_post(post:dict, info:dict, channel:dict):
-    """
-    channel                     # dict
-        ['id']                  # str
-        ['name']                # str
-        
-    post                        # dict
-        ['added']               # str, datetime object
-        ['attachments']         # list of dict
-            ['isImage']         # str
-            ['name']            # str
-            ['path']            # str
-        ['author']              # dict   
-            ['avatar']          # str
-            ['discriminator']   # str
-            ['id']              # str
-            ['public_flags']    # int
-            ['username']        # str
-        ['channel']             # str
-        ['content']             # str, html
-        ['edited']              # ???
-        ['embeds']              # list of dict
-            ['description']     # str
-            ['thumbnail']       # dict
-                ['height']      # int
-                ['proxy_url']   # str
-                ['url']         # str
-                ['width']       # int
-            ['title']           # str
-            ['type']            # str
-            ['url']             # str
-        ['id']                  # str
-        ['mentions']            # list of dict
-            ['avatar']          # str
-            ['discriminator']   # str
-            ['id']              # str
-            ['public_flags']    # int
-            ['username']        # str    
-        ['published']           # str, datetime object
-        ['server]               # str
-    """
-    # format into html file    
+    # download images
+    # save links to file    
+    # format into html file
     return
 
-def get_discord_chanels(info:dict):
+def get_discord_channels(info:dict):
     api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
     api_responce = requests.get(api_call) 
     return json.loads(api_responce.text)
@@ -306,15 +236,15 @@ def get_posts(info:dict):
     if info['service'] == 'discord':
         print('Saving Discords is still being developed')
         return
-    channels = get_discord_chanels(dict(info)) if info['service'] == 'discord' else [0]
+    channels = get_discord_channels(dict(info)) if info['service'] == 'discord' else [0]
     for channel in channels:
         chunk = 0
         while True:
             api_call = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
             if info['post_id'] == None:
                 api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
-                if info['service'] == 'discord':
-                    api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
+            if info['service'] == 'discord':
+                api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
             api_responce = requests.get(api_call) 
             data = json.loads(api_responce.text)
             if not data:
@@ -335,7 +265,7 @@ def get_pfp_banner(info:dict):
         list = ['icon']
     elif info['service'] == 'discord':
         list = [] 
-    folder_path = os.path.join(download_location, info['service'], '{username} [{user_id}]'.format(**info))    
+    folder_path = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info))    
     for item in list:
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path):
@@ -352,14 +282,6 @@ def get_username(service:str, user_id:str):
     api_responce = requests.get(api_creators)
     data = json.loads(api_responce.text)
     for creator in data:
-        """
-        creator            # dict
-            ['id']         # str
-            ['indexed']    # str 
-            ['name']       # str
-            ['service']    # str
-            ['updated']    # str
-        """
         if creator['id'] == user_id and creator['service'] == service:
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
@@ -376,69 +298,38 @@ def extract_link(link:str):
         return True
     return False    
 
-def get_favorite_users():
-    try:
-        api_favorites = 'https://kemono.party/api/favorites?type=artist'
-        api_responce = requests.get(api_favorites, cookies=cookie_jar)
-        api_responce.raise_for_status()
-        data = json.loads(api_responce.text)
-        if not data:
-            print('You have no favorite users.')
-            return
-        for favorite_user in data:
-            """
-            favorite_user       # dict
-                ['faved_seq']   # int
-                ['id']          # str
-                ['indexed']     # str, datetime object
-                ['name']        # str
-                ['service']     # str
-                ['updated']     # str, datetime object
-            """
-            extract_link('https://kemono.party/{service}/user/{id}'.format(**favorite_user))
+def get_favorites(type:str):
+    if not args['cookies']:
+        print('You must pass a cookies.txt with your login session to use --favorite-users or --favorite-posts.')
         return
-    except:
-        print('Error getting favorite users. Session might have expired, re-log in to kemono.party and get a new cookies.txt')
+    api_favorites = 'https://kemono.party/api/favorites?type={}'.format(type)
+    api_responce = requests.get(api_favorites, cookies=cookie_jar)
+    if not api_responce.ok:
+        print('Error getting favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
-
-def get_favorite_posts():
-    try:
-        api_favorites = 'https://kemono.party/api/favorites?type=post'
-        api_responce = requests.get(api_favorites, cookies=cookie_jar)
-        api_responce.raise_for_status()
-        data = json.loads(api_responce.text)
-        if not data:
-            print('You have no favorite posts.')
-            return
-        for favorite_post in data:
-            """
-            favorite_post       # dict, same as post
-                ['faved_seq']   # int
-            """
-            extract_link('https://kemono.party/{service}/user/{user}/post/{id}'.format(**favorite_post))
+    data = json.loads(api_responce.text)
+    if not data:
+        print('You have no favorite {}s.'.format(type))
         return
-    except:
-        print('Error getting favorite posts. Session might have expired, re-log in to kemono.party and get a new cookies.txt')
-        return
-
+    for favorite in data:
+        if type == 'post':
+            extract_link('https://kemono.party/{service}/user/{user}/post/{id}'.format(**favorite))
+        elif type == 'artist':
+            extract_link('https://kemono.party/{service}/user/{id}'.format(**favorite))
+    return
+        
 def main():
     
     if args['favorite_users']:
-        if not args['cookies']:
-            print('You must pass a cookies.txt with your login session')
-        else:
-            get_favorite_users()
+        get_favorites('artist')
         
     if args['favorite_posts']:
-        if not args['cookies']:
-            print('You must pass a cookies.txt with your login session')
-        else:
-            get_favorite_posts()
+        get_favorites('post')
         
     if args['links']:
         links = args['links'].split(",")
         for link in links:
-            if not extract_link(link.lstrip()):
+            if not extract_link(link.lstrip().strip().split('?')[0]):
                 print('Error invalid link: {}'.format(link))
                 
     if args['fromfile']:
@@ -451,7 +342,7 @@ def main():
             print('Error {} is empty.'.format(args['fromfile'])), quit()       
         
         for link in links:
-            if not extract_link(link.strip()):
+            if not extract_link(link.lstrip().strip().split('?')[0]):
                 print('Error invalid link: {}'.format(link.strip()))
             
 if __name__ == '__main__':
