@@ -39,7 +39,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - External links will be placed in external_links.txt
 - Using any date option will not downlaod any gumroad posts because they have no dates
 - Using ```--ignore-erros``` posts with errors will not be archived
-- Using ```--max-filesize``` or ```--min-filesize``` will cause files that don't have ```content-length``` in their headers to not download. This manly includes external inline images, pfp, and banners.
+- Using ```--max-filesize``` or ```--min-filesize``` will cause files that don't have ```content-length``` in their headers to not download. This mainly includes external inline images, pfp, and banners.
 - When using ```--favorite-users``` or ```--favorite-posts``` you must get your cookies.txt after logging into kemono.party.
 
 ## Default File Output Format:
