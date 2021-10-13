@@ -413,7 +413,7 @@ def get_favorite_users():
             extract_link('https://kemono.party/{service}/user/{id}'.format(**favorite_user))
         return
     except:
-        print('Error getting favorite users. Session might have expired, login to kemono.party then get cookies.txt')
+        print('Error getting favorite users. Session might have expired, relog into kemono.party and get a new cookies.txt')
         return
 
 def get_favorite_posts():
@@ -433,16 +433,22 @@ def get_favorite_posts():
             extract_link('https://kemono.party/{service}/user/{user}/post/{id}'.format(**favorite_post))
         return
     except:
-        print('Error getting favorite posts. Session might have expired, login to kemono.party then get cookies.txt')
+        print('Error getting favorite posts. Session might have expired, relog into kemono.party and get a new cookies.txt')
         return
 
 def main():
     
     if args['favorite_users']:
-        get_favorite_users()
+        if not args['cookies']:
+            print('You must pass a cookies.txt with your login session')
+        else:
+            get_favorite_users()
         
     if args['favorite_posts']:
-        get_favorite_posts()
+        if not args['cookies']:
+            print('You must pass a cookies.txt with your login session')
+        else:
+            get_favorite_posts()
         
     if args['links']:
         links = args['links'].split(",")
