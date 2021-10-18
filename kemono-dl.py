@@ -10,11 +10,11 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 
-version = '2021.10.13.2'
+version = '2021.10.18'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
-ap.add_argument("--cookies", help="Set path to cookie.txt (REQUIRED TO DOWNLOAD FILES)")
+ap.add_argument("--cookies", required=True, help="Set path to cookie.txt (REQUIRED)")
 ap.add_argument("-l", "--links", help="Downloads user or post links seperated by a comma (,)")
 ap.add_argument("-f", "--fromfile", help="Download users and posts from a file seperated by a newline")
 ap.add_argument("-o", "--output", help="Set path to download posts")
@@ -31,7 +31,6 @@ ap.add_argument("--skip-content", action='store_true', help="Skips creating cont
 ap.add_argument("--skip-embeds", action='store_true', help="Skips creating external_links.txt")
 ap.add_argument("--favorite-users", action='store_true', help="Downloads all users saved in your favorites. (Requires --cookies)")
 ap.add_argument("--favorite-posts", action='store_true', help="Downloads all posts saved in your favorites. (Requires --cookies)")
-# ap.add_argument("-up", "--update", action='store_true', help="Redownloads any post that has been updated (ignores --archive)") # might need to create a log file of kemono.party last edit time
 args = vars(ap.parse_args())
 
 if args['version']: print(version), quit()
@@ -40,9 +39,7 @@ if args['cookies']:
     if not os.path.exists(args['cookies']):
         print('Invalid cookie location: {}'.format(args['cookies'])), quit()
     cookie_jar = MozillaCookieJar(args['cookies'])
-    cookie_jar.load()
-else:
-    args['simulate'] = True    
+    cookie_jar.load()   
 
 if args['output']:
     if not os.path.exists(args['output']):
@@ -51,17 +48,18 @@ else:
     args['output'] = os.path.join(os.getcwd(), 'Downloads') # default download location
 
 if args['archive']:
-    if not os.path.exists(os.path.dirname(os.path.abspath(args['archive']))):
+    if not os.path.exists(os.path.dirname(os.path.abspath(args['archive']))): # checks archive.txt location exists (file doesn't need to exist, will be created)
         print('Invalid archive location: {}'.format(os.path.dirname(os.path.abspath(args['archive'])))), quit()
 
-def valid_date(date:str):
-    try: datetime.datetime.strptime(date, r'%Y%m%d')  
-    except: print("Error incorrect data format, should be YYYYMMDD"), quit()
-    return True   
-     
-if args['date']: valid_date(args['date'])
-if args['datebefore']: valid_date(args['datebefore'])
-if args['dateafter']: valid_date(args['dateafter'])
+def valid_date(date:str, name:str):
+    try: 
+        return datetime.datetime.strptime(date, r'%Y%m%d')  
+    except: 
+        print("Error incorrect data format for {}, should be YYYYMMDD".format(name)), quit()   
+    
+if args['date']: args['date'] = valid_date(args['date'], 'date')
+if args['datebefore']: args['datebefore'] = valid_date(args['datebefore'], 'datebefore')
+if args['dateafter']: args['dateafter'] = valid_date(args['dateafter'], 'dateafter')
 
 def valid_size(size:str):
     giga = re.search('([0-9]+)GB', size)
@@ -76,14 +74,8 @@ def valid_size(size:str):
 
 if args['max_filesize']: args['max_filesize'] = valid_size(args['max_filesize'])
 if args['min_filesize']: args['min_filesize'] = valid_size(args['min_filesize'])
-    
-def check_date(date:str):
-    if not args['date'] and not args['datebefore'] and not args['dateafter']: return True
-    if date == '00000000': return False
-    if not args['datebefore']: args['datebefore'] = '0'
-    if not args['dateafter']: args['dateafter'] = 'inf'
-    if not args['date']: args['date'] = '0'
-    return True if int(date) == int(args['date']) or int(date) <= int(args['datebefore']) or int(date) >= float(args['dateafter']) else False
+
+# end of arguments
     
 def check_size(size:int):
     if not args['min_filesize'] and not args['max_filesize']: return True
@@ -93,8 +85,10 @@ def check_size(size:int):
     return True if size <= float(args['max_filesize']) and size >= int(args['min_filesize']) else False    
            
 def download_file(file_name:str, url:str, file_path:str):
-    file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name
-    print('Downloading: {}'.format(file_name))
+    file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name (assume no file names are greater than 255)
+    # file_name_temp = re.sub('[\\/:\"*?<>|]+','',file_name).rsplit('.',1) # remove illegal windows characters from file name
+    # file_name = file_name_temp[0][:255-len(file_name_temp[1])-1] + '.' + file_name_temp[1] # shorten file name length for windows    
+    print('Downloading: {}'.format(file_name))  
     with requests.get(url,stream=True,cookies=cookie_jar) as r:
         if not r.ok:
             print('{} Error downloading: {}'.format(r.status_code, url))
@@ -108,11 +102,11 @@ def download_file(file_name:str, url:str, file_path:str):
             return True
         if args['simulate']:
             if total:
-                print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1)))
+                print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1))) # fake download bar with correct filesize
             return True
         if not os.path.exists(file_path):
             os.makedirs(file_path)
-        with open(os.path.join(file_path, file_name), 'wb') as f:
+        with open(os.path.join(file_path, file_name), 'wb') as f: # if I removed the download bar this would be a bit cleaner
             start = time.time()
             for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
                 downloaded += len(chunk)
@@ -161,30 +155,79 @@ def download_inline(html:str, file_path:str, external:bool):
             errors += 1
     return  (content_soup, errors)          
 
-def extract_post(post:dict, info:dict):
-    errors = 0
-    info['post_id'] = post['id']
-    
-    archived = []
-    if args['archive'] and os.path.exists(args['archive']):
-        with open(args['archive'],'r') as f:
-            archived = f.read().splitlines() 
-               
-    if not '{service} {user_id} {post_id}'.format(**info) in archived:
+def save_comments(post:dict, post_path:str):
+    # no api method to get comments so using from html (not future proof) (calls site just to get comments)
+    page_html = requests.get('https://kemono.party/{service}/user/{user}/post/{id}'.format(**post), allow_redirects=True, cookies=cookie_jar)
+    page_soup = BeautifulSoup(page_html.text, 'html.parser')                                   
+    comment_html = page_soup.find("div", {"class": "post__comments"})
+    if comment_html:
+        not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
+        if not not_supported:
+            print('Saving comments to comments.txt')
+            if not args['simulate']:
+                if not os.path.exists(post_path):
+                    os.makedirs(post_path)
+                with open(post_path + os.path.sep + 'comments.html','wb') as File:
+                    File.write(comment_html.prettify().encode("utf-16"))    
+    return
+
+def check_archived(post:dict):
+    if args['archive']:
+        if os.path.exists(args['archive']):
+            with open(args['archive'],'r') as f:
+                archived = f.read().splitlines()
+            try:    
+                if '/{service}/user/{user}/post/{id}'.format(**post) in archived:
+                    print('Already archived post: {title}'.format(**post)) 
+                    print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100,**post))
+                    return False
+            except:
+                if '/discord/server/{server}/channel/{id}'.format(**post) in archived:
+                    print('Already archived post: {channel}'.format(**post)) 
+                    print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
+                    return False            
+        return True
+    return True
         
-        try: date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(r'%Y%m%d')   
-        except: date = '00000000'
+def check_date(date):
+    if not args['date'] and not args['datebefore'] and not args['dateafter']: return True
+    if date == datetime.datetime.min: return False
+    if not args['datebefore']: args['datebefore'] = datetime.datetime.min
+    if not args['dateafter']: args['dateafter'] = datetime.datetime.max
+    if not args['date']: args['date'] = datetime.datetime.min
+    return True if date == args['date'] or date <= args['datebefore'] or date >= args['dateafter'] else False
+
+def save_post(post:dict, info:dict):
+
+    if check_archived(dict(post)):
+        
+        try: 
+            date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
+            date_string = date.strftime(r'%Y%m%d')   
+        except: 
+            date = datetime.datetime.min
+            date_string = '00000000'        
         
         if not check_date(date):
-            print('Date out of range {} for post: {title}'.format(date, **post)) 
-            print('service: [{service}] user_id: [{user_id}] post_id: [{post_id}]\n{}'.format('-'*100, **info))
-            return        
-    
-        post_title = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post['title'] )).strip('.').strip() # removing illegal windows characters
-        post_path = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info), '[{}] [{post_id}] {}'.format(date, post_title, **info))
+            print('Date out of range {} for post: {title}'.format(date_string, **post)) 
+            print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
+            return
         
+        errors = 0
+        
+        post_title = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post['title'] )).strip('.').strip() # removing illegal windows characters
+        post_folder = '[{}] [{id}] {}'.format(date_string, post_title, **post)[:248].strip() # shorten folder name length for windows 
+        post_path = os.path.join(info['path'], post_folder)
+        
+        for item in post['attachments']:
+            errors += 0 if download_file(item['name'], 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 1
+                
+        if post['file']:
+            errors += 0 if download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(**post['file']), post_path) else 1
+
         if post['content'] and not args['skip_content']:
             print('Saving content to content.html')
+            # extract_external_links()
             result = download_inline(post['content'], post_path, args['force_inline'])
             errors += result[1]
             if not args['simulate']:   
@@ -193,49 +236,57 @@ def extract_post(post:dict, info:dict):
                 with open(os.path.join(post_path, 'content.html'),'wb') as File:
                     File.write(result[0].prettify().encode("utf-16"))
                 
-        for item in post['attachments']:
-            errors += 1 if not download_file(item['name'], 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 0
-                
-        if post['file']:
-            errors += 1 if not download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(**post['file']), post_path) else 0
-                 
         if post['embed'] and not args['skip_embeds']:
             print('Saving embeds to external_links.txt')
             if not args['simulate']:
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)
+                # download_using_ytdl()
                 with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
-                    f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16"))
-                           
+                    f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16")) 
+        
+        save_comments(dict(post), post_path)
+                    
         if not errors:
-            if args['archive'] and not args['simulate']:
-                with open(args['archive'],'a') as f:
-                    f.write('{service} {user_id} {post_id}\n'.format(**info))
+            if not args['simulate']:
+                with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
+                    json.dump(post, f)           
+                if args['archive']:
+                    with open(args['archive'],'a') as f:
+                        f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
             print('Completed downloading post: {title}'.format(**post)) 
-            print('service: [{service}] user_id: [{user_id}] post_id: [{post_id}]\n{}'.format('-'*100, **info))
+            print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
             return    
         print('{} Error(s) encountered downloading post: {title}'.format(errors, **post)) 
-        print('service: [{service}] user_id: [{user_id}] post_id: [{post_id}]\n{}'.format('-'*100, **info))
-        return
-    print('Already archived post: {title}'.format(**post)) 
-    print('service: [{service}] user_id: [{user_id}] post_id: [{post_id}]\n{}'.format('-'*100,**info))
-    return    
+        print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
+        return  
 
-def extract_channel_post(post:dict, info:dict, channel:dict):
-    # download images
-    # save links to file    
-    # format into html file
-    return
+def save_channel(post:dict, info:dict, channel:dict):
+    # im not sure how to format this!
+    if check_archived(dict(post)):
+        
+        errors = 0
+        # download images
+        # save links to file    
+        # format into html file
+        if not errors:           
+            if args['archive']:
+                with open(args['archive'],'a') as f:
+                    f.write('/discord/server/{server}/channel/{id}'.format(**post))
+            print('Completed downloading post: {channel}'.format(**post)) 
+            print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
+            return    
+        print('{} Error(s) encountered downloading post: {channel}'.format(errors, **post)) 
+        print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
+        return 
 
 def get_discord_channels(info:dict):
     api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
-    api_responce = requests.get(api_call) 
+    api_responce = requests.get(api_call)
+    api_responce.raise_for_status() # should only happen if site is down
     return json.loads(api_responce.text)
 
-def get_posts(info:dict):
-    if info['service'] == 'discord':
-        print('Saving Discords is still being developed')
-        return
+def get_posts_channels(info:dict):
     channels = get_discord_channels(dict(info)) if info['service'] == 'discord' else [0]
     for channel in channels:
         chunk = 0
@@ -245,43 +296,39 @@ def get_posts(info:dict):
                 api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
             if info['service'] == 'discord':
                 api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
-            api_responce = requests.get(api_call) 
+            api_responce = requests.get(api_call)
+            api_responce.raise_for_status() # should only happen if site is down
             data = json.loads(api_responce.text)
             if not data:
                 break
             for post in data:
                 if info['service'] == 'discord':
-                    extract_channel_post(dict(post), dict(info), dict(channel))
+                    save_channel(dict(post), dict(info), dict(channel))
                 else:
-                    extract_post(dict(post), dict(info))
+                    save_post(dict(post), dict(info))
             if not info['post_id'] == None and not info['service'] == 'discord':
                 break
             chunk += 10 if info['service'] == 'discord' else 25    
     return
 
-def get_pfp_banner(info:dict):
-    list = ['icon', 'banner']
-    if info['service'] == 'gumroad': # gumroad does not have banners and when calling /baners/ you just get the icon again
-        list = ['icon']
-    elif info['service'] == 'discord':
-        list = [] 
-    folder_path = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info))    
-    for item in list:
-        file_name = '{username} [{user_id}] {}'.format(item, **info)
-        if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info).format(**info), folder_path):
-            try:
-                with Image.open(os.path.join(folder_path, file_name)) as image:
-                    image.save(os.path.join(folder_path, '{}.{}'.format(file_name, image.format.lower())), format=image.format)
-            except: pass
-            if os.path.exists(os.path.join(folder_path, file_name)):
-                os.remove(os.path.join(folder_path, file_name))
-    return
+def get_icon_banner(info:dict):
+    if info['post_id'] == None and not info['service'] == 'discord':
+        for item in ['icon','banner']: 
+            file_name = '{username} [{user_id}] {}'.format(item, **info)
+            if download_file(file_name, 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info), info['path']):
+                try:
+                    with Image.open(os.path.join(info['path'], file_name)) as image:
+                        image.save(os.path.join(info['path'], '{}.{}'.format(file_name, image.format.lower())), format=image.format)
+                except: pass
+                if os.path.exists(os.path.join(info['path'], file_name)):
+                    os.remove(os.path.join(info['path'], file_name))
+    return   
 
 def get_username(service:str, user_id:str):
-    api_creators = 'https://kemono.party/api/creators/'
-    api_responce = requests.get(api_creators)
-    data = json.loads(api_responce.text)
-    for creator in data:
+    api_call = 'https://kemono.party/api/creators/'
+    api_responce = requests.get(api_call)
+    api_responce.raise_for_status() # should only happen if site is down
+    for creator in json.loads(api_responce.text):
         if creator['id'] == user_id and creator['service'] == service:
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
@@ -292,18 +339,18 @@ def extract_link(link:str):
                 'user_id':found.group(3),
                 'post_id':found.group(5),
                 'username': get_username(found.group(1), found.group(3))}
-        if info['post_id'] == None:
-            get_pfp_banner(dict(info))
-        get_posts(dict(info))
+        info['path'] = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info))
+        if info['service'] == 'discord':
+            print('Saving Discords is still being developed')
+            return
+        get_icon_banner(dict(info))
+        get_posts_channels(dict(info))
         return True
     return False    
 
 def get_favorites(type:str):
-    if not args['cookies']:
-        print('You must pass a cookies.txt with your login session to use --favorite-users or --favorite-posts.')
-        return
-    api_favorites = 'https://kemono.party/api/favorites?type={}'.format(type)
-    api_responce = requests.get(api_favorites, cookies=cookie_jar)
+    api_call = 'https://kemono.party/api/favorites?type={}'.format(type)
+    api_responce = requests.get(api_call, cookies=cookie_jar)
     if not api_responce.ok:
         print('Error getting favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
