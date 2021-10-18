@@ -7,14 +7,14 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 3. Then install requirements with  `pip install -r requirements.txt`
 4. Get a cookie.txt file from kemono.party 
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
-   - A cookie.txt file is needed to download files 
+   - A cookie.txt file is required to use downloader.
 5. Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
 
 
 ## Options:
 - `-h, --help` Prints help text then exits
 - `--version` Displays the current version then exits
-- `--cookies FILE` Set path to cookie.txt (**REQUIRED TO DOWNLOAD FILES**)
+- `--cookies FILE` Set path to cookie.txt (**REQUIRED**)
 - `-l, --links LINK(s)` Downloads user or post links seperated by a comma (,)
 - `-f, --fromfile FILE` Download users and posts from a file seperated by a newline
 - `-o, --output FOLDER` Set path to download posts
@@ -57,6 +57,7 @@ CWD
                 ├── inline
                 │   └── image.ext
                 ├── content.html
+                ├── comments.html
                 ├── external_links.txt
                 └── file.ext
 ```
@@ -81,7 +82,6 @@ python kemono-dl.py --cookies "cookie.txt" -i -l https://kemono.party/SERVICE/us
 - [ ] Allow file naming structure to be changed in command line
 - [ ] Allow file path structure to be changed in command line
 - [ ] Add Discord service (in progress)
-- [ ] Download comments using API (if possible, might not be)
 
 ## Keep in mind:
 - Using this might get you IP banned from kemono party.
