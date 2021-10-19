@@ -18,7 +18,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - `-l, --links LINK(s)` Downloads user or post links seperated by a comma (,)
 - `-f, --fromfile FILE` Download users and posts from a file seperated by a newline
 - `-o, --output FOLDER` Set path to download posts
-- `-a, --archive FILE` Downloads only posts that are not in provided archive file 
+- `-a, --archive FILE` Downloads only posts that are not in provided archive file. 
 - `-i, --ignore-errors` Continue to download post(s) when an error occurs
 - `-s, --simulate` Do not download users or posts and do not write to disk
 - `--date YYYYMMDD` Only download posts from this date. (Format: YYYYMMDD)
@@ -41,6 +41,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - Using ```--ignore-erros``` posts with errors will not be archived
 - Using ```--max-filesize``` or ```--min-filesize``` will cause files that don't have ```content-length``` in their headers to not download. This mainly includes external inline images, pfp, and banners.
 - When using ```--favorite-users``` or ```--favorite-posts``` you must get your cookies.txt after logging into kemono.party.
+- If a post encounters an error it will not be recorded in the archive file when using ```--archive archive.txt```
 
 ## Default File Output Format:
 ```
