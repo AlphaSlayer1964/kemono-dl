@@ -31,6 +31,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - `--skip-embeds` Skips creating external_links.txt
 - `--favorite-users` Downloads all users saved in your favorites. (Requires --cookies)
 - `--favorite-posts` Downloads all posts saved in your favorites. (Requires --cookies)
+- `--force-indexing` Adds an indexing value to the attachment file names to preserve ordering
 
 ## Notes:
 - If ```--cookie cookie.txt``` is not passed script will run as if ```--simulation``` was passed
