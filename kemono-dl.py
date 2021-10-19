@@ -10,7 +10,7 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 
-version = '2021.10.18'
+version = '2021.10.19'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -31,6 +31,7 @@ ap.add_argument("--skip-content", action='store_true', help="Skips creating cont
 ap.add_argument("--skip-embeds", action='store_true', help="Skips creating external_links.txt")
 ap.add_argument("--favorite-users", action='store_true', help="Downloads all users saved in your favorites. (Requires --cookies)")
 ap.add_argument("--favorite-posts", action='store_true', help="Downloads all posts saved in your favorites. (Requires --cookies)")
+ap.add_argument("--force-indexing", action='store_true', help="Adds an indexing value to the attachment file names to preserve ordering")
 args = vars(ap.parse_args())
 
 if args['version']: print(version), quit()
@@ -219,8 +220,17 @@ def save_post(post:dict, info:dict):
         post_folder = '[{}] [{id}] {}'.format(date_string, post_title, **post)[:248].strip() # shorten folder name length for windows 
         post_path = os.path.join(info['path'], post_folder)
         
-        for item in post['attachments']:
-            errors += 0 if download_file(item['name'], 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 1
+        for index, item in enumerate(post['attachments']):
+            if args['force_indexing']:
+                if len(post['attachments']) < 10:
+                    file_name = '[{:01d}]_{}'.format(index+1, item['name'])
+                elif len(post['attachments']) < 100:
+                    file_name = '[{:02d}]_{}'.format(index+1, item['name'])
+                elif len(post['attachments']) >= 100:
+                    file_name = '[{:03d}]_{}'.format(index+1, item['name'])
+            else:
+                file_name = '{}'.format(item['name'])
+            errors += 0 if download_file(file_name, 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 1
                 
         if post['file']:
             errors += 0 if download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(**post['file']), post_path) else 1
@@ -282,9 +292,9 @@ def save_channel(post:dict, info:dict, channel:dict):
 
 def get_discord_channels(info:dict):
     api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
-    api_responce = requests.get(api_call)
-    api_responce.raise_for_status() # should only happen if site is down
-    return json.loads(api_responce.text)
+    api_response = requests.get(api_call)
+    api_response.raise_for_status() # should only happen if site is down
+    return json.loads(api_response.text)
 
 def get_posts_channels(info:dict):
     channels = get_discord_channels(dict(info)) if info['service'] == 'discord' else [0]
@@ -296,9 +306,9 @@ def get_posts_channels(info:dict):
                 api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
             if info['service'] == 'discord':
                 api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
-            api_responce = requests.get(api_call)
-            api_responce.raise_for_status() # should only happen if site is down
-            data = json.loads(api_responce.text)
+            api_response = requests.get(api_call)
+            api_response.raise_for_status() # should only happen if site is down
+            data = json.loads(api_response.text)
             if not data:
                 break
             for post in data:
@@ -326,9 +336,9 @@ def get_icon_banner(info:dict):
 
 def get_username(service:str, user_id:str):
     api_call = 'https://kemono.party/api/creators/'
-    api_responce = requests.get(api_call)
-    api_responce.raise_for_status() # should only happen if site is down
-    for creator in json.loads(api_responce.text):
+    api_response = requests.get(api_call)
+    api_response.raise_for_status() # should only happen if site is down
+    for creator in json.loads(api_response.text):
         if creator['id'] == user_id and creator['service'] == service:
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
 
@@ -350,11 +360,11 @@ def extract_link(link:str):
 
 def get_favorites(type:str):
     api_call = 'https://kemono.party/api/favorites?type={}'.format(type)
-    api_responce = requests.get(api_call, cookies=cookie_jar)
-    if not api_responce.ok:
+    api_response = requests.get(api_call, cookies=cookie_jar)
+    if not api_response.ok:
         print('Error getting favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
-    data = json.loads(api_responce.text)
+    data = json.loads(api_response.text)
     if not data:
         print('You have no favorite {}s.'.format(type))
         return
