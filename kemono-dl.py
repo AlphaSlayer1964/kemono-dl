@@ -167,7 +167,7 @@ def save_comments(post:dict, post_path:str):
     if comment_html:
         not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
         if not not_supported:
-            print('Saving comments to comments.txt')
+            print('Saving comments to comments.html')
             if not args['simulate']:
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)
