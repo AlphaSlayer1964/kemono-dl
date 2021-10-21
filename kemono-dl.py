@@ -10,7 +10,7 @@ from PIL import Image
 from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 
-version = '2021.10.19'
+version = '2021.10.21'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -89,36 +89,39 @@ def download_file(file_name:str, url:str, file_path:str):
     file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name (assume no file names are greater than 255)
     # file_name_temp = re.sub('[\\/:\"*?<>|]+','',file_name).rsplit('.',1) # remove illegal windows characters from file name
     # file_name = file_name_temp[0][:255-len(file_name_temp[1])-1] + '.' + file_name_temp[1] # shorten file name length for windows    
-    print('Downloading: {}'.format(file_name))  
-    with requests.get(url,stream=True,cookies=cookie_jar) as r:
-        if not r.ok:
-            print('{} Error downloading: {}'.format(r.status_code, url))
-            if args['ignore_errors']:
-                return False
-            quit()
-        downloaded = 0
-        total = int(r.headers.get('content-length', '0'))
-        if not check_size(total):
-            print('File size out of range: {} bytes'.format(total))
-            return True
-        if args['simulate']:
-            if total:
-                print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1))) # fake download bar with correct filesize
-            return True
-        if not os.path.exists(file_path):
-            os.makedirs(file_path)
-        with open(os.path.join(file_path, file_name), 'wb') as f: # if I removed the download bar this would be a bit cleaner
-            start = time.time()
-            for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
-                downloaded += len(chunk)
-                f.write(chunk)
+    print('Downloading: {}'.format(file_name))
+    try:  
+        with requests.get(url,stream=True,cookies=cookie_jar) as r:
+            r.raise_for_status()
+            downloaded = 0
+            total = int(r.headers.get('content-length', '0'))
+            if not check_size(total):
+                print('File size out of range: {} bytes'.format(total))
+                return True
+            if args['simulate']:
                 if total:
-                    done = int(50*downloaded/total)
-                    sys.stdout.write('\r[{}{}] {}/{} MB, {} Mbps'.format('='*done, ' '*(50-done), round(downloaded/1000000,1), round(total/1000000,1), round(downloaded//(time.time() - start) / 100000,1)))
-                    sys.stdout.flush() 
-        if total:
-            sys.stdout.write('\n')
-    return True
+                    print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1))) # fake download bar with correct filesize
+                return True
+            if not os.path.exists(file_path):
+                os.makedirs(file_path)
+            with open(os.path.join(file_path, file_name), 'wb') as f: # if I removed the download bar this would be a bit cleaner
+                start = time.time()
+                for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
+                    downloaded += len(chunk)
+                    f.write(chunk)
+                    if total:
+                        done = int(50*downloaded/total)
+                        sys.stdout.write('\r[{}{}] {}/{} MB, {} Mbps'.format('='*done, ' '*(50-done), round(downloaded/1000000,1), round(total/1000000,1), round(downloaded//(time.time() - start) / 100000,1)))
+                        sys.stdout.flush() 
+            if total:
+                sys.stdout.write('\n')
+        return True
+    except Exception as e:
+        print('Error downloading: {}'.format(url))
+        print(e)
+        if args['ignore_errors']:
+            return False
+        quit()        
 
 def download_inline(html:str, file_path:str, external:bool):
     errors = 0
@@ -157,7 +160,7 @@ def download_inline(html:str, file_path:str, external:bool):
     return  (content_soup, errors)          
 
 def save_comments(post:dict, post_path:str):
-    # no api method to get comments so using from html (not future proof) (calls site just to get comments)
+    # no api method to get comments so using from html (not future proof)
     page_html = requests.get('https://kemono.party/{service}/user/{user}/post/{id}'.format(**post), allow_redirects=True, cookies=cookie_jar)
     page_soup = BeautifulSoup(page_html.text, 'html.parser')                                   
     comment_html = page_soup.find("div", {"class": "post__comments"})
@@ -168,8 +171,8 @@ def save_comments(post:dict, post_path:str):
             if not args['simulate']:
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)
-                with open(post_path + os.path.sep + 'comments.html','wb') as File:
-                    File.write(comment_html.prettify().encode("utf-16"))    
+                with open(os.path.join(post_path, 'comments.html'),'wb') as f:
+                    f.write(comment_html.prettify().encode("utf-16"))    
     return
 
 def check_archived(post:dict):
@@ -179,15 +182,10 @@ def check_archived(post:dict):
                 archived = f.read().splitlines()
             try:    
                 if '/{service}/user/{user}/post/{id}'.format(**post) in archived:
-                    print('Already archived post: {title}'.format(**post)) 
-                    print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100,**post))
                     return False
             except:
                 if '/discord/server/{server}/channel/{id}'.format(**post) in archived:
-                    print('Already archived post: {channel}'.format(**post)) 
-                    print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
                     return False            
-        return True
     return True
         
 def check_date(date):
@@ -221,15 +219,14 @@ def save_post(post:dict, info:dict):
         post_path = os.path.join(info['path'], post_folder)
         
         for index, item in enumerate(post['attachments']):
+            file_name = '{}'.format(item['name'])
             if args['force_indexing']:
                 if len(post['attachments']) < 10:
                     file_name = '[{:01d}]_{}'.format(index+1, item['name'])
                 elif len(post['attachments']) < 100:
                     file_name = '[{:02d}]_{}'.format(index+1, item['name'])
-                elif len(post['attachments']) >= 100:
+                else:
                     file_name = '[{:03d}]_{}'.format(index+1, item['name'])
-            else:
-                file_name = '{}'.format(item['name'])
             errors += 0 if download_file(file_name, 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 1
                 
         if post['file']:
@@ -269,7 +266,10 @@ def save_post(post:dict, info:dict):
             return    
         print('{} Error(s) encountered downloading post: {title}'.format(errors, **post)) 
         print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
-        return  
+        return
+    print('Already archived post: {title}'.format(**post)) 
+    print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100,**post))
+    return 
 
 def save_channel(post:dict, info:dict, channel:dict):
     # im not sure how to format this!
@@ -288,7 +288,10 @@ def save_channel(post:dict, info:dict, channel:dict):
             return    
         print('{} Error(s) encountered downloading post: {channel}'.format(errors, **post)) 
         print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
-        return 
+        return
+    print('Already archived post: {channel}'.format(**post)) 
+    print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
+    return
 
 def get_discord_channels(info:dict):
     api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
