@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 import yt_dlp
 
-version = '2021.10.23'
+version = '2021.10.21'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -175,10 +175,13 @@ def save_content_links(html:str, post_path:str, download:bool):
     content_soup = BeautifulSoup(html, 'html.parser')
     links = content_soup.find_all('a', href=True)
     if links:
-        with open(os.path.join(post_path, 'content_links.txt'),'a') as f:
-            for link in links:
-                f.write(link['href'] + '\n')
+        if args['force_external']:
+            print('Saving external links in content to content_links.txt')        
+            with open(os.path.join(post_path, 'content_links.txt'),'a') as f:
+                for link in links:
+                    f.write(link['href'] + '\n')
         if download:
+            print('Trying to download content links with yt_dlp')
             for link in links:
                 download_yt_dlp(os.path.join(post_path, 'external files'), link['href'])
     return
@@ -268,9 +271,7 @@ def save_post(post:dict, info:dict):
                     os.makedirs(post_path)                
                 with open(os.path.join(post_path, 'content.html'),'wb') as File:
                     File.write(result[0].prettify().encode("utf-16"))
-                if args['force_external']:
-                    print('Trying to download content links with yt_dlp')
-                    save_content_links(post['content'], post_path, args['force_yt_dlp'])
+                save_content_links(post['content'], post_path, args['force_yt_dlp'])
                 
         if post['embed'] and not args['skip_embeds']:
             print('Saving embeds to embeds.txt')
