@@ -25,13 +25,17 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - `--datebefore YYYYMMDD` Only download posts from this date and before. (Format: YYYYMMDD)
 - `--dateafter YYYYMMDD` Only download posts from this date and after. (Format: YYYYMMDD)
 - `--force-inline` Force download all external inline images found in post content. (experimental)
+- `--force-external` Save all external links in content to a text file
 - `--min-filesize #MB` Do not download files smaller than this. (Format: 1GB, 1MB, 1KB, 1B)
 - `--max-filesize #MB` Do not download files larger than this. (Format: 1GB, 1MB, 1KB, 1B)
 - `--skip-content` Skips creating content.html
 - `--skip-embeds` Skips creating external_links.txt
+- - `--skip-comments` Skips creating comments.html
 - `--favorite-users` Downloads all users saved in your favorites. (Requires --cookies)
 - `--favorite-posts` Downloads all posts saved in your favorites. (Requires --cookies)
 - `--force-indexing` Adds an indexing value to the attachment file names to preserve ordering
+- `--yt-dlp` Tries to Download embeds with yt-dlp. (experimental)
+- `--force-yt-dlp` Tries to Download links in content with yt-dlp. (experimental)
 
 ## Notes:
 - If ```--cookie cookie.txt``` is not passed script will run as if ```--simulation``` was passed
@@ -43,6 +47,8 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - Using ```--max-filesize``` or ```--min-filesize``` will cause files that don't have ```content-length``` in their headers to not download. This mainly includes external inline images, pfp, and banners.
 - When using ```--favorite-users``` or ```--favorite-posts``` you must get your cookies.txt after logging into kemono.party.
 - If a post encounters an error it will not be recorded in the archive file when using ```--archive archive.txt```
+- You may need to install ffmpeg for yt-dlp to work
+- Embeds and external links in content will be saved to the folder `external files`
 
 ## Default File Output Format:
 ```
@@ -54,14 +60,18 @@ CWD
             ├── {username} [{user_id}] icon.ext
             ├── {username} [{user_id}] banner.ext
             └── [{date}] [{post_id}] {post_title}
+                ├── external files
+                │   └── video.mp4
                 ├── attachments
                 │   └── attachment.ext
                 ├── inline
                 │   └── image.ext
                 ├── content.html
                 ├── comments.html
+                ├── embeds.txt
                 ├── external_links.txt
-                └── file.ext
+                ├── file.ext
+                └── {post_id}.json
 ```
 
 ## Examples:
