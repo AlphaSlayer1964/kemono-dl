@@ -30,7 +30,7 @@ This is a simple kemono.party downloader using python and kemono.party's API.
 - `--max-filesize #MB` Do not download files larger than this. (Format: 1GB, 1MB, 1KB, 1B)
 - `--skip-content` Skips creating content.html
 - `--skip-embeds` Skips creating external_links.txt
-- - `--skip-comments` Skips creating comments.html
+- `--skip-comments` Skips creating comments.html
 - `--favorite-users` Downloads all users saved in your favorites. (Requires --cookies)
 - `--favorite-posts` Downloads all posts saved in your favorites. (Requires --cookies)
 - `--force-indexing` Adds an indexing value to the attachment file names to preserve ordering
