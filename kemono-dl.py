@@ -9,8 +9,9 @@ import json
 from PIL import Image
 from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
+import yt_dlp
 
-version = '2021.10.21'
+version = '2021.10.23'
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
@@ -25,13 +26,17 @@ ap.add_argument("--date", help="Only download posts from this date. (Format: YYY
 ap.add_argument("--datebefore", help="Only download posts from this date and before. (Format: YYYYMMDD)")
 ap.add_argument("--dateafter", help="Only download posts from this date and after. (Format: YYYYMMDD)")
 ap.add_argument("--force-inline", action='store_true', help="Force download all external inline images found in post content. (experimental)")
+ap.add_argument("--force-external", action='store_true', help="Save all external links in content to a text file")
 ap.add_argument("--min-filesize", help="Do not download files smaller than this. (Format: 1GB, 1MB, 1KB, 1B)")
 ap.add_argument("--max-filesize", help="Do not download files larger than this. (Format: 1GB, 1MB, 1KB, 1B)")
 ap.add_argument("--skip-content", action='store_true', help="Skips creating content.html")
-ap.add_argument("--skip-embeds", action='store_true', help="Skips creating external_links.txt")
+ap.add_argument("--skip-embeds", action='store_true', help="Skips creating embeds.txt")
 ap.add_argument("--favorite-users", action='store_true', help="Downloads all users saved in your favorites. (Requires --cookies)")
 ap.add_argument("--favorite-posts", action='store_true', help="Downloads all posts saved in your favorites. (Requires --cookies)")
 ap.add_argument("--force-indexing", action='store_true', help="Adds an indexing value to the attachment file names to preserve ordering")
+ap.add_argument("--yt-dlp", action='store_true', help="Tries to Download embeds with yt-dlp. (experimental)")
+ap.add_argument("--force-yt-dlp", action='store_true', help="Tries to Download links in content with yt-dlp. (experimental)")
+ap.add_argument("--skip-comments", action='store_true', help="Skips creating comments.html")
 args = vars(ap.parse_args())
 
 if args['version']: print(version), quit()
@@ -76,7 +81,16 @@ def valid_size(size:str):
 if args['max_filesize']: args['max_filesize'] = valid_size(args['max_filesize'])
 if args['min_filesize']: args['min_filesize'] = valid_size(args['min_filesize'])
 
-# end of arguments
+def download_yt_dlp(path:str, link:str):
+    ydl_opts = {
+        "format" :"best",
+        "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
+        "noplaylist" : True,
+        "merge_output_format" : "mp4",
+        "ignoreerrors" : True
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([link])
     
 def check_size(size:int):
     if not args['min_filesize'] and not args['max_filesize']: return True
@@ -86,9 +100,7 @@ def check_size(size:int):
     return True if size <= float(args['max_filesize']) and size >= int(args['min_filesize']) else False    
            
 def download_file(file_name:str, url:str, file_path:str):
-    file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name (assume no file names are greater than 255)
-    # file_name_temp = re.sub('[\\/:\"*?<>|]+','',file_name).rsplit('.',1) # remove illegal windows characters from file name
-    # file_name = file_name_temp[0][:255-len(file_name_temp[1])-1] + '.' + file_name_temp[1] # shorten file name length for windows    
+    file_name = re.sub('[\\/:\"*?<>|]+','',file_name) # remove illegal windows characters from file name (assume no file names are greater than 255)    
     print('Downloading: {}'.format(file_name))
     try:  
         with requests.get(url,stream=True,cookies=cookie_jar) as r:
@@ -136,7 +148,7 @@ def download_inline(html:str, file_path:str, external:bool):
         else:
             if external: # can't think of a better way of doing this!
                 Content_Disposition = re.findall('filename="(.+)"', requests.head(inline_image['src'],allow_redirects=True).headers.get('Content-Disposition', ''))
-                file_name = link.split('?')[0].split('/')[-1]
+                file_name = inline_image['src'].split('?')[0].split('/')[-1]
                 if Content_Disposition:
                     file_name = Content_Disposition[0]
                 extention = re.search('([^.]+)\.([^*]+)', file_name)
@@ -158,6 +170,18 @@ def download_inline(html:str, file_path:str, external:bool):
         else:
             errors += 1
     return  (content_soup, errors)          
+
+def save_content_links(html:str, post_path:str, download:bool):
+    content_soup = BeautifulSoup(html, 'html.parser')
+    links = content_soup.find_all('a', href=True)
+    if links:
+        with open(os.path.join(post_path, 'content_links.txt'),'a') as f:
+            for link in links:
+                f.write(link['href'] + '\n')
+        if download:
+            for link in links:
+                download_yt_dlp(os.path.join(post_path, 'external files'), link['href'])
+    return
 
 def save_comments(post:dict, post_path:str):
     # no api method to get comments so using from html (not future proof)
@@ -198,6 +222,9 @@ def check_date(date):
 
 def save_post(post:dict, info:dict):
 
+    print('Downloading post: {title}'.format(**post))
+    print('service: [{service}] user_id: [{user}] post_id: [{id}]'.format(**post))
+    
     if check_archived(dict(post)):
         
         try: 
@@ -208,8 +235,7 @@ def save_post(post:dict, info:dict):
             date_string = '00000000'        
         
         if not check_date(date):
-            print('Date out of range {} for post: {title}'.format(date_string, **post)) 
-            print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
+            print('Date out of range {}\n{}'.format(date_string, '-'*100)) 
             return
         
         errors = 0
@@ -228,31 +254,37 @@ def save_post(post:dict, info:dict):
                 else:
                     file_name = '[{:03d}]_{}'.format(index+1, item['name'])
             errors += 0 if download_file(file_name, 'https://kemono.party/data{path}'.format(**item), os.path.join(post_path, 'attachments')) else 1
+            # extract zip files?
                 
         if post['file']:
             errors += 0 if download_file(post['file']['name'], 'https://kemono.party/data{path}'.format(**post['file']), post_path) else 1
 
         if post['content'] and not args['skip_content']:
-            print('Saving content to content.html')
-            # extract_external_links()
-            result = download_inline(post['content'], post_path, args['force_inline'])
-            errors += result[1]
-            if not args['simulate']:   
+            if not args['simulate']: 
+                print('Saving content to content.html')
+                result = download_inline(post['content'], post_path, args['force_inline'])
+                errors += result[1]  
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)                
                 with open(os.path.join(post_path, 'content.html'),'wb') as File:
                     File.write(result[0].prettify().encode("utf-16"))
+                if args['force_external']:
+                    print('Trying to download content links with yt_dlp')
+                    save_content_links(post['content'], post_path, args['force_yt_dlp'])
                 
         if post['embed'] and not args['skip_embeds']:
-            print('Saving embeds to external_links.txt')
+            print('Saving embeds to embeds.txt')
             if not args['simulate']:
                 if not os.path.exists(post_path):
                     os.makedirs(post_path)
-                # download_using_ytdl()
-                with open(os.path.join(post_path, 'external_links.txt'),'wb') as f:
-                    f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16")) 
+                with open(os.path.join(post_path, 'embeds.txt'),'wb') as f:
+                    f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode("utf-16"))
+                if args['yt_dlp']:
+                    print('Trying to download embed with yt_dlp')
+                    download_yt_dlp(os.path.join(post_path, 'external files'), post['embed']['url'])     
         
-        save_comments(dict(post), post_path)
+        if not args['skip_comments']:               
+            save_comments(dict(post), post_path)
                     
         if not errors:
             if not args['simulate']:
@@ -261,68 +293,73 @@ def save_post(post:dict, info:dict):
                 if args['archive']:
                     with open(args['archive'],'a') as f:
                         f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
-            print('Completed downloading post: {title}'.format(**post)) 
-            print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
+            print('Completed downloading post: {title}\n{}'.format('-'*100, **post)) 
             return    
-        print('{} Error(s) encountered downloading post: {title}'.format(errors, **post)) 
-        print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100, **post))
+        print('{} Error(s) encountered downloading post: {title}\n{}'.format(errors, '-'*100, **post)) 
         return
-    print('Already archived post: {title}'.format(**post)) 
-    print('service: [{service}] user_id: [{user}] post_id: [{id}]\n{}'.format('-'*100,**post))
+    print('Already archived post: {title}\n{}'.format('-'*100, **post)) 
     return 
 
+# no testing has been done with this code!
 def save_channel(post:dict, info:dict, channel:dict):
-    # im not sure how to format this!
-    if check_archived(dict(post)):
+    pass
+
+    # print('Downloading post: {channel}'.format(**post)) 
+    # print('service: [discord] server_id: [{user}] channel_id: [{id}]'.format(**post))    
+    
+    # if check_archived(dict(post)):
         
-        errors = 0
-        # download images
-        # save links to file    
-        # format into html file
-        if not errors:           
-            if args['archive']:
-                with open(args['archive'],'a') as f:
-                    f.write('/discord/server/{server}/channel/{id}'.format(**post))
-            print('Completed downloading post: {channel}'.format(**post)) 
-            print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
-            return    
-        print('{} Error(s) encountered downloading post: {channel}'.format(errors, **post)) 
-        print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
-        return
-    print('Already archived post: {channel}'.format(**post)) 
-    print('service: [discord] server_id: [{user}] channel_id: [{id}]\n{}'.format('-'*100,**post))
-    return
+    #     errors = 0
+    #     # download images
+    #     # save links to file    
+    #     # format into html file
+    #     if not errors:           
+    #         if args['archive']:
+    #             with open(args['archive'],'a') as f:
+    #                 f.write('/discord/server/{server}/channel/{id}'.format(**post))
+    #         print('Completed downloading channel: {channel}\n{}'.format('-'*100, **post)) 
+    #         return    
+    #     print('{} Error(s) encountered downloading channel: {channel}\n{}'.format(errors, '-'*100, **post)) 
+    #     return
+    # print('Already archived channel: {channel}\n{}'.format('-'*100, **post)) 
+    # return
 
-def get_discord_channels(info:dict):
-    api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
-    api_response = requests.get(api_call)
-    api_response.raise_for_status() # should only happen if site is down
-    return json.loads(api_response.text)
-
-def get_posts_channels(info:dict):
-    channels = get_discord_channels(dict(info)) if info['service'] == 'discord' else [0]
-    for channel in channels:
-        chunk = 0
-        while True:
+def get_posts(info:dict):
+    chunk = 0
+    while True:
+        if info['post_id'] == None:
+            api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
+        else:
             api_call = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
-            if info['post_id'] == None:
-                api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
-            if info['service'] == 'discord':
-                api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(chunk, **channel) 
+        api_response = requests.get(api_call)
+        api_response.raise_for_status()
+        data = json.loads(api_response.text)
+        for post in data:
+            save_post(dict(post), dict(info))
+        if not info['post_id'] or not data:
+            return
+        chunk += 25    
+    
+def get_channels(info:dict):
+    for channel in info['channels']:
+        skip = 0
+        while True:
+            api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(skip, **channel) 
             api_response = requests.get(api_call)
-            api_response.raise_for_status() # should only happen if site is down
+            api_response.raise_for_status()
             data = json.loads(api_response.text)
+            for post in data:
+                save_channel(dict(post), dict(info), dict(channel))
             if not data:
                 break
-            for post in data:
-                if info['service'] == 'discord':
-                    save_channel(dict(post), dict(info), dict(channel))
-                else:
-                    save_post(dict(post), dict(info))
-            if not info['post_id'] == None and not info['service'] == 'discord':
-                break
-            chunk += 10 if info['service'] == 'discord' else 25    
+            skip += 10    
     return
+
+def get_channel_ids(info:dict):
+    api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['user_id'])
+    api_response = requests.get(api_call)
+    api_response.raise_for_status()
+    return json.loads(api_response.text)
 
 def get_icon_banner(info:dict):
     if info['post_id'] == None and not info['service'] == 'discord':
@@ -340,7 +377,7 @@ def get_icon_banner(info:dict):
 def get_username(service:str, user_id:str):
     api_call = 'https://kemono.party/api/creators/'
     api_response = requests.get(api_call)
-    api_response.raise_for_status() # should only happen if site is down
+    api_response.raise_for_status()
     for creator in json.loads(api_response.text):
         if creator['id'] == user_id and creator['service'] == service:
             return re.sub('[\\/:\"*?<>|]+','', creator['name']) # removing illegal windows characters
@@ -349,15 +386,16 @@ def extract_link(link:str):
     found = re.search('https://kemono\.party/([^/]+)/(server|user)/([^/]+)($|/post/([^/]+)$)',link)
     if found:
         info = {'service':found.group(1),
-                'user_id':found.group(3),
+                'user_id':found.group(3), # holds server_id for discord
                 'post_id':found.group(5),
                 'username': get_username(found.group(1), found.group(3))}
         info['path'] = os.path.join(args['output'], info['service'], '{username} [{user_id}]'.format(**info))
         if info['service'] == 'discord':
-            print('Saving Discords is still being developed')
-            return
-        get_icon_banner(dict(info))
-        get_posts_channels(dict(info))
+            return False
+            info['channels'] = get_channel_ids(info)
+        else:
+            get_icon_banner(dict(info))
+            get_posts(dict(info))
         return True
     return False    
 
@@ -368,14 +406,13 @@ def get_favorites(type:str):
         print('Error getting favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
     data = json.loads(api_response.text)
-    if not data:
-        print('You have no favorite {}s.'.format(type))
-        return
     for favorite in data:
         if type == 'post':
             extract_link('https://kemono.party/{service}/user/{user}/post/{id}'.format(**favorite))
         elif type == 'artist':
             extract_link('https://kemono.party/{service}/user/{id}'.format(**favorite))
+    if not data:
+        print('You have no favorite {}s.'.format(type))
     return
         
 def main():
