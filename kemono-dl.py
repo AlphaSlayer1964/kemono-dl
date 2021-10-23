@@ -113,6 +113,8 @@ def download_file(file_name:str, url:str, file_path:str):
             if args['simulate']:
                 if total:
                     print('[{}] 0.0/{} MB, 0.0 Mbps'.format('='*50, round(total/1000000,1))) # fake download bar with correct filesize
+                else:
+                    print('[{}] 0.0/0.0 MB, 0.0 Mbps'.format('='*50))
                 return True
             if not os.path.exists(file_path):
                 os.makedirs(file_path)
@@ -124,9 +126,11 @@ def download_file(file_name:str, url:str, file_path:str):
                     if total:
                         done = int(50*downloaded/total)
                         sys.stdout.write('\r[{}{}] {}/{} MB, {} Mbps'.format('='*done, ' '*(50-done), round(downloaded/1000000,1), round(total/1000000,1), round(downloaded//(time.time() - start) / 100000,1)))
-                        sys.stdout.flush() 
-            if total:
-                sys.stdout.write('\n')
+                        sys.stdout.flush()
+                    else:
+                        sys.stdout.write('\r[{}] 0.0/0.0 MB, 0.0 Mbps'.format('='*50))
+                        sys.stdout.flush()
+            sys.stdout.write('\n')
         return True
     except Exception as e:
         print('Error downloading: {}'.format(url))
@@ -337,7 +341,7 @@ def get_posts(info:dict):
         data = json.loads(api_response.text)
         for post in data:
             save_post(dict(post), dict(info))
-        if not info['post_id'] or not data:
+        if info['post_id'] or not data:
             return
         chunk += 25    
     
