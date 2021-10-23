@@ -83,7 +83,7 @@ if args['min_filesize']: args['min_filesize'] = valid_size(args['min_filesize'])
 
 def download_yt_dlp(path:str, link:str):
     ydl_opts = {
-        "format" :"best",
+        "format" :"bestvideo+bestaudio",
         "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
         "noplaylist" : True,
         "merge_output_format" : "mp4",
