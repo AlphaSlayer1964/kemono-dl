@@ -40,9 +40,9 @@ This is a simple kemono.party downloader.
                                  (Format: YYYYMMDD)
 --dateafter YYYYMMDD             Only download posts from this date and after.
                                  (Format: YYYYMMDD)
---min-filesize #MB               Do not download files smaller than this. 
+--min-filesize SIZE              Do not download files smaller than this. 
                                  (Format: 1GB, 1MB, 1KB, 1B)
---max-filesize #MB               Do not download files larger than this. 
+--max-filesize SIZE              Do not download files larger than this. 
                                  (Format: 1GB, 1MB, 1KB, 1B)
 --only-filetypes EXT             Only downloads attachments and post file with 
                                  given extentions. Suports comman seperated lists. 
