@@ -90,7 +90,6 @@ python kemono-dl.py --cookies "cookie.txt" -i -l https://kemono.party/SERVICE/us
 ```
 
 ## To do:
-- [ ] Integrate youtube-dl for downloading external video links
 - [ ] Allow file naming structure to be changed in command line
 - [ ] Allow file path structure to be changed in command line
 - [ ] Add Discord service (in progress)
