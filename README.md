@@ -78,7 +78,8 @@ This is a simple kemono.party downloader.
 - Using ```--ignore-erros``` posts with errors will not be archived
 - Using ```--max-filesize``` or ```--min-filesize``` will cause files that don't have ```content-length``` in their headers to not download. This mainly includes external inline images, pfp, and banners.
 - When using ```--favorite-users``` or ```--favorite-posts``` you must get your cookies.txt after logging into kemono.party.
-- You may need to install ffmpeg for yt-dlp to work
+- You may need to install `ffmpeg` for `yt-dlp` to work
+- If downloading with `yt-dlp` fails that will count as an error and the post won't be archived. This includes yt-dlp failing because the site was just incompatible. I will need to look into seeing if there is a different error for these two circumstances.
 
 ## Examples:
 ```bash
