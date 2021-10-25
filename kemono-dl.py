@@ -101,14 +101,14 @@ def download_yt_dlp(path, link):
         ydl_opts = {
             "format" :"bestvideo+bestaudio",
             "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
-            "noplaylist" : True,
+            "noplaylist" : True, # stops from downloading an entire youtube channel
             "merge_output_format" : "mp4"
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
         return 0
     except:
-        print('Error with yt-dlp and link: {link}'.format(link)) # errors always ignored
+        print('Error with yt-dlp and link: {}'.format(link)) # errors always ignored
         return 1
     
 def check_size(size):
@@ -333,7 +333,7 @@ def save_post(post, info):
             return
         
         post_title = re.sub('[\\n\\t]+',' ', re.sub('[\\/:\"*?<>|]+','', post['title'] )).strip('.').strip() # removing illegal windows characters
-        post_folder = '[{}] [{id}] {}'.format(date_string, post_title, **post)[:248].strip() # shorten folder name length for windows 
+        post_folder = '[{}] [{id}] {}'.format(date_string, post_title, **post)[:248].strip('.').strip() # shorten folder name length for windows 
         post_path = os.path.join(info['path'], post_folder)
         if not os.path.exists(post_path):
             os.makedirs(post_path)
