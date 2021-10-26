@@ -63,6 +63,8 @@ def download_file(file_name, url, file_path):
                         sys.stdout.write('\r[{}] 0.0/??? MB, 0.0 Mbps'.format('='*50))
                         sys.stdout.flush()
             sys.stdout.write('\n')
+        if not downloaded == total:
+            raise Exception("[Error] File just stopped downloading for no reason. I don't know what causes this!")
         return 0
     except Exception as e:
         print('Error downloading: {}'.format(url))
