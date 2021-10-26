@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from http.cookiejar import MozillaCookieJar
 import yt_dlp
 
-version = '2021.10.25
+version = '2021.10.26
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--version", action='store_true', help="Displays the current version then exits")
