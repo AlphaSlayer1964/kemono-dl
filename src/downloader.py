@@ -3,6 +3,8 @@ import yt_dlp
 import requests
 import os
 import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from .arguments import get_args
 from .helper import win_file_name, check_size
@@ -23,12 +25,23 @@ def download_yt_dlp(path, link):
         print('Error with yt-dlp and link: {}'.format(link)) # errors always ignored
         return 1
     
-    
+retry_strategy = Retry(
+    total=2,
+    backoff_factor=60,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=False
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+s = requests.Session()
+s.mount("https://", adapter)
+s.mount("http://", adapter)
+   
 def download_file(file_name, url, file_path):
     file_name = win_file_name(file_name)
     print('Downloading: {}'.format(file_name))
-    try:  
-        with requests.get(url,stream=True,cookies=args['cookies']) as r:
+    try:
+        headers = {"Connection": "keep-alive"}         
+        with s.get(url,stream=True,cookies=args['cookies'],headers=headers) as r:
             r.raise_for_status()
             downloaded = 0
             total = int(r.headers.get('content-length', '0'))
