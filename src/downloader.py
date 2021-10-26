@@ -24,7 +24,7 @@ def download_yt_dlp(path, link):
     except:
         print('Error with yt-dlp and link: {}'.format(link)) # errors always ignored
         return 1
-    
+
 retry_strategy = Retry(
     total=2,
     backoff_factor=60,
@@ -35,12 +35,12 @@ adapter = HTTPAdapter(max_retries=retry_strategy)
 s = requests.Session()
 s.mount("https://", adapter)
 s.mount("http://", adapter)
-   
+
 def download_file(file_name, url, file_path):
     file_name = win_file_name(file_name)
     print('Downloading: {}'.format(file_name))
     try:
-        headers = {"Connection": "keep-alive"}         
+        headers = {"Connection": "keep-alive"}
         with s.get(url,stream=True,cookies=args['cookies'],headers=headers) as r:
             r.raise_for_status()
             downloaded = 0
@@ -52,7 +52,7 @@ def download_file(file_name, url, file_path):
                 os.makedirs(file_path)
             with open(os.path.join(file_path, file_name), 'wb') as f:
                 start = time.time()
-                for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):                   
+                for chunk in r.iter_content(chunk_size=max(int(total/1000), 1024*1024)):
                     downloaded += len(chunk)
                     f.write(chunk)
                     if total:
@@ -69,4 +69,4 @@ def download_file(file_name, url, file_path):
         print(e)
         if args['ignore_errors']:
             return 1
-        quit()  
+        quit()
