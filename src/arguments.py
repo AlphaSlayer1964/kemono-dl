@@ -23,8 +23,8 @@ def get_args():
                     help="Downloads user or post links. Suports comman seperated lists.")
 
     ap.add_argument("-f", "--fromfile",
-                    default=[],
-                    help="Download users and posts from a file seperated by a newline")
+                    metavar="FILE", type=str, default=[],
+                    help="Download users and posts from a file seperated by newlines")
 
     ap.add_argument("--favorite-users",
                     action='store_true', default=False,
@@ -35,11 +35,11 @@ def get_args():
                     help="Downloads all posts saved in your favorites. (Requires --cookies)")
 
     ap.add_argument("-o", "--output",
-                    default=None,
+                    type=str, default=None,
                     help="Set path to download posts")
 
     ap.add_argument("-a", "--archive",
-                    default=None,
+                    metavar="FILE", type=str, default=None,
                     help="Downloads only posts that are not in provided archive file")
 
     ap.add_argument("-i", "--ignore-errors",
@@ -51,31 +51,31 @@ def get_args():
                     help="Tries to Download embeds with yt-dlp. (experimental)")
 
     ap.add_argument("--date",
-                    metavar="YYYYMMDD", default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date.")
 
     ap.add_argument("--datebefore",
-                    metavar="YYYYMMDD", default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date and before.")
 
     ap.add_argument("--dateafter",
-                    metavar="YYYYMMDD", default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date and after.")
 
     ap.add_argument("--min-filesize",
-                    metavar="SIZE", default=None,
+                    metavar="SIZE", type=str, default=None,
                     help="Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
 
     ap.add_argument("--max-filesize",
-                    metavar="SIZE", default=None,
+                    metavar="SIZE", type=str, default=None,
                     help="Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
 
     ap.add_argument("--only-filetypes",
-                    metavar="EXT", default=[],
+                    metavar="EXT", type=str, default=[],
                     help="Only downloads attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)")
 
     ap.add_argument("--skip-filetypes",
-                    metavar="EXT", default=[],
+                    metavar="EXT", type=str, default=[],
                     help="Skips attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)")
 
     ap.add_argument("--skip-content",
@@ -117,6 +117,10 @@ def get_args():
     ap.add_argument("--force-yt-dlp",
                     action='store_true', default=False,
                     help="Tries to Download links in content with yt-dlp. (experimental)")
+
+    ap.add_argument("--post-timeout",
+                    metavar="SEC", type=int, default=0,
+                    help="The amount of time in seconds to wait between getting posts. (default: 0)")
 
     args = vars(ap.parse_args())
 

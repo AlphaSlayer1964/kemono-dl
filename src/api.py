@@ -3,6 +3,7 @@ import re
 import json
 import os
 import datetime
+import time
 from PIL import Image
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
@@ -197,6 +198,7 @@ def get_post(info):
     for post in data:
         save_post(dict(post), dict(info))
         print('-'*100)
+        time.sleep(args['post_timeout'])
     return
 
 def get_user(info):
@@ -217,6 +219,7 @@ def get_user(info):
         for post in data:
             save_post(dict(post), dict(info))
             print('-'*100)
+            time.sleep(args['post_timeout'])
         chunk += 25
 
 def get_channels(info):
