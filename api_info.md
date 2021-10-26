@@ -1,13 +1,13 @@
-# USERS
+## USERS
+```python
+# api call: /api/{service}/user/{user_id}?o={chunk}
+# chunk starts at 0 and incriments by 25
+# returns a list of post data (see POSTS)
 ```
-api call: /api/{service}/user/{user_id}?o={chunk}
-chunk starts at 0 and incriments by 25
-returns a list of post data (see POSTS)
-```
-# POSTS
-```
-api call: /api/{service}/user/{user_id}/post/{post_id}
-returns a dictionary of the post data
+## POSTS
+```python
+# api call: /api/{service}/user/{user_id}/post/{post_id}
+# returns a dictionary of the post data
 
 post                    # dict      
     ['title']           # str 
@@ -29,20 +29,20 @@ post                    # dict
         ['subject']     # str
         ['url']         # str
 ```
-# DISCORD CHANNELS
-```
-api call: /api/discord/channels/lookup?q={sercer_id}
-returns a list of dictionaris contaning channel names and ids
+## DISCORD CHANNELS
+```python
+# api call: /api/discord/channels/lookup?q={sercer_id}
+# returns a list of dictionaris contaning channel names and ids
 
 channel                     # dict
     ['id']                  # str
     ['name']                # str
 ```
-# DISCORD CHANNEL POSTS
-```
-api call: /api/discord/channel/{channel_id}?skip={skip}
-skip starts at 0 and incriments by 10
-returns a list of dictionaries contaning each posts data
+## DISCORD CHANNEL POSTS
+```python
+# api call: /api/discord/channel/{channel_id}?skip={skip}
+# skip starts at 0 and incriments by 10
+# returns a list of dictionaries contaning each posts data
 
 post                        # dict
     ['added']               # str, datetime object
@@ -79,10 +79,10 @@ post                        # dict
     ['published']           # str, datetime object
     ['server']              # str
 ```
-# CREATORS
-```
-api call: /api/creators
-returns a list of dictionaries of user data
+## CREATORS
+```python
+# api call: /api/creators
+# returns a list of dictionaries of user data
 
 creator            # dict
     ['id']         # str
@@ -91,11 +91,11 @@ creator            # dict
     ['service']    # str
     ['updated']    # str
 ```
-# FAVORITES
-```
-api all: /api/favorites?type={type}
-type can be post or artist
-(artist) returns a list of dictionaries with user data
+## FAVORITES
+```python
+# api all: /api/favorites?type={type}
+# type can be post or artist
+# (artist) returns a list of dictionaries with user data
 
 favorite_user       # dict
     ['faved_seq']   # int
@@ -105,7 +105,7 @@ favorite_user       # dict
     ['service']     # str
     ['updated']     # str, datetime object
    
-(post) returns a list of dictionaries with post data
+# (post) returns a list of dictionaries with post data
 
 favorite_post       # dict, same as post
     ['faved_seq']   # int
