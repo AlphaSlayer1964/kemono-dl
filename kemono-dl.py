@@ -183,9 +183,9 @@ def download_inline(html, file_path, external = False):
             else:
                 break
         if download_file(file_name, link, os.path.join(file_path, 'inline')):
-            inline_image['src'] = os.path.join(file_path, 'inline', file_name)
-        else:
             errors += 1
+        else:
+            inline_image['src'] = os.path.join(file_path, 'inline', file_name)
     return  (content_soup, errors)          
 
 def get_content_links(html, post_path, save = False, download = False):
