@@ -119,14 +119,14 @@ def get_args():
                     help="Tries to Download links in content with yt-dlp. (experimental)")
 
     args = vars(ap.parse_args())
-    
-    if args['version']: 
+
+    if args['version']:
         print(__version__)
         quit()
 
     if args['cookies']:
         try:
-            args['cookies'] = MozillaCookieJar(args['cookies']) 
+            args['cookies'] = MozillaCookieJar(args['cookies'])
             args['cookies'].load()
         except (LoadError, FileNotFoundError) as e:
             print(e)
@@ -139,7 +139,7 @@ def get_args():
                 args['output']= os.path.abspath(args['output'])
             except OSError as e:
                 print(e)
-                quit() 
+                quit()
     else:
         args['output'] = os.path.join(os.getcwd(), 'Downloads')
 
@@ -152,33 +152,33 @@ def get_args():
     if args['only_filetypes'] and args['skip_filetypes']:
         print('[Error] You can only use one: --only-filetypes or --skip-filetypes')
         quit()
-        
+
     def filetype_list(file_types):
         temp = []
         file_types = file_types.split(',')
         for file_type in file_types:
             temp.append(file_type.lower().strip().lstrip(' '))
         return temp
-        
+
     if args['only_filetypes']:
         args['only_filetypes'] = filetype_list(args['only_filetypes'])
-        
+
     if args['skip_filetypes']:
         args['skip_filetypes'] = filetype_list(args['skip_filetypes'])
-    
+
     def valid_date(date, name):
-        try: 
-            return datetime.datetime.strptime(date, r'%Y%m%d')  
-        except: 
+        try:
+            return datetime.datetime.strptime(date, r'%Y%m%d')
+        except:
             print("[Error] Incorrect data format for {}: {}, should be YYYYMMDD".format(name, date))
-            quit()   
-        
+            quit()
+
     if args['date']:
         args['date'] = valid_date(args['date'], 'date')
-        
+
     if args['datebefore']:
         args['datebefore'] = valid_date(args['datebefore'], 'datebefore')
-        
+
     if args['dateafter']:
         args['dateafter'] = valid_date(args['dateafter'], 'dateafter')
 
@@ -188,38 +188,38 @@ def get_args():
             if found.group(2) == 'B':
                 return str(int(found.group(1)))
             elif found.group(2) == 'KB':
-                return str(int(found.group(1)) * 10**2) 
+                return str(int(found.group(1)) * 10**2)
             elif found.group(2) == 'MB':
                 return str(int(found.group(1)) * 10**6)
-            elif found.group(2) == 'GB': 
+            elif found.group(2) == 'GB':
                 return str(int(found.group(1)) * 10**9)
-        else: 
+        else:
             print("[Error] Incorrect size format: {}, should be #GB, #MB, #KB, #B".format(size))
             quit()
 
     if args['max_filesize']:
         args['max_filesize'] = valid_size(args['max_filesize'])
-        
+
     if args['min_filesize']:
         args['min_filesize'] = valid_size(args['min_filesize'])
-   
+
     if args['links']:
         links = args['links'].split(',')
         args['links'] = []
         for link in links:
-            args['links'].append(link.strip().lstrip(' ').split('?')[0])        
-                
+            args['links'].append(link.strip().lstrip(' ').split('?')[0])
+
     if args['fromfile']:
         if not os.path.isfile(args['fromfile']):
             print('[Error] No file found: {}'.format(args['fromfile']))
             quit()
-   
+
         with open(args['fromfile'],'r') as f:
             links = f.readlines()
         if not links:
             print('[Error] File is empty: {}'.format(args['fromfile']))
-            quit()       
-        
+            quit()
+
         args['fromfile'] = []
         for link in links:
             args['fromfile'].append(link.strip().lstrip().split('?')[0])
