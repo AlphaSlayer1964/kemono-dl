@@ -81,6 +81,9 @@ This is a simple kemono.party downloader.
 -  You may need to install `ffmpeg` for `yt-dlp` to work
 -  If downloading with `yt-dlp` fails that will count as an error and the post won't be archived. This includes yt-dlp failing because the site was just incompatible. I will need to look into seeing if there is a different error for these two circumstances.
 
+### Known Bugs
+- When downloading a file it might just stop downloading, I believe this happens when a large file is downloaded and the site doesn't have it cached so the connection gets timed out after a while. I am still looking into this issue.
+
 ### Examples
 ```bash
 # downloads all users and posts from "kemono.txt" to "C:\Users\User\Downloads" while skipping saved posts in "archive.txt"
