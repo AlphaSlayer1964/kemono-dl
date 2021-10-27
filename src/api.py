@@ -48,7 +48,7 @@ def save_inline(html, file_path, external = False):
                 break
         if args['force_indexing']:
             file_name = add_indexing(index, file_name, inline_images)
-        if download_file(file_name, link, os.path.join(file_path, 'inline')) == 1:
+        if download_file(file_name, link, os.path.join(file_path, 'inline')) == 0:
             inline_image['src'] = os.path.join(file_path, 'inline', file_name)
         else:
             errors += 1
@@ -242,7 +242,7 @@ def save_icon_banner(info):
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         url = 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info)
         file_path = info['path']
-        if download_file(file_name, url, file_path) == 1:
+        if download_file(file_name, url, file_path) == 0:
             try:
                 with Image.open(os.path.join(info['path'], file_name)) as image:
                     image.save(os.path.join(info['path'], '{}.{}'.format(file_name, image.format.lower())), format=image.format)
