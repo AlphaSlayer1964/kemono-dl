@@ -120,7 +120,11 @@ def get_args():
 
     ap.add_argument("--post-timeout",
                     metavar="SEC", type=int, default=0,
-                    help="The amount of time in seconds to wait between getting posts. (default: 0)")
+                    help="The amount of time in seconds to wait between saving a posts. (default: 0)")
+
+    ap.add_argument("--retry-download",
+                    metavar="COUNT", type=int, default=0,
+                    help="The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)")
 
     args = vars(ap.parse_args())
 
