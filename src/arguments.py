@@ -63,11 +63,11 @@ def get_args():
                     help="Only download posts from this date and after.")
 
     ap.add_argument("--min-filesize",
-                    metavar="SIZE", type=str, default=None,
+                    metavar="SIZE", type=str, default='0',
                     help="Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
 
     ap.add_argument("--max-filesize",
-                    metavar="SIZE", type=str, default=None,
+                    metavar="SIZE", type=str, default='inf',
                     help="Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
 
     ap.add_argument("--only-filetypes",
@@ -181,14 +181,11 @@ def get_args():
             print("[Error] Incorrect data format for {}: {}, should be YYYYMMDD".format(name, date))
             quit()
 
-    if args['date']:
-        args['date'] = valid_date(args['date'], 'date')
+    args['date'] = valid_date(args['date'], 'date') if args['date'] else datetime.datetime.min
 
-    if args['datebefore']:
-        args['datebefore'] = valid_date(args['datebefore'], 'datebefore')
+    args['datebefore'] = valid_date(args['datebefore'], 'datebefore') if args['datebefore'] else datetime.datetime.min
 
-    if args['dateafter']:
-        args['dateafter'] = valid_date(args['dateafter'], 'dateafter')
+    args['dateafter'] = valid_date(args['dateafter'], 'dateafter') if args['dateafter'] else datetime.datetime.max
 
     def valid_size(size):
         found = re.search(r'([0-9]+)(GB|MB|KB|B)', size)
