@@ -70,6 +70,10 @@ This is a simple kemono.party downloader.
                                  in post content. (experimental)
 --force-yt-dlp                   Tries to Download links in content with yt-dlp. 
                                  (experimental)
+--post-timeout                   The amount of time in seconds to wait between saving
+                                 posts. (default: 0)
+--retry-download                 The amount of times to try to redownload a file.
+                                 (automatically ignores errors) (default: 0)
 ```
 ### Notes
 -  Default download location is a `Downloads` folder in the current working directory (will be created automatically)
