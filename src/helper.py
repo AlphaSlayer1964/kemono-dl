@@ -11,7 +11,6 @@ def check_post_archived(post):
         if os.path.exists(args['archive']):
             with open(args['archive'],'r') as f:
                 archived = f.read().splitlines()
-
             if '/{service}/user/{user}/post/{id}'.format(**post) in archived:
                 return False
     return True
@@ -59,24 +58,34 @@ def check_extention(file_name):
 
 
 def win_file_name(file_name):
-    file_name = file_name.rsplit('.', 1) # separate extention
-    file_name[0] = re.sub(r'[\n\t]+',' ', file_name[0]) # convert newline and tabs to white space
-    file_name[0] = re.sub(r'[\\/:\"*?<>|]+','', file_name[0]) # remove illgal file name characters
+    # separate extention
+    file_name = file_name.rsplit('.', 1)
+    # convert newline and tabs to white space
+    file_name[0] = re.sub(r'[\n\t]+',' ', file_name[0])
+    # remove illgal file name characters
+    file_name[0] = re.sub(r'[\\/:\"*?<>|]+','', file_name[0])
     if len(file_name) == 2:
-        file_name[1] = re.sub(r'[\n\t]+',' ', file_name[1]) # convert newline and tabs to white space
-        file_name[1] = re.sub(r'[\\/:\"*?<>|]+','', file_name[1]) # remove illgal file name characters
+        # incase file name has a period but no extention
+        # convert newline and tabs to white space
+        file_name[1] = re.sub(r'[\n\t]+',' ', file_name[1])
+        # remove illgal file name characters
+        file_name[1] = re.sub(r'[\\/:\"*?<>|]+','', file_name[1])
         file_name[0] = file_name[0][:260-len(file_name[1])-1]
         return file_name[0] + '.' + file_name[1]
     else:
-        file_name[0] = file_name[0][:260] # if file name some how has no extention
+        # if file name some how has no extention
+        file_name[0] = file_name[0][:260]
         return file_name[0]
 
 
 def win_folder_name(folder_name):
-    folder_name = re.sub(r'[\n\t]+',' ', folder_name) # convert newline and tabs to white space
-    folder_name = re.sub(r'[\\/:\"*?<>|]+','', folder_name) # remove illgal file name characters
+    # convert newline and tabs to white space
+    folder_name = re.sub(r'[\n\t]+',' ', folder_name)
+    # remove illgal file name characters
+    folder_name = re.sub(r'[\\/:\"*?<>|]+','', folder_name)
     folder_name = folder_name[:248]
-    folder_name = folder_name.strip('. ') # windows will remove trailing periods
+    # windows will remove trailing periods and white spaces
+    folder_name = folder_name.strip('. ')
     return folder_name
 
 
@@ -85,5 +94,6 @@ def add_indexing(index, file_name, list):
         return '[{:01d}]_{}'.format(index+1, file_name)
     elif len(list) < 100:
         return '[{:02d}]_{}'.format(index+1, file_name)
-    elif len(list) < 1000: # there is no way a post has more than 1000 attachments!
+    elif len(list) < 1000:
         return '[{:03d}]_{}'.format(index+1, file_name)
+    # there is no way a post has more than 1000 attachments!
