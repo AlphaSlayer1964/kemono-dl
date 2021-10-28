@@ -75,18 +75,17 @@ def check_extention(file_name):
 
 def win_file_name(file_name):
     file_name = file_name.rsplit('.', 1) # separate extention
-    if len(file_name) == 2:
-        if len(file_name[1]) > 10: # if the extention is longer than 10 char assume it is not an extention
-            file_name[0] = file_name[0] + '.' + file_name[1]
-            file_name.remove(file_name[1])
     file_name[0] = re.sub(r'[\n\t]+',' ', file_name[0]) # convert newline and tabs to white space
     file_name[0] = re.sub(r'[\\/:\"*?<>|]+','', file_name[0]) # remove illgal file name characters
     if len(file_name) == 2:
+        file_name[1] = re.sub(r'[\n\t]+',' ', file_name[1]) # convert newline and tabs to white space
+        file_name[1] = re.sub(r'[\\/:\"*?<>|]+','', file_name[1]) # remove illgal file name characters
         file_name[0] = file_name[0][:260-len(file_name[1])-1]
         return file_name[0] + '.' + file_name[1]
     else:
         file_name[0] = file_name[0][:260] # if file name some how has no extention
         return file_name[0]
+
 
 def win_folder_name(folder_name):
     folder_name = re.sub(r'[\n\t]+',' ', folder_name) # convert newline and tabs to white space
