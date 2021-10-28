@@ -17,8 +17,8 @@ This is a simple kemono.party downloader.
   --cookies COOKIES           Set path to cookie.txt (REQUIRED)
   -l LINKS, --links LINKS     Downloads user or post links. Suports comman seperated lists.
   -f FILE, --fromfile FILE    Download users and posts from a file seperated by newlines
-  --favorite-users            Downloads all users saved in your favorites. (Requires --cookies)
-  --favorite-posts            Downloads all posts saved in your favorites. (Requires --cookies)
+  --favorite-users            Downloads all users saved in your favorites. (Requires logged in cookies)
+  --favorite-posts            Downloads all posts saved in your favorites. (Requires logged in cookies)
   -o PATH, --output PATH      Set path to download posts
   -a FILE, --archive FILE     Downloads only posts that are not in provided archive file. (Can not be used with --update)
   -u, --update                Updates already downloaded posts. (post must have json log) (can not be used with --archive)
