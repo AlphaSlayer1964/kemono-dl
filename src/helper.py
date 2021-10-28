@@ -88,7 +88,7 @@ def win_folder_name(folder_name):
     folder_name = re.sub(r'[\n\t]+',' ', folder_name) # convert newline and tabs to white space
     folder_name = re.sub(r'[\\/:\"*?<>|]+','', folder_name) # remove illgal file name characters
     folder_name = folder_name[:248]
-    folder_name = folder_name.strip().strip('.') # windows will remove trailing periods
+    folder_name = folder_name.strip('. ') # windows will remove trailing periods
     return folder_name
 
 
