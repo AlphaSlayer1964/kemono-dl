@@ -12,68 +12,38 @@ This is a simple kemono.party downloader.
 
 ## Options
 ```
--h, --help                       Prints help text then exits
-
---version                        Displays the current version then exits
-
---cookies FILE                   Set path to cookie.txt (**REQUIRED**)
-
--l, --links LINK(s)              Downloads user or post links. Suports comman
-                                 seperated lists.
--f, --fromfile FILE              Download users and posts from a file seperated 
-                                 by a newline
---favorite-users                 Downloads all users saved in your favorites.
-
---favorite-posts                 Downloads all posts saved in your favorites.
-
--o, --output FOLDER              Set path to download posts.
-
--a, --archive FILE               Downloads only posts that are not in provided 
-                                 archive file. 
--i, --ignore-errors              Continue to download post(s) when an error 
-                                 occurs.
---yt-dlp                         Tries to Download embeds with yt-dlp. 
-                                 (experimental)
---date YYYYMMDD                  Only download posts from this date.
-                                 (Format: YYYYMMDD)
---datebefore YYYYMMDD            Only download posts from this date and before.
-                                 (Format: YYYYMMDD)
---dateafter YYYYMMDD             Only download posts from this date and after.
-                                 (Format: YYYYMMDD)
---min-filesize SIZE              Do not download files smaller than this. 
-                                 (Format: 1GB, 1MB, 1KB, 1B)
---max-filesize SIZE              Do not download files larger than this. 
-                                 (Format: 1GB, 1MB, 1KB, 1B)
---only-filetypes EXT             Only downloads attachments and post file with 
-                                 given extentions. Suports comman seperated lists. 
-                                 (Format: JPG,mp4,png)
---skip-filetypes EXT             Skips attachments and post file with given 
-                                 extentions. Suports comman seperated lists. 
-                                 (Format: JPG,mp4,png)
---skip-content                   Skips saving posts content.
-
---skip-embeds                    Skips saving posts embeds.
-
---skip-comments                  Skips saving posts comments.
-
---skip-pfp-banner                Skips saving users pfp and banner.
-
---skip-postfile                  Skips saving posts post file.
-
---skip-attachments               Skips saving posts attachments.
-
---force-external                 Save all external links in content to a text file.
-
---force-indexing                 Adds an indexing value to the attachment file 
-                                 names to preserve ordering
---force-inline                   Force download all external inline images found 
-                                 in post content. (experimental)
---force-yt-dlp                   Tries to Download links in content with yt-dlp. 
-                                 (experimental)
---post-timeout                   The amount of time in seconds to wait between saving
-                                 posts. (default: 0)
---retry-download                 The amount of times to try to redownload a file.
-                                 (automatically ignores errors) (default: 0)
+  -h, --help                  show this help message and exit
+  --version                   Displays the current version then exits
+  --cookies COOKIES           Set path to cookie.txt (REQUIRED)
+  -l LINKS, --links LINKS     Downloads user or post links. Suports comman seperated lists.
+  -f FILE, --fromfile FILE    Download users and posts from a file seperated by newlines
+  --favorite-users            Downloads all users saved in your favorites. (Requires logged in cookies)
+  --favorite-posts            Downloads all posts saved in your favorites. (Requires logged in cookies)
+  -o PATH, --output PATH      Set path to download posts
+  -a FILE, --archive FILE     Downloads only posts that are not in provided archive file. (Can not be used with --update)
+  -u, --update                Updates already downloaded posts. (post must have json log) (can not be used with --archive)
+  -i, --ignore-errors         Continue to download post(s) when an error occurs
+  --yt-dlp                    Tries to Download embeds with yt-dlp. (experimental)
+  --post-timeout SEC          The amount of time in seconds to wait between saving a posts. (default: 0)
+  --retry-download COUNT      The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)
+  --date DATE                 Only download posts from this date.
+  --datebefore DATE           Only download posts from this date and before.
+  --dateafter DATE            Only download posts from this date and after.
+  --min-filesize SIZE         Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
+  --max-filesize SIZE         Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
+  --only-filetypes EXT        Only downloads attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)
+  --skip-filetypes EXT        Skips attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)
+  --skip-content              Skips saving posts content.
+  --skip-embeds               Skips saving posts embeds.
+  --skip-pfp-banner           Skips saving users pfp and banner.
+  --skip-comments             Skips saving posts comments.
+  --skip-postfile             Skips saving posts post file.
+  --skip-attachments          Skips saving posts attachments.
+  --skip-json                 Skips saving posts json. (--update won't work on posts without json)
+  --force-external            Save all external links in content to a text file.
+  --force-indexing            Adds an indexing value to the attachment file names to preserve ordering.
+  --force-inline              Force download all external inline images found in post content. (experimental)
+  --force-yt-dlp              Tries to Download links in content with yt-dlp. (experimental)
 ```
 ### Notes
 -  Default download location is a `Downloads` folder in the current working directory (will be created automatically)
