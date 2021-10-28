@@ -37,7 +37,7 @@ def download_file(file_name, url, file_path):
             if r.status_code != 200:
                 if r.status_code == 404:
                     flag_404 = 1
-                raise Exception('[Error] Responce status code: {}'.format(r.status_code()))
+                raise Exception('[Error] Responce status code: {}'.format(r.status_code))
             block_size = 1024
             downloaded = 0
             total = int(r.headers.get('content-length', 0)) # this seems to happen on pdfs a lot
