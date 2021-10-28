@@ -28,11 +28,11 @@ def get_args():
 
     ap.add_argument("--favorite-users",
                     action='store_true', default=False,
-                    help="Downloads all users saved in your favorites. (Requires --cookies)")
+                    help="Downloads all users saved in your favorites. (Requires logged in cookies)")
 
     ap.add_argument("--favorite-posts",
                     action='store_true', default=False,
-                    help="Downloads all posts saved in your favorites. (Requires --cookies)")
+                    help="Downloads all posts saved in your favorites. (Requires logged in cookies)")
 
     ap.add_argument("-o", "--output",
                     metavar="PATH", type=str, default=None,
