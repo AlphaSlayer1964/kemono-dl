@@ -200,6 +200,8 @@ def get_args():
     args['dateafter'] = valid_date(args['dateafter'], 'dateafter') if args['dateafter'] else datetime.datetime.max
 
     def valid_size(size):
+        if size in {'0', 'inf'}:
+            return size
         found = re.search(r'([0-9]+)(GB|MB|KB|B)', size)
         if found:
             if found.group(2) == 'B':
