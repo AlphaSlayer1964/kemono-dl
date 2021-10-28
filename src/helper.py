@@ -46,12 +46,12 @@ def check_extention(file_name):
     for valid_extention in args['only_filetypes']:
         if valid_extention == file_extention.lower():
             return True
-        print('Wrong file type skiping "{}"'.format(file_name))
+        print('Wrong file type skiping download for "{}"'.format(file_name))
         return False
 
     for invalid_extention in args['skip_filetypes']:
         if invalid_extention == file_extention.lower():
-            print('Wrong file type skiping "{}"'.format(file_name))
+            print('Wrong file type skiping download for "{}"'.format(file_name))
             return False
         return True
 
