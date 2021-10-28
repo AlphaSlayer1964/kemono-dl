@@ -18,20 +18,11 @@ def check_post_archived(post):
 
 
 def check_date(date):
-    if not args['date'] and not args['datebefore'] and not args['dateafter']:
+    if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
         return True
 
     if date == datetime.datetime.min:
         return False
-
-    if not args['datebefore']:
-        args['datebefore'] = datetime.datetime.min
-
-    if not args['dateafter']:
-        args['dateafter'] = datetime.datetime.max
-
-    if not args['date']:
-        args['date'] = datetime.datetime.min
 
     if date == args['date'] or date <= args['datebefore'] or date >= args['dateafter']:
         return True
@@ -39,17 +30,11 @@ def check_date(date):
 
 
 def check_size(size):
-    if not args['min_filesize'] and not args['max_filesize']:
+    if args['min_filesize'] == '0' and args['max_filesize'] == 'inf':
         return True
 
     if size == 0:
         return False
-
-    if not args['min_filesize']:
-        args['min_filesize'] = '0'
-
-    if not args['max_filesize']:
-        args['max_filesize'] = 'inf'
 
     if int(size) <= float(args['max_filesize']) and int(size) >= int(args['min_filesize']):
         return True
@@ -61,12 +46,12 @@ def check_extention(file_name):
     for valid_extention in args['only_filetypes']:
         if valid_extention == file_extention.lower():
             return True
-        print('Skiping "{}"'.format(file_name))
+        print('Wrong file type skiping "{}"'.format(file_name))
         return False
 
     for invalid_extention in args['skip_filetypes']:
         if invalid_extention == file_extention.lower():
-            print('Skiping "{}"'.format(file_name))
+            print('Wrong file type skiping "{}"'.format(file_name))
             return False
         return True
 
