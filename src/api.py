@@ -48,7 +48,7 @@ def save_inline(html, file_path, external = False):
                 break
         if args['force_indexing']:
             file_name = add_indexing(index, file_name, inline_images)
-        if download_file(file_name, link, os.path.join(file_path, 'inline')) == 0:
+        if download_file(file_name, link, os.path.join(file_path, 'inline'), args['retry_download']) == 0:
             inline_image['src'] = os.path.join(file_path, 'inline', file_name)
         else:
             errors += 1
@@ -65,7 +65,7 @@ def save_attachments(post, post_path):
         url = 'https://kemono.party/data{path}'.format(**item)
         file_path = os.path.join(post_path, 'attachments')
         if check_extention(file_name):
-            errors += download_file(file_name, url, file_path)
+            errors += download_file(file_name, url, file_path, args['retry_download'])
     return errors
 
 def save_postfile(post, post_path):
@@ -76,7 +76,7 @@ def save_postfile(post, post_path):
         url = 'https://kemono.party/data{path}'.format(**post['file'])
         file_path = post_path
         if check_extention(file_name):
-            errors += download_file(file_name, url, file_path)
+            errors += download_file(file_name, url, file_path, args['retry_download'])
     return errors
 
 def get_content_links(html, post_path, save = False, download = False):
@@ -242,7 +242,7 @@ def save_icon_banner(info):
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         url = 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info)
         file_path = info['path']
-        if download_file(file_name, url, file_path) == 0:
+        if download_file(file_name, url, file_path, args['retry_download']) == 0:
             try:
                 with Image.open(os.path.join(info['path'], file_name)) as image:
                     image.save(os.path.join(info['path'], '{}.{}'.format(file_name, image.format.lower())), format=image.format)

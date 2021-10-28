@@ -22,7 +22,7 @@ def download_yt_dlp(path, link):
         print('[Error] yt-dlp, link: {}'.format(link)) # errors always ignored
         return 1
 
-def download_file(file_name, url, file_path):
+def download_file(file_name, url, file_path, retry = 0):
     flag_404 = 0
     file_name = win_file_name(file_name)
     if not os.path.exists(file_path):
@@ -63,18 +63,18 @@ def download_file(file_name, url, file_path):
     except Exception as e:
         print('[Error] downloading: {}'.format(url))
         print(e)
-        if args['retry_download']:
+        if retry:
             if flag_404 == 1:
                 print('[Warning] Skipping retry because responce status 404')
                 return 1
             current_try = 0
             while True:
                 current_try += 1
-                print('[info] Retrying download in 60 seconds. ({}/{})'.format(current_try, args['retry_download']))
+                print('[info] Retrying download in 60 seconds. ({}/{})'.format(current_try, retry))
                 time.sleep(30)
                 if download_file(file_name, url, file_path) == 0:
                     return 0
-                if current_try >= args['retry_download']:
+                if current_try >= retry:
                     return 1
         if args['ignore_errors']:
             return 1
