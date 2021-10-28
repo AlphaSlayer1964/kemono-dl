@@ -35,12 +35,16 @@ def get_args():
                     help="Downloads all posts saved in your favorites. (Requires --cookies)")
 
     ap.add_argument("-o", "--output",
-                    type=str, default=None,
+                    metavar="PATH", type=str, default=None,
                     help="Set path to download posts")
 
     ap.add_argument("-a", "--archive",
                     metavar="FILE", type=str, default=None,
-                    help="Downloads only posts that are not in provided archive file")
+                    help="Downloads only posts that are not in provided archive file. (Can not be used with --update)")
+
+    ap.add_argument("-u", "--update",
+                    action='store_true', default=False,
+                    help="Updates already downloaded posts. (post must have json log) (can not be used with --archive)")
 
     ap.add_argument("-i", "--ignore-errors",
                     action='store_true', default=False,
@@ -50,16 +54,24 @@ def get_args():
                     action='store_true', default=False,
                     help="Tries to Download embeds with yt-dlp. (experimental)")
 
+    ap.add_argument("--post-timeout",
+                    metavar="SEC", type=int, default=0,
+                    help="The amount of time in seconds to wait between saving a posts. (default: 0)")
+
+    ap.add_argument("--retry-download",
+                    metavar="COUNT", type=int, default=0,
+                    help="The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)")
+
     ap.add_argument("--date",
-                    metavar="YYYYMMDD", type=str, default=None,
+                    metavar="DATE", type=str, default=None,
                     help="Only download posts from this date.")
 
     ap.add_argument("--datebefore",
-                    metavar="YYYYMMDD", type=str, default=None,
+                    metavar="DATE", type=str, default=None,
                     help="Only download posts from this date and before.")
 
     ap.add_argument("--dateafter",
-                    metavar="YYYYMMDD", type=str, default=None,
+                    metavar="DATE", type=str, default=None,
                     help="Only download posts from this date and after.")
 
     ap.add_argument("--min-filesize",
@@ -102,6 +114,10 @@ def get_args():
                     action='store_true', default=False,
                     help="Skips saving posts attachments.")
 
+    ap.add_argument("--skip-json",
+                    action='store_true', default=False,
+                    help="Skips saving posts json. (--update won't work on posts without json)")
+
     ap.add_argument("--force-external",
                     action='store_true', default=False,
                     help="Save all external links in content to a text file.")
@@ -118,18 +134,14 @@ def get_args():
                     action='store_true', default=False,
                     help="Tries to Download links in content with yt-dlp. (experimental)")
 
-    ap.add_argument("--post-timeout",
-                    metavar="SEC", type=int, default=0,
-                    help="The amount of time in seconds to wait between saving a posts. (default: 0)")
-
-    ap.add_argument("--retry-download",
-                    metavar="COUNT", type=int, default=0,
-                    help="The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)")
-
     args = vars(ap.parse_args())
 
     if args['version']:
         print(__version__)
+        quit()
+
+    if args['update'] and args['archive']:
+        print('[Error] Can not use --archive and --update together')
         quit()
 
     if args['cookies']:

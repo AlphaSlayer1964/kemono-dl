@@ -11,7 +11,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 from .arguments import get_args
 from .downloader import download_yt_dlp, download_file
-from .helper import check_post_archived, check_date, check_extention, win_folder_name, add_indexing
+from .helper import check_post_archived, check_date, check_extention, win_folder_name, add_indexing, check_post_edited
 
 args = get_args()
 
@@ -141,47 +141,53 @@ def save_post(post, info):
     print('Downloading post: {title}'.format(**post))
     print('service: [{service}] user_id: [{user}] post_id: [{id}]'.format(**post))
 
+    if post['published']:
+        date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
+        date_string = date.strftime(r'%Y%m%d')
+    else:
+        date = datetime.datetime.min
+        date_string = '00000000'
+
+    post_path = os.path.join(info['path'], win_folder_name('[{}] [{id}] {}'.format(date_string, post['title'], **post)))
+
     if check_post_archived(post):
 
-        try:
-            date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
-            date_string = date.strftime(r'%Y%m%d')
-        except:
-            date = datetime.datetime.min
-            date_string = '00000000'
+        if check_post_edited(post, post_path):
 
-        if not check_date(date):
-            print('Date out of range {}\n{}'.format(date_string, '-'*100))
+            if not check_date(date):
+                print('Date out of range {}\n{}'.format(date_string, '-'*100))
+                return
+
+            if not os.path.exists(post_path):
+                os.makedirs(post_path)
+
+            errors = 0
+            if not args['skip_attachments']:
+                errors += save_attachments(post, post_path)
+            if not args['skip_postfile']:
+                errors += save_postfile(post, post_path)
+            if not args['skip_content']:
+                errors += save_content(post, post_path)
+            if not args['skip_comments']:
+                errors += save_comments(post, post_path)
+            if not args['skip_embeds']:
+                errors += save_embeds(post, post_path)
+            if not args['skip_json']:
+                with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
+                    json.dump(post, f)
+
+            if errors == 0:
+                if args['archive']:
+                    with open(args['archive'],'a') as f:
+                        f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
+
+                print('Completed downloading post: {title}'.format(**post))
+                return
+
+            print('[{} Errors] encountered downloading post: {title}'.format(errors, **post))
             return
 
-        post_path = os.path.join(info['path'], win_folder_name('[{}] [{id}] {}'.format(date_string, post['title'], **post)))
-        if not os.path.exists(post_path):
-            os.makedirs(post_path)
-
-        errors = 0
-        if not args['skip_attachments']:
-            errors += save_attachments(post, post_path)
-        if not args['skip_postfile']:
-            errors += save_postfile(post, post_path)
-        if not args['skip_content']:
-            errors += save_content(post, post_path)
-        if not args['skip_comments']:
-            errors += save_comments(post, post_path)
-        if not args['skip_embeds']:
-            errors += save_embeds(post, post_path)
-
-        with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
-            json.dump(post, f)
-
-        if errors == 0:
-            if args['archive']:
-                with open(args['archive'],'a') as f:
-                    f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
-
-            print('Completed downloading post: {title}'.format(**post))
-            return
-
-        print('{} Error(s) encountered downloading post: {title}'.format(errors, **post))
+        print('Post already up to date: {title}'.format(**post))
         return
 
     print('Already archived post: {title}'.format(**post))

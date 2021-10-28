@@ -1,6 +1,7 @@
 import os
 import datetime
 import re
+import json
 
 from .arguments import get_args
 
@@ -15,6 +16,18 @@ def check_post_archived(post):
                 return False
     return True
 
+def check_post_edited(post, post_path):
+    if args['update']:
+        json_path = os.path.join(post_path,'{id}.json'.format(**post))
+        if not os.path.exists(json_path):
+            return False
+        current_edited = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if post['edited'] else datetime.datetime.min
+        with open(json_path,'r') as f:
+            data = json.loads(f.read())
+        recorded_edited = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
+        if current_edited <= recorded_edited:
+            return False
+    return True
 
 def check_date(date):
     if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
@@ -42,17 +55,15 @@ def check_size(size):
 def check_extention(file_name):
     file_extention = file_name.split('.')[-1]
 
-    for valid_extention in args['only_filetypes']:
-        if valid_extention == file_extention.lower():
-            return True
-        print('Wrong file type skiping download for "{}"'.format(file_name))
-        return False
-
-    for invalid_extention in args['skip_filetypes']:
-        if invalid_extention == file_extention.lower():
+    if args['only_filetypes']:
+        if not file_extention.lower() in args['only_filetypes']:
             print('Wrong file type skiping download for "{}"'.format(file_name))
             return False
-        return True
+
+    if args['skip_filetypes']:
+        if file_extention.lower() in args['skip_filetypes']:
+            print('Wrong file type skiping download for "{}"'.format(file_name))
+            return False
 
     return True
 
