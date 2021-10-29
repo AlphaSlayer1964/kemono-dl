@@ -175,11 +175,11 @@ def save_post(post, info):
                 errors += save_comments(post, post_path)
             if not args['skip_embeds']:
                 errors += save_embeds(post, post_path)
-            if not args['skip_json']:
-                with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
-                    json.dump(post, f)
 
             if errors == 0:
+                if not args['skip_json']:
+                    with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
+                        json.dump(post, f)
                 if args['archive']:
                     with open(args['archive'],'a') as f:
                         f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
