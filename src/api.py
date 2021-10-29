@@ -158,6 +158,7 @@ def save_post(post, info):
                 print('Date out of range {}\n{}'.format(date_string, '-'*100))
                 return
 
+            print('Sleeping for {} seconds...'.format(args['post_timeout']))
             time.sleep(args['post_timeout'])
 
             if not os.path.exists(post_path):
