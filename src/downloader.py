@@ -19,16 +19,19 @@ def download_yt_dlp(path, link):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
         return 0
-    except DownloadError as e:
+    except (Exception, DownloadError) as e:
         print('[Error] yt-dlp could not download: {}'.format(link)) # errors always ignored
-        if (str(e).find('Unsupported URL:') != -1):
-            return 0
-        elif (str(e).find('Video unavailable') != -1):
-            return 0
-        # elif (str(e).find('HTTP Error 404: Not Found') != -1): # noticed an imgur link 404ed when the link still works
-        #     return 0
-        else:
-            return 1
+        if type(e) is DownloadError:
+            if (str(e).find('Unsupported URL:') != -1):
+                return 0
+            elif (str(e).find('Video unavailable') != -1):
+                return 0
+            # elif (str(e).find('HTTP Error 404: Not Found') != -1): # noticed an imgur link 404ed when the link still works
+            #     return 0
+            else:
+                return 1
+        print('[Error] Something in yt-dl broke! Please report this link to their github: {}'.format(link))
+        return 1
 
 def download_file(file_name, url, file_path, retry = 0):
     flag_404 = 0
