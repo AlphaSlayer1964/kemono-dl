@@ -158,6 +158,8 @@ def save_post(post, info):
                 print('Date out of range {}\n{}'.format(date_string, '-'*100))
                 return
 
+            time.sleep(args['post_timeout'])
+
             if not os.path.exists(post_path):
                 os.makedirs(post_path)
 
@@ -204,7 +206,6 @@ def get_post(info):
     for post in data:
         save_post(dict(post), dict(info))
         print('-'*100)
-        time.sleep(args['post_timeout'])
     return
 
 def get_user(info):
@@ -225,7 +226,6 @@ def get_user(info):
         for post in data:
             save_post(dict(post), dict(info))
             print('-'*100)
-            time.sleep(args['post_timeout'])
         chunk += 25
 
 def get_channels(info):

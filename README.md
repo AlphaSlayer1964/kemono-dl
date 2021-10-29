@@ -5,7 +5,7 @@ This is a simple kemono.party downloader.
 1.  Install python
 2.  Download source code from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases) and extract it
 3.  Then install requirements with  `pip install -r requirements.txt`
-4. Get a cookie.txt file from kemono.party 
+4. Get a cookie.txt file from kemono.party
    - You can get the cookie text file using a [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - A cookie.txt file is required to use downloader.
 5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
@@ -15,8 +15,8 @@ This is a simple kemono.party downloader.
   -h, --help                  show this help message and exit
   --version                   Displays the current version then exits
   --cookies COOKIES           Set path to cookie.txt (REQUIRED)
-  -l LINKS, --links LINKS     Downloads user or post links. Suports comman seperated lists.
-  -f FILE, --fromfile FILE    Download users and posts from a file seperated by newlines
+  -l LINKS, --links LINKS     Downloads user or post links. Supports comma separated lists.
+  -f FILE, --fromfile FILE    Download users and posts from a file separated by newlines
   --favorite-users            Downloads all users saved in your favorites. (Requires logged in cookies)
   --favorite-posts            Downloads all posts saved in your favorites. (Requires logged in cookies)
   -o PATH, --output PATH      Set path to download posts
@@ -31,8 +31,8 @@ This is a simple kemono.party downloader.
   --dateafter DATE            Only download posts from this date and after.
   --min-filesize SIZE         Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
   --max-filesize SIZE         Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
-  --only-filetypes EXT        Only downloads attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)
-  --skip-filetypes EXT        Skips attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)
+  --only-filetypes EXT        Only downloads attachments and post file with given EXTs. Supports comma separated lists. (ex. JPG, mp4, mp3, png)
+  --skip-filetypes EXT        Skips attachments and post file with given EXTs. Supports comma separated lists. (ex. JPG, mp4, mp3, png)
   --skip-content              Skips saving posts content.
   --skip-embeds               Skips saving posts embeds.
   --skip-pfp-banner           Skips saving users pfp and banner.
@@ -48,8 +48,8 @@ This is a simple kemono.party downloader.
 ### Notes
 -  Default download location is a `Downloads` folder in the current working directory (will be created automatically)
 -  Input link format: `https://kemono.party/{service}/user/{user_id}` or `https://kemono.party/{service}/user/{user_id}/post/{post_is}`
--  Using any date option will not downlaod any gumroad posts because they have no dates
--  Using `--ignore-erros` posts with errors will not be archived
+-  Using any date option will not download any gumroad posts because they have no dates
+-  Using `--ignore-errors` posts with errors will not be archived
 -  Using `--max-filesize` or `--min-filesize` will cause files that don't have `content-length` in their headers to not download. This mainly includes external inline images, pfp, and banners.
 -  When using `--favorite-users` or `--favorite-posts` you must get your cookies.txt after logging into kemono.party.
 -  You may need to install `ffmpeg` for `yt-dlp` to work
@@ -66,7 +66,7 @@ python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archiv
 # only downloads user posts that were published on 1/1/21
 python kemono-dl.py --cookies "cookie.txt" --date 20210101 --links https://kemono.party/SERVICE/user/USERID
 
-# goes through all favorite users and posts only downloading files smaller than 100MB 
+# goes through all favorite users and posts only downloading files smaller than 100MB
 python kemono-dl.py --cookies "cookie.txt" --favorite-users --favorite-posts --max-filesize 100MB
 
 # downloads a post and user while ignoring downloading errors
