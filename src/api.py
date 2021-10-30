@@ -15,16 +15,19 @@ from .helper import check_post_archived, check_date, check_extention, win_folder
 
 args = get_args()
 
+TIMEOUT = 120
+
 retry_strategy = Retry(
-    total=2,
-    backoff_factor=60,
-    status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=False
+    total = 8,
+    backoff_factor = 1,
+    status_forcelist = [429, 500, 502, 503, 504],
+    allowed_methods = False,
+    raise_on_status = True
 )
 adapter = HTTPAdapter(max_retries=retry_strategy)
-s = requests.Session()
-s.mount("https://", adapter)
-s.mount("http://", adapter)
+session = requests.Session()
+session.mount("https://", adapter)
+session.mount("http://", adapter)
 
 def save_inline(html, file_path, external = False):
     errors = 0
@@ -35,24 +38,24 @@ def save_inline(html, file_path, external = False):
         kemono_hosted = re.search('^/[^*]+', inline_image['src'])
         if kemono_hosted:
             file_name = inline_image['src'].split('/')[-1] # might want to check content-disposition
-            link = "https://kemono.party/data{}".format(inline_image['src'])
+            url = "https://kemono.party/data{}".format(inline_image['src'])
         else:
             if external: # can't think of a better way of doing this!
-                Content_Disposition = requests.head(inline_image['src'],allow_redirects=True).headers.get('Content-Disposition', '')
+                Content_Disposition = requests.head(inline_image['src']).headers.get('Content-Disposition', '')
                 file_name_CD = re.findall('filename="(.+)"', Content_Disposition)
                 file_name = inline_image['src'].split('?')[0].split('/')[-1]
                 if file_name_CD:
                     file_name = file_name_CD[0]
-                link = inline_image['src']
+                url = inline_image['src']
             else:
                 break
         if args['force_indexing']:
             file_name = add_indexing(index, file_name, inline_images)
-        if download_file(file_name, link, os.path.join(file_path, 'inline'), args['retry_download']) == 0:
+        if download_file(url, file_name, os.path.join(file_path, 'inline'), args['retry_download']) == 0:
             inline_image['src'] = os.path.join(file_path, 'inline', file_name)
         else:
             errors += 1
-    return  (content_soup, errors)
+    return (content_soup, errors)
 
 def save_attachments(post, post_path):
     errors = 0
@@ -65,7 +68,7 @@ def save_attachments(post, post_path):
         url = 'https://kemono.party/data{path}'.format(**item)
         file_path = os.path.join(post_path, 'attachments')
         if check_extention(file_name):
-            errors += download_file(file_name, url, file_path, args['retry_download'])
+            errors += download_file(url, file_name, file_path, args['retry_download'])
     return errors
 
 def save_postfile(post, post_path):
@@ -76,7 +79,7 @@ def save_postfile(post, post_path):
         url = 'https://kemono.party/data{path}'.format(**post['file'])
         file_path = post_path
         if check_extention(file_name):
-            errors += download_file(file_name, url, file_path, args['retry_download'])
+            errors += download_file(url, file_name, file_path, args['retry_download'])
     return errors
 
 def get_content_links(html, post_path, save = False, download = False):
@@ -105,22 +108,23 @@ def save_content(post, post_path):
     return errors
 
 def save_embeds(post, post_path):
-    errrors = 0
+    errors = 0
     if post['embed']:
         print('Saving embeds to embeds.txt')
         with open(os.path.join(post_path, 'embed.txt'),'w') as f:
             f.write('{url}'.format(**post['embed']))
         if args['yt_dlp']:
             print('Trying to download embed with yt_dlp')
-            errrors += download_yt_dlp(os.path.join(post_path, 'embed'), post['embed']['url'])
-    return errrors
+            errors += download_yt_dlp(os.path.join(post_path, 'embed'), post['embed']['url'])
+    return errors
 
 def save_comments(post, post_path):
     # no api method to get comments so using from html (not future proof)
     try:
-        page_html = s.get('https://kemono.party/{service}/user/{user}/post/{id}'.format(**post), allow_redirects=True, cookies=args['cookies'])
-        page_html.raise_for_status()
-        page_soup = BeautifulSoup(page_html.text, 'html.parser')
+        url = 'https://kemono.party/{service}/user/{user}/post/{id}'.format(**post)
+        responce = session.get(url=url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
+        responce.raise_for_status()
+        page_soup = BeautifulSoup(responce.text, 'html.parser')
         comment_html = page_soup.find("div", {"class": "post__comments"})
         if comment_html:
             not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
@@ -158,8 +162,9 @@ def save_post(post, info):
                 print('Date out of range {}\n{}'.format(date_string, '-'*100))
                 return
 
-            print('Sleeping for {} seconds...'.format(args['post_timeout']))
-            time.sleep(args['post_timeout'])
+            if args['post_timeout']:
+                print('Sleeping for {} seconds...'.format(args['post_timeout']))
+                time.sleep(args['post_timeout'])
 
             if not os.path.exists(post_path):
                 os.makedirs(post_path)
@@ -178,6 +183,7 @@ def save_post(post, info):
 
             if errors == 0:
                 if not args['skip_json']:
+                    print('Witing JSON info to {id}.json'.format(**post))
                     with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
                         json.dump(post, f)
                 if args['archive']:
@@ -200,14 +206,12 @@ def save_channel(post, info, channel):
     pass
 
 def get_post(info):
-    api_call = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
-    api_response = s.get(api_call)
-    api_response.raise_for_status()
-    data = json.loads(api_response.text)
-    for post in data:
+    url = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
+    response = session.get(url, timeout=TIMEOUT)
+    response.raise_for_status()
+    for post in response.json():
         save_post(dict(post), dict(info))
         print('-'*100)
-    return
 
 def get_user(info):
     print('Downloading posts for user: {username}'.format(**info))
@@ -218,38 +222,38 @@ def get_user(info):
 
     chunk = 0
     while True:
-        api_call = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
-        api_response = s.get(api_call)
-        api_response.raise_for_status()
-        data = json.loads(api_response.text)
-        if not data:
+        url = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
+        response = session.get(url, timeout=TIMEOUT)
+        response.raise_for_status()
+        if not response.json():
             return
-        for post in data:
+        for post in response.json():
             save_post(dict(post), dict(info))
             print('-'*100)
         chunk += 25
 
 def get_channels(info):
-    # for channel in info['channels']:
-    #     skip = 0
-    #     while True:
-    #         api_call = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(skip, **channel)
-    #         api_response = s.get(api_call)
-    #         api_response.raise_for_status()
-    #         data = json.loads(api_response.text)
-    #         for post in data:
-    #             save_channel(dict(post), dict(info), dict(channel))
-    #         if not data:
-    #             break
-    #         skip += 10
+    return
+    for channel in info['channels']:
+        skip = 0
+        while True:
+            url = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(skip, **channel)
+            response = session.get(url, timeout=TIMEOUT)
+            response.raise_for_status()
+            for post in response.json():
+                save_channel(dict(post), dict(info), dict(channel))
+            if not data:
+                break
+            skip += 10
     return
 
 def save_icon_banner(info):
+    # look into doing this https://docs.python-requests.org/en/latest/user/quickstart/#binary-response-content
     for item in ['icon','banner']:
         file_name = '{username} [{user_id}] {}'.format(item, **info)
         url = 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info)
         file_path = info['path']
-        if download_file(file_name, url, file_path, args['retry_download']) == 0:
+        if download_file(url, file_name, file_path, args['retry_download']) == 0:
             try:
                 with Image.open(os.path.join(info['path'], file_name)) as image:
                     image.save(os.path.join(info['path'], '{}.{}'.format(file_name, image.format.lower())), format=image.format)
@@ -259,20 +263,17 @@ def save_icon_banner(info):
                 os.remove(os.path.join(info['path'], file_name))
         else:
             print('[Error] unable to get user {}'.format(item))
-    return
 
 def get_channel_ids(info):
-    api_call = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['server_id'])
-    api_response = s.get(api_call)
-    api_response.raise_for_status()
-    return json.loads(api_response.text)
+    url = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['server_id'])
+    response = session.get(url, timeout=TIMEOUT)
+    return response.json()
 
 def get_username(info):
-    api_call = 'https://kemono.party/api/creators/'
-    api_response = s.get(api_call)
-    api_response.raise_for_status()
-    for creator in json.loads(api_response.text):
-        if creator['id'] == info['user_id'] and creator['service'] == info['service']:
+    url = 'https://kemono.party/api/creators/'
+    response = session.get(url, timeout=TIMEOUT)
+    for creator in response.json():
+        if creator['id'] in {info['user_id'], info['server_id']} and creator['service'] == info['service']:
             return creator['name']
 
 def extract_link_info(link):
@@ -280,15 +281,16 @@ def extract_link_info(link):
     info = {'service':None,'user_id':None,'post_id':None,'username':None,'path':None,'server_id':None,'Channels':None}
     if found:
         info['service'] =found.group(1)
+
         if info['service'] == 'discord':
             info['server_id'] = found.group(3)
             info['channels'] = get_channel_ids(info)
-            info['path'] = ''
         else:
             info['user_id'] = found.group(3)
             info['post_id'] = found.group(5) # None for users
-            info['username'] = get_username(info)
-            info['path'] = os.path.join(args['output'], info['service'], win_folder_name('{username} [{user_id}]'.format(**info)))
+
+        info['username'] = get_username(info)
+        info['path'] = os.path.join(args['output'], info['service'], win_folder_name('{username} [{user_id}]'.format(**info)))
 
         if info['service'] == 'discord':
             return False
@@ -303,17 +305,16 @@ def extract_link_info(link):
     return False
 
 def get_favorites(type):
-    api_call = 'https://kemono.party/api/favorites?type={}'.format(type)
-    api_response = s.get(api_call, cookies=args['cookies'])
-    if not api_response.ok:
+    url = 'https://kemono.party/api/favorites?type={}'.format(type)
+    response = session.get(url, cookies=args['cookies'], timeout=TIMEOUT)
+    if not response.ok:
         print('Error getting favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
-    data = json.loads(api_response.text)
-    for favorite in data:
+    for favorite in response.json():
         if type == 'post':
             extract_link_info('https://kemono.party/{service}/user/{user}/post/{id}'.format(**favorite))
         elif type == 'artist':
             extract_link_info('https://kemono.party/{service}/user/{id}'.format(**favorite))
-    if not data:
+    if not response.json():
         print('You have no favorite {}s.'.format(type))
     return
