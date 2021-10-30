@@ -98,7 +98,7 @@ def get_content_links(html, post_path, save = False, download = False):
 def save_content(post, post_path):
     errors = 0
     if post['content']:
-        print('[Saving] Post content: content.html')
+        print('[Saving] Content: content.html')
         result = save_inline(post['content'], post_path, args['force_inline'])
         errors += result[1]
         with open(os.path.join(post_path, 'content.html'),'wb') as File:
@@ -110,8 +110,8 @@ def save_embeds(post, post_path):
     errors = 0
     if post['embed']:
         print('[Saving] Embeds: embeds.txt')
-        with open(os.path.join(post_path, 'embed.txt'),'w') as f:
-            f.write('{url}'.format(**post['embed']))
+        with open(os.path.join(post_path, 'embed.txt'),'wb') as f:
+            f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode('utf-8'))
         if args['yt_dlp']:
             print('[Downloading] embed with yt_dlp')
             errors += download_yt_dlp(os.path.join(post_path, 'embed'), post['embed']['url'])
@@ -127,7 +127,7 @@ def save_comments(post, post_path):
         if comment_html:
             not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
             if not not_supported:
-                print('[Saving] comments: comments.html')
+                print('[Saving] Comments: comments.html')
                 with open(os.path.join(post_path, 'comments.html'),'wb') as f:
                     f.write(comment_html.prettify().encode("utf-16"))
         return 0
