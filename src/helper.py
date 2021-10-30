@@ -102,10 +102,5 @@ def win_folder_name(folder_name):
 
 
 def add_indexing(index, file_name, list):
-    if len(list) < 10:
-        return '[{:01d}]_{}'.format(index+1, file_name)
-    elif len(list) < 100:
-        return '[{:02d}]_{}'.format(index+1, file_name)
-    elif len(list) < 1000:
-        return '[{:03d}]_{}'.format(index+1, file_name)
-    # there is no way a post has more than 1000 attachments!
+    index_string = str(index+1).zfill(len(str(len(list))))
+    return '[{}]_{}'.format(index_string, file_name)
