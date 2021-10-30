@@ -9,6 +9,8 @@ from .helper import win_file_name, check_size
 
 args = get_args()
 
+TIMEOUT = 120
+
 def download_yt_dlp(path, link):
     try:
         ydl_opts = {
@@ -44,7 +46,7 @@ def download_file(url, file_name, file_path, retry = 0):
             'Connection': 'keep-alive',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36',
             }
-        with requests.get(url,stream=True,cookies=args['cookies'],headers=headers) as r:
+        with requests.get(url,stream=True,cookies=args['cookies'],headers=headers, timeout=TIMEOUT) as r:
             if r.status_code != 200:
                 if r.status_code == 404:
                     flag_404 = 1
