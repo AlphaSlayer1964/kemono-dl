@@ -32,6 +32,7 @@ def download_yt_dlp(path, link):
                     if os.path.exists(os.path.join(path,x)):
                         os.remove(os.path.join(path,x))
                     os.rename(os.path.join('./temp',x),os.path.join(path,x))
+            os.rmdir('./temp')
         return 0
     except (Exception, DownloadError) as e:
         print('[Error] yt-dlp could not download: {}'.format(link)) # errors always ignored
