@@ -157,11 +157,11 @@ def save_post(post, info):
         if check_post_edited(post, post_path):
 
             if not check_date(date):
-                print('Date out of range {}\n{}'.format(date_string, '-'*100))
+                print('[info] Date out of range {}\n{}'.format(date_string, '-'*100))
                 return
 
             if args['post_timeout']:
-                print('Sleeping for {} seconds...'.format(args['post_timeout']))
+                print('[info] Sleeping for {} seconds...'.format(args['post_timeout']))
                 time.sleep(args['post_timeout'])
 
             if not os.path.exists(post_path):
