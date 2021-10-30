@@ -249,6 +249,8 @@ def save_icon_banner(info):
     for item in ['icon','banner']:
         if info['service'] == 'gumroad' and item == 'banner':
             return
+        if not os.path.exists(info['path']):
+            os.makedirs(info['path'])
         print('[Downloading] User {}.'.format(item))
         url = 'https://kemono.party/{}s/{service}/{id}'.format(item, **info)
         response = requests.get(url, cookies=args['cookies'], timeout=TIMEOUT)
