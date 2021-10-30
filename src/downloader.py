@@ -56,7 +56,7 @@ def download_file(url, file_name, file_path, retry = 0):
             downloaded = 0
             total = int(r.headers.get('content-length', 0)) # this seems to happen on pdf files
             if not check_size(total):
-                print('File size out of range: {} bytes'.format(total))
+                print('[info] File size out of range: {} bytes'.format(total))
                 return 0
             with open(os.path.join(file_path, file_name), 'wb') as f:
                 start = time.time()
@@ -79,7 +79,7 @@ def download_file(url, file_name, file_path, retry = 0):
         print(e)
         if retry:
             if flag_404 == 1:
-                print('[Warning] Skipping retry because responce status 404')
+                print('[info] Skipping retry because responce status 404')
                 return 1
             current_try = 0
             while True:
