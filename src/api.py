@@ -4,7 +4,6 @@ import json
 import os
 import datetime
 import time
-from PIL import Image
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
@@ -123,7 +122,6 @@ def save_comments(post, post_path):
     try:
         url = 'https://kemono.party/{service}/user/{user}/post/{id}'.format(**post)
         responce = session.get(url=url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
-        responce.raise_for_status()
         page_soup = BeautifulSoup(responce.text, 'html.parser')
         comment_html = page_soup.find("div", {"class": "post__comments"})
         if comment_html:
@@ -192,13 +190,10 @@ def save_post(post, info):
 
                 print('Completed downloading post: {title}'.format(**post))
                 return
-
             print('[{} Errors] encountered downloading post: {title}'.format(errors, **post))
             return
-
         print('Post already up to date: {title}'.format(**post))
         return
-
     print('Already archived post: {title}'.format(**post))
     return
 
@@ -206,7 +201,7 @@ def save_channel(post, info, channel):
     pass
 
 def get_post(info):
-    url = 'https://kemono.party/api/{service}/user/{user_id}/post/{post_id}'.format(**info)
+    url = 'https://kemono.party/api/{service}/user/{id}/post/{post_id}'.format(**info)
     response = session.get(url, timeout=TIMEOUT)
     response.raise_for_status()
     for post in response.json():
@@ -215,14 +210,14 @@ def get_post(info):
 
 def get_user(info):
     print('Downloading posts for user: {username}'.format(**info))
-    print('service: [{service}] user_id: [{user_id}]'.format(**info))
+    print('service: [{service}] user_id: [{id}]'.format(**info))
 
     if not args['skip_pfp_banner']:
         save_icon_banner(info)
 
     chunk = 0
     while True:
-        url = 'https://kemono.party/api/{service}/user/{user_id}?o={}'.format(chunk, **info)
+        url = 'https://kemono.party/api/{service}/user/{id}?o={}'.format(chunk, **info)
         response = session.get(url, timeout=TIMEOUT)
         response.raise_for_status()
         if not response.json():
@@ -233,39 +228,38 @@ def get_user(info):
         chunk += 25
 
 def get_channels(info):
-    return
     for channel in info['channels']:
         skip = 0
         while True:
             url = 'https://kemono.party/api/discord/channel/{id}?skip={}'.format(skip, **channel)
             response = session.get(url, timeout=TIMEOUT)
-            response.raise_for_status()
             for post in response.json():
                 save_channel(dict(post), dict(info), dict(channel))
-            if not data:
+            if not response.json():
                 break
             skip += 10
-    return
 
 def save_icon_banner(info):
-    # look into doing this https://docs.python-requests.org/en/latest/user/quickstart/#binary-response-content
+    from PIL import Image
+    from io import BytesIO
+
+    if info['service'] in ('discord','dlsite'):
+        print('[Warning] icon and banner not supported by discord or dslite.')
+        return
     for item in ['icon','banner']:
-        file_name = '{username} [{user_id}] {}'.format(item, **info)
-        url = 'https://kemono.party/{}s/{service}/{user_id}'.format(item, **info)
-        file_path = info['path']
-        if download_file(url, file_name, file_path, args['retry_download']) == 0:
-            try:
-                with Image.open(os.path.join(info['path'], file_name)) as image:
-                    image.save(os.path.join(info['path'], '{}.{}'.format(file_name, image.format.lower())), format=image.format)
-            except:
-                pass
-            if os.path.exists(os.path.join(info['path'], file_name)):
-                os.remove(os.path.join(info['path'], file_name))
-        else:
-            print('[Error] unable to get user {}'.format(item))
+        if info['service'] == 'gumroad' and item == 'banner':
+            return
+        print('Saving user {}.'.format(item))
+        url = 'https://kemono.party/{}s/{service}/{id}'.format(item, **info)
+        response = requests.get(url, cookies=args['cookies'], timeout=TIMEOUT)
+        try:
+            image = Image.open(BytesIO(response.content))
+            image.save(os.path.join(info['path'], '{username} [{id}] {}.{}'.format(item, image.format.lower(), **info)), format=image.format)
+        except:
+            print('[Error] unable to get user {}.'.format(item))
 
 def get_channel_ids(info):
-    url = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['server_id'])
+    url = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['id'])
     response = session.get(url, timeout=TIMEOUT)
     return response.json()
 
@@ -273,35 +267,27 @@ def get_username(info):
     url = 'https://kemono.party/api/creators/'
     response = session.get(url, timeout=TIMEOUT)
     for creator in response.json():
-        if creator['id'] in {info['user_id'], info['server_id']} and creator['service'] == info['service']:
+        if creator['id'] == info['id'] and creator['service'] == info['service']:
             return creator['name']
 
 def extract_link_info(link):
     found = re.search('https://kemono\.party/([^/]+)/(server|user)/([^/]+)($|/post/([^/]+)$)',link)
-    info = {'service':None,'user_id':None,'post_id':None,'username':None,'path':None,'server_id':None,'Channels':None}
+    info = {'username':None,'service':None,'id':None,'post_id':None,'channels':None,'path':None}
     if found:
-        info['service'] =found.group(1)
-
-        if info['service'] == 'discord':
-            info['server_id'] = found.group(3)
-            info['channels'] = get_channel_ids(info)
-        else:
-            info['user_id'] = found.group(3)
-            info['post_id'] = found.group(5) # None for users
-
+        info['service'] = found.group(1)
+        info['id'] = found.group(3)
+        info['post_id'] = found.group(5) # None for users
         info['username'] = get_username(info)
-        info['path'] = os.path.join(args['output'], info['service'], win_folder_name('{username} [{user_id}]'.format(**info)))
-
+        info['path'] = os.path.join(args['output'], info['service'], win_folder_name('{username} [{id}]'.format(**info)))
         if info['service'] == 'discord':
             return False
-
-        if info['post_id'] == None:
+            info['channels'] = get_channel_ids(info)
+            get_channels(info)
+        elif info['post_id'] == None:
             get_user(info)
-            return True
-
-        get_post(info)
+        else:
+            get_post(info)
         return True
-
     return False
 
 def get_favorites(type):
@@ -317,4 +303,3 @@ def get_favorites(type):
             extract_link_info('https://kemono.party/{service}/user/{id}'.format(**favorite))
     if not response.json():
         print('You have no favorite {}s.'.format(type))
-    return
