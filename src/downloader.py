@@ -42,6 +42,7 @@ def download_file(url, file_name, file_path, retry = 0):
         os.makedirs(file_path)
     print('[Downloading] {}'.format(file_name))
     try:
+        # no idea if the header 'Connection': 'keep-alive' helps or not
         headers = {
             'Connection': 'keep-alive',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.54 Safari/537.36',
@@ -53,7 +54,7 @@ def download_file(url, file_name, file_path, retry = 0):
                 raise Exception('[Error] Responce status code: {}'.format(r.status_code))
             block_size = 1024
             downloaded = 0
-            total = int(r.headers.get('content-length', 0)) # this seems to happen on pdfs a lot
+            total = int(r.headers.get('content-length', 0)) # this seems to happen on pdf files
             if not check_size(total):
                 print('File size out of range: {} bytes'.format(total))
                 return 0
