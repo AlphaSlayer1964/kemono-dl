@@ -13,24 +13,25 @@ def download_yt_dlp(path, link):
     import yt_dlp
     from yt_dlp import DownloadError
     try:
-        # truncate = 240 - len(path)
         ydl_opts = {
-            # "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
-            # Because file path can get to long for ffmpeg to handle on windows
-            # I am opting to just use the posts id for the file name.
-            # The other option is to truncate the title but in some cases that
-            # will truncate most of the name!
-            # If a video somehow doesn't have an id idk what to do then!
-            # If you want the truncate method uncomment line 16 and 26.
-            # No idea if it will work!
-            # "outtmpl" : "{}/%(title).{}s.%(ext)s".format(path, truncate),
-            # Don't forget to comment this next line
-            "outtmpl" : "{}/%(id)s.%(ext)s".format(path),
+
+            "outtmpl" : "./temp/%(title)s.%(ext)s",
             "noplaylist" : True, # stops from downloading an entire youtube channel
-            "merge_output_format" : "mp4"
+            "merge_output_format" : "mp4",
+            "quiet" : True
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
+        # This is so jank!
+        if os.path.isdir('./temp'):
+            if len(os.listdir('./temp')) > 1:
+                raise Exception('[Error] Not a yt-dlp error this should never happen! Please report to ME if it does!')
+            os.makedirs(path)
+            for x in os.listdir('./temp'):
+                if x.find('.mp4'):
+                    if os.path.exists(os.path.join(path,x)):
+                        os.remove(os.path.join(path,x))
+                    os.rename(os.path.join('./temp',x),os.path.join(path,x))
         return 0
     except (Exception, DownloadError) as e:
         print('[Error] yt-dlp could not download: {}'.format(link)) # errors always ignored
