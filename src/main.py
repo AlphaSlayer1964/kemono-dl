@@ -13,10 +13,10 @@ def main():
 
     for link in args['links']:
         if not extract_link_info(link):
-            print('Error invalid link: {}'.format(link))
+            print('[Error] Invalid link: {}'.format(link))
 
     for link in args['fromfile']:
         if not extract_link_info(link):
-            print('Error invalid link: {}'.format(link))
+            print('[Error] Invalid link: {}'.format(link))
 
     print('Done.')
