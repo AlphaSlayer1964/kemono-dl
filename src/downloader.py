@@ -1,5 +1,3 @@
-import yt_dlp
-from yt_dlp import DownloadError
 import requests
 import os
 import time
@@ -12,9 +10,22 @@ args = get_args()
 TIMEOUT = 120
 
 def download_yt_dlp(path, link):
+    import yt_dlp
+    from yt_dlp import DownloadError
     try:
+        # truncate = 240 - len(path)
         ydl_opts = {
-            "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
+            # "outtmpl" : "{}/%(title)s.%(ext)s".format(path),
+            # Because file path can get to long for ffmpeg to handle on windows
+            # I am opting to just use the posts id for the file name.
+            # The other option is to truncate the title but in some cases that
+            # will truncate most of the name!
+            # If a video somehow doesn't have an id idk what to do then!
+            # If you want the truncate method uncomment line 16 and 26.
+            # No idea if it will work!
+            # "outtmpl" : "{}/%(title).{}s.%(ext)s".format(path, truncate),
+            # Don't forget to comment this next line
+            "outtmpl" : "{}/%(id)s.%(ext)s".format(path),
             "noplaylist" : True, # stops from downloading an entire youtube channel
             "merge_output_format" : "mp4"
         }
