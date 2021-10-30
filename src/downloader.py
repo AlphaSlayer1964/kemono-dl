@@ -33,7 +33,7 @@ def download_yt_dlp(path, link):
         print('[Error] Something in yt-dl broke! Please report this link to their github: {}'.format(link))
         return 1
 
-def download_file(file_name, url, file_path, retry = 0):
+def download_file(url, file_name, file_path, retry = 0):
     flag_404 = 0
     file_name = win_file_name(file_name)
     if not os.path.exists(file_path):
