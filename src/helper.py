@@ -67,8 +67,8 @@ def check_extention(file_name):
 
     return True
 
-# If am imigur link is embeded an attachmanet and post file are created that are the thumbanil
-# image of the video. The problem is the api saves these files names as the image link. Bruh!
+# If am imgur link is embedded an attachmanet and post file are created that are the thumbanil
+# image of the video. The problem is the api saves these files names as the image link.
 def win_file_name(file_name):
     # separate extention
     file_name = file_name.rsplit('.', 1)
