@@ -10,7 +10,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 from .arguments import get_args
 from .downloader import download_yt_dlp, download_file
-from .helper import check_post_archived, check_date, check_extention, win_folder_name, add_indexing, check_post_edited
+from .helper import check_post_archived, check_date, check_extention, win_folder_name, add_indexing, check_post_edited, print_info, print_error, print_separator, print_warning
 
 args = get_args()
 
@@ -30,7 +30,7 @@ session.mount("http://", adapter)
 
 def save_inline(html, file_path, external = False):
     errors = 0
-    print('[Downloading] Inline Images:')
+    print_info('Downloading inline images:')
     content_soup = BeautifulSoup(html, 'html.parser')
     inline_images = content_soup.find_all('img')
     for index, inline_image in enumerate(inline_images):
@@ -58,7 +58,7 @@ def save_inline(html, file_path, external = False):
 
 def save_attachments(post, post_path):
     errors = 0
-    print('[Downloading] Attachments:')
+    print_info('Downloading attachments:')
     for index, item in enumerate(post['attachments']):
         if args['force_indexing']:
             file_name = add_indexing(index, item['name'], post['attachments'])
@@ -73,7 +73,7 @@ def save_attachments(post, post_path):
 
 def save_postfile(post, post_path):
     errors = 0
-    print('[Downloading] Post File:')
+    print_info('Downloading post file:')
     if post['file']:
         file_name = post['file']['name']
         url = 'https://kemono.party/data{path}'.format(**post['file'])
@@ -89,18 +89,18 @@ def get_content_links(html, post_path, save = False, download = False):
     links = content_soup.find_all('a', href=True)
     for link in links:
         if save:
-            print('[Saving] External content links: links.txt')
+            print_info('Saving external content links: links.txt')
             with open(os.path.join(post_path, 'links.txt'),'a') as f:
                 f.write(link['href'] + '\n')
         if download:
-            print('[Downloading] Content links with yt_dlp')
+            print_info(' Downloading content links with yt_dlp')
             errors += download_yt_dlp(os.path.join(post_path, 'external files'), link['href'])
     return errors
 
 def save_content(post, post_path):
     errors = 0
     if post['content']:
-        print('[Saving] Content: content.html')
+        print_info('Saving content: content.html')
         result = save_inline(post['content'], post_path, args['force_inline'])
         errors += result[1]
         with open(os.path.join(post_path, 'content.html'),'wb') as File:
@@ -111,11 +111,11 @@ def save_content(post, post_path):
 def save_embeds(post, post_path):
     errors = 0
     if post['embed']:
-        print('[Saving] Embeds: embeds.txt')
+        print_info('Saving embeds: embeds.txt')
         with open(os.path.join(post_path, 'embed.txt'),'wb') as f:
             f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode('utf-8'))
         if args['yt_dlp']:
-            print('[Downloading] embed with yt_dlp')
+            print_info('Downloading embed with yt_dlp')
             errors += download_yt_dlp(os.path.join(post_path, 'embed'), post['embed']['url'])
     return errors
 
@@ -129,21 +129,20 @@ def save_comments(post, post_path):
         if comment_html:
             not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
             if not not_supported:
-                print('[Saving] Comments: comments.html')
+                print_info('Saving comments: comments.html')
                 with open(os.path.join(post_path, 'comments.html'),'wb') as f:
                     f.write(comment_html.prettify().encode("utf-16"))
         return 0
     except Exception as e:
-        print('[Error] getting comments: {}'.format(url))
-        print(e)
+        print_error('Could not get post comments: {}'.format(url))
         if args['ignore_errors']:
             return 1
         quit()
 
 def save_post(post, info):
 
-    print('[Downloading] Post: {title}'.format(**post))
-    print('[info] service: [{service}] user_id: [{user}] post_id: [{id}]'.format(**post))
+    print_info('Downloading Post: {title}'.format(**post))
+    print_info('service: [{service}] user_id: [{user}] post_id: [{id}]'.format(**post))
 
     if post['published']:
         date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
@@ -159,11 +158,11 @@ def save_post(post, info):
         if check_post_edited(post, post_path):
 
             if not check_date(date):
-                print('[info] Date out of range {}\n{}'.format(date_string, '-'*100))
+                print_info('Date out of range {}\n{}'.format(date_string, '-'*100))
                 return
 
             if args['post_timeout']:
-                print('[info] Sleeping for {} seconds...'.format(args['post_timeout']))
+                print_info('Sleeping for {} seconds...'.format(args['post_timeout']))
                 time.sleep(args['post_timeout'])
 
             if not os.path.exists(post_path):
@@ -183,20 +182,20 @@ def save_post(post, info):
 
             if errors == 0:
                 if not args['skip_json']:
-                    print('[Saving] JSON info: {id}.json'.format(**post))
+                    print_info('Saving json: {id}.json'.format(**post))
                     with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
                         json.dump(post, f)
                 if args['archive']:
                     with open(args['archive'],'a') as f:
                         f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
 
-                print('Completed downloading post: {title}'.format(**post))
+                print_info('Completed downloading post: {title}'.format(**post))
                 return
-            print('[{} Errors] encountered downloading post: {title}'.format(errors, **post))
+            print_warning('{} Errors encountered downloading post: {title}'.format(errors, **post))
             return
-        print('Post already up to date: {title}'.format(**post))
+        print_info('Post already up to date: {title}'.format(**post))
         return
-    print('Already archived post: {title}'.format(**post))
+    print_info('Already archived post: {title}'.format(**post))
     return
 
 def save_channel(post, info, channel):
@@ -208,11 +207,11 @@ def get_post(info):
     response.raise_for_status()
     for post in response.json():
         save_post(dict(post), dict(info))
-        print('-'*100)
+        print_separator()
 
 def get_user(info):
-    print('[Downloading] User: {username}'.format(**info))
-    print('[info] service: [{service}] user_id: [{id}]'.format(**info))
+    print_info('Downloading User: {username}'.format(**info))
+    print_info('service: [{service}] user_id: [{id}]'.format(**info))
 
     if not args['skip_pfp_banner']:
         save_icon_banner(info)
@@ -226,7 +225,7 @@ def get_user(info):
             return
         for post in response.json():
             save_post(dict(post), dict(info))
-            print('-'*100)
+            print_separator()
         chunk += 25
 
 def get_channels(info):
@@ -246,7 +245,7 @@ def save_icon_banner(info):
     from io import BytesIO
 
     if info['service'] in ('discord','dlsite'):
-        print('[Error] icon and banner not supported by discord or dslite.')
+        print_error('icon and banner not supported by discord or dslite.')
         return
     for item in ['icon','banner']:
         if info['service'] == 'gumroad' and item == 'banner':
@@ -260,7 +259,7 @@ def save_icon_banner(info):
             image = Image.open(BytesIO(response.content))
             image.save(os.path.join(info['path'], '{username} [{id}] {}.{}'.format(item, image.format.lower(), **info)), format=image.format)
         except:
-            print('[Error] unable to get user {}.'.format(item))
+            print_error('Unable to get user {}.'.format(item))
 
 def get_channel_ids(info):
     url = 'https://kemono.party/api/discord/channels/lookup?q={}'.format(info['id'])
@@ -298,7 +297,7 @@ def get_favorites(type):
     url = 'https://kemono.party/api/favorites?type={}'.format(type)
     response = session.get(url, cookies=args['cookies'], timeout=TIMEOUT)
     if not response.ok:
-        print('[Error] Can not get favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
+        print_error('Can not get favorite {}s. Session might have expired, re-log in to kemono.party and get a new cookies.txt'.format(type))
         return
     for favorite in response.json():
         if type == 'post':
@@ -306,4 +305,4 @@ def get_favorites(type):
         elif type == 'artist':
             extract_link_info('https://kemono.party/{service}/user/{id}'.format(**favorite))
     if not response.json():
-        print('[info] You have no favorite {}s.'.format(type))
+        print_warning('You have no favorite {}s.'.format(type))
