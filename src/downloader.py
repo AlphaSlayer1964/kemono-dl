@@ -25,7 +25,8 @@ def download_yt_dlp(path, link):
         # This is so jank! Needed for when file path length is to long on windows
         if os.path.isdir('./temp'):
             if len(os.listdir('./temp')) > 1:
-                raise Exception('[Error] Not a yt-dlp error this should never happen! Please report to ME if it does!')
+                print_error('Not a yt-dlp error this should never happen! Please report to ME if it does!')
+                raise Exception
             os.makedirs(path)
             for x in os.listdir('./temp'):
                 if x.find('.mp4'):
@@ -45,6 +46,9 @@ def download_yt_dlp(path, link):
             #     return 0
             else:
                 return 1
+        for x in os.listdir('./temp'):
+            os.remove(x)
+        os.rmdir('./temp')
         print_error('Something in yt-dl broke! Please report this link to their github: {}'.format(link))
         return 1
 
