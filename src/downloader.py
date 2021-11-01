@@ -124,7 +124,7 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
                 current_try += 1
                 print_info('Retrying download in 60 seconds. ({}/{})'.format(current_try, retry))
                 time.sleep(30)
-                if download_file(file_name, url, file_path) == 0:
+                if download_file(url, file_name, file_path, file_hash=file_hash) == 0:
                     return 0
                 if current_try >= retry:
                     return 1
