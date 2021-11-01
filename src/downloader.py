@@ -27,7 +27,8 @@ def download_yt_dlp(path, link):
             if len(os.listdir('./temp')) > 1:
                 print_error('Not a yt-dlp error this should never happen! Please report to ME if it does!')
                 raise Exception
-            os.makedirs(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
             for x in os.listdir('./temp'):
                 if x.find('.mp4'):
                     if os.path.exists(os.path.join(path,x)):
