@@ -12,31 +12,31 @@ def get_args():
 
     ap.add_argument("--version",
                     action='store_true', default=False,
-                    help="Displays the current version then exits")
+                    help="Displays current version and exits.")
 
     ap.add_argument("--cookies",
                     required=True,
-                    help="Set path to cookie.txt (REQUIRED)")
+                    help="File to read cookies from. (REQUIRED)")
 
     ap.add_argument("-l", "--links",
                     default=[],
-                    help="Downloads user or post links. Suports comman seperated lists.")
+                    help="Downloads URLs, can be separated by commas.")
 
     ap.add_argument("-f", "--fromfile",
                     metavar="FILE", type=str, default=[],
-                    help="Download users and posts from a file seperated by newlines")
+                    help="File containing URLs to download, one URL per line.")
 
     ap.add_argument("--favorite-users",
                     action='store_true', default=False,
-                    help="Downloads all users saved in your favorites. (Requires logged in cookies)")
+                    help="Downloads all favorite users. (Requires cookies while logged in)")
 
     ap.add_argument("--favorite-posts",
                     action='store_true', default=False,
-                    help="Downloads all posts saved in your favorites. (Requires logged in cookies)")
+                    help="Downloads all favorites posts. (Requires cookies while logged in)")
 
     ap.add_argument("-o", "--output",
                     metavar="PATH", type=str, default=None,
-                    help="Set path to download posts")
+                    help="Path to download location")
 
     ap.add_argument("-a", "--archive",
                     metavar="FILE", type=str, default=None,
@@ -44,23 +44,23 @@ def get_args():
 
     ap.add_argument("-u", "--update",
                     action='store_true', default=False,
-                    help="Updates already downloaded posts. (post must have json log) (can not be used with --archive)")
+                    help="Updates already downloaded posts. Post must have json log file. (can not be used with --archive)")
 
     ap.add_argument("-i", "--ignore-errors",
                     action='store_true', default=False,
-                    help="Continue to download post(s) when an error occurs")
+                    help="Continue to download posts when an error occurs.")
 
     ap.add_argument("--yt-dlp",
                     action='store_true', default=False,
-                    help="Tries to Download embeds with yt-dlp. (experimental)")
+                    help="Tries to download embeds with yt-dlp. (experimental)")
 
     ap.add_argument("--post-timeout",
                     metavar="SEC", type=int, default=0,
-                    help="The amount of time in seconds to wait between saving a posts. (default: 0)")
+                    help="The amount of time in seconds to wait between downloading posts. (default: 0)")
 
     ap.add_argument("--retry-download",
                     metavar="COUNT", type=int, default=0,
-                    help="The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)")
+                    help="The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 0)")
 
     ap.add_argument("--date",
                     metavar="DATE", type=str, default=None,
@@ -75,64 +75,64 @@ def get_args():
                     help="Only download posts from this date and after.")
 
     ap.add_argument("--min-filesize",
-                    metavar="SIZE", type=str, default='0',
-                    help="Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
+                    metavar="SIZE", type=str, default='0B',
+                    help="Do not download files smaller than SIZE. (ex. #GB | #MB | #KB | #B)")
 
     ap.add_argument("--max-filesize",
                     metavar="SIZE", type=str, default='inf',
-                    help="Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)")
+                    help="Do not download files larger than SIZE. (ex. #GB | #MB | #KB | #B)")
 
     ap.add_argument("--only-filetypes",
                     metavar="EXT", type=str, default=[],
-                    help="Only downloads attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)")
+                    help="Only downloads attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)")
 
     ap.add_argument("--skip-filetypes",
                     metavar="EXT", type=str, default=[],
-                    help="Skips attachments and post file with given EXTs. Suports comman seperated lists. (ex. JPG, mp4, mp3, png)")
+                    help="Skips attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)")
 
     ap.add_argument("--skip-content",
                     action='store_true', default=False,
-                    help="Skips saving posts content.")
+                    help="Skips posts content.")
 
     ap.add_argument("--skip-embeds",
                     action='store_true', default=False,
-                    help="Skips saving posts embeds.")
+                    help="Skips posts embeds.")
 
     ap.add_argument("--skip-pfp-banner",
                     action='store_true', default=False,
-                    help="Skips saving users pfp and banner.")
+                    help="Skips user pfp and banner.")
 
     ap.add_argument("--skip-comments",
                     action='store_true', default=False,
-                    help="Skips saving posts comments.")
+                    help="Skips posts comments.")
 
     ap.add_argument("--skip-postfile",
                     action='store_true', default=False,
-                    help="Skips saving posts post file.")
+                    help="Skips post file.")
 
     ap.add_argument("--skip-attachments",
                     action='store_true', default=False,
-                    help="Skips saving posts attachments.")
+                    help="Skips attachments.")
 
     ap.add_argument("--skip-json",
                     action='store_true', default=False,
-                    help="Skips saving posts json. (--update won't work on posts without json)")
+                    help="Skips json. (--update requires post json)")
 
     ap.add_argument("--force-external",
                     action='store_true', default=False,
-                    help="Save all external links in content to a text file.")
+                    help="Save all content links to a file.")
 
     ap.add_argument("--force-indexing",
                     action='store_true', default=False,
-                    help="Adds an indexing value to the attachment file names to preserve ordering.")
+                    help="Attachments and inline images will have indexing numbers added to their file names.")
 
     ap.add_argument("--force-inline",
                     action='store_true', default=False,
-                    help="Force download all external inline images found in post content. (experimental)")
+                    help="Download all external inline images found in post content. (experimental)")
 
     ap.add_argument("--force-yt-dlp",
                     action='store_true', default=False,
-                    help="Tries to Download links in content with yt-dlp. (experimental)")
+                    help="Tries to download content links with yt-dlp. (experimental)")
 
     args = vars(ap.parse_args())
 
@@ -141,7 +141,7 @@ def get_args():
         quit()
 
     if args['update'] and args['archive']:
-        print('[Error] Can not use --archive and --update together')
+        print('[Error] Only use one: --archive or --update')
         quit()
 
     if args['cookies']:
@@ -166,11 +166,11 @@ def get_args():
     if args['archive']:
         archive_path = os.path.dirname(os.path.abspath(args['archive']))
         if not os.path.isdir(archive_path):
-            print('[Error] Invalid archive location: {}'.format(archive_path))
+            print('[Error] Archive directory does not exist: {}'.format(archive_path))
             quit()
 
     if args['only_filetypes'] and args['skip_filetypes']:
-        print('[Error] You can only use one: --only-filetypes or --skip-filetypes')
+        print('[Error] Only use one: --only-filetypes or --skip-filetypes')
         quit()
 
     def filetype_list(file_types):
@@ -186,20 +186,20 @@ def get_args():
     if args['skip_filetypes']:
         args['skip_filetypes'] = filetype_list(args['skip_filetypes'])
 
-    def valid_date(date, name):
+    def valid_date(date, arg):
         try:
             return datetime.datetime.strptime(date, r'%Y%m%d')
         except:
-            print("[Error] Incorrect data format for {}: {}, should be YYYYMMDD".format(name, date))
+            print("[Error] Incorrect format: {} {}".format(arg, date))
             quit()
 
-    args['date'] = valid_date(args['date'], 'date') if args['date'] else datetime.datetime.min
+    args['date'] = valid_date(args['date'], '--date') if args['date'] else datetime.datetime.min
 
-    args['datebefore'] = valid_date(args['datebefore'], 'datebefore') if args['datebefore'] else datetime.datetime.min
+    args['datebefore'] = valid_date(args['datebefore'], '--datebefore') if args['datebefore'] else datetime.datetime.min
 
-    args['dateafter'] = valid_date(args['dateafter'], 'dateafter') if args['dateafter'] else datetime.datetime.max
+    args['dateafter'] = valid_date(args['dateafter'], '--dateafter') if args['dateafter'] else datetime.datetime.max
 
-    def valid_size(size):
+    def valid_size(size, arg):
         if size in {'0', 'inf'}:
             return size
         found = re.search(r'([0-9]+)(GB|MB|KB|B)', size)
@@ -213,14 +213,14 @@ def get_args():
             elif found.group(2) == 'GB':
                 return str(int(found.group(1)) * 10**9)
         else:
-            print("[Error] Incorrect size format: {}, should be #GB, #MB, #KB, #B".format(size))
+            print("[Error] Incorrect format: {} {}".format(arg, size))
             quit()
 
     if args['max_filesize']:
-        args['max_filesize'] = valid_size(args['max_filesize'])
+        args['max_filesize'] = valid_size(args['max_filesize'], '--max-filesize')
 
     if args['min_filesize']:
-        args['min_filesize'] = valid_size(args['min_filesize'])
+        args['min_filesize'] = valid_size(args['min_filesize'], '--min-filesize')
 
     if args['links']:
         links = args['links'].split(',')
