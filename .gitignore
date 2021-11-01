@@ -6,3 +6,4 @@ update_reqtext.bat
 run.bat
 kemono-dl.py.backup
 kemono-dl_html.py.backup
+broken_hashes.log
