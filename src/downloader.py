@@ -3,7 +3,7 @@ import os
 import time
 
 from .arguments import get_args
-from .helper import win_file_name, check_size
+from .helper import win_file_name, check_size, compare_hash
 
 args = get_args()
 
@@ -22,7 +22,7 @@ def download_yt_dlp(path, link):
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
-        # This is so jank!
+        # This is so jank! Needed for when file path length is to long on windows
         if os.path.isdir('./temp'):
             if len(os.listdir('./temp')) > 1:
                 raise Exception('[Error] Not a yt-dlp error this should never happen! Please report to ME if it does!')
@@ -48,11 +48,16 @@ def download_yt_dlp(path, link):
         print('[Error] Something in yt-dl broke! Please report this link to their github: {}'.format(link))
         return 1
 
-def download_file(url, file_name, file_path, retry = 0):
+def download_file(url, file_name, file_path, retry = 0, file_hash = None):
+    # pdf files seem to either return no content length in header or a smaller value then actual "sometimes".
     flag_404 = 0
     file_name = win_file_name(file_name)
     if not os.path.exists(file_path):
         os.makedirs(file_path)
+    if os.path.exists(os.path.join(file_path, file_name)) and file_hash:
+        if compare_hash(os.path.join(file_path, file_name), file_hash):
+            print('[info] Skipping download: file with matching hash already exists.')
+            return 0
     print('[Downloading] {}'.format(file_name))
     try:
         # no idea if the header 'Connection': 'keep-alive' helps or not
@@ -67,7 +72,7 @@ def download_file(url, file_name, file_path, retry = 0):
                 raise Exception('[Error] Responce status code: {}'.format(r.status_code))
             block_size = 1024
             downloaded = 0
-            total = int(r.headers.get('content-length', 0)) # this seems to happen on pdf files
+            total = int(r.headers.get('content-length', 0))
             if not check_size(total):
                 print('[info] File size out of range: {} bytes'.format(total))
                 return 0
@@ -86,10 +91,23 @@ def download_file(url, file_name, file_path, retry = 0):
             print()
             if total != 0 and downloaded < total:
                 raise Exception(("[Error] I don't know what causes this!"))
+        # Some of the file hashes kemono has recorded are wrong!?!?!?!
+        if file_hash:
+            if not compare_hash(os.path.join(file_path, file_name), file_hash):
+                with open('broken_hashes.log','a') as f:
+                    for line in f:
+                        if (url + '\n') in line:
+                            break
+                    else:
+                        f.write((url + '\n'))
+                # raise Exception(("[Error] File hash does not match"))
         return 0
     except Exception as e:
         print('[Error] downloading: {}'.format(url))
         print(e)
+        # delete failed file
+        if os.path.exists(os.path.join(file_path, file_name)):
+            os.remove(os.path.join(file_path, file_name))
         if retry:
             if flag_404 == 1:
                 print('[info] Skipping retry because responce status 404')
