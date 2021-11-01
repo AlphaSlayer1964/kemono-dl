@@ -99,15 +99,15 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
                 print_error("I don't know what causes this!")
                 raise Exception
         # Some of the file hashes kemono has recorded are wrong!?!?!?!
-        if file_hash:
-            if not compare_hash(os.path.join(file_path, file_name), file_hash):
-                with open('broken_hashes.log','r+') as f:
-                    for line in f:
-                        if (url + '\n') in line:
-                            break
-                    else:
-                        f.write((url + '\n'))
-                # raise Exception(("[Error] File hash does not match"))
+        # if file_hash:
+        #     if not compare_hash(os.path.join(file_path, file_name), file_hash):
+        #         with open('broken_hashes.log','r+') as f:
+        #             for line in f:
+        #                 if (url + '\n') in line:
+        #                     break
+        #             else:
+        #                 f.write((url + '\n'))
+        #        raise Exception(("[Error] File hash does not match"))
         return 0
     except Exception as e:
         print_error('downloading: {}'.format(url))
