@@ -134,6 +134,10 @@ def get_args():
                     action='store_true', default=False,
                     help="Tries to download content links with yt-dlp. (experimental)")
 
+    ap.add_argument("--quiet",
+                    action='store_true', default=False,
+                    help="Suppress printing except for download bar, warnings, and errors")
+
     args = vars(ap.parse_args())
 
     if args['version']:
