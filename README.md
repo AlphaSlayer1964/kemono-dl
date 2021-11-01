@@ -12,38 +12,38 @@ This is a simple kemono.party downloader.
 
 ## Options
 ```
-  -h, --help                  show this help message and exit
-  --version                   Displays the current version then exits
-  --cookies COOKIES           Set path to cookie.txt (REQUIRED)
-  -l LINKS, --links LINKS     Downloads user or post links. Supports comma separated lists.
-  -f FILE, --fromfile FILE    Download users and posts from a file separated by newlines
-  --favorite-users            Downloads all users saved in your favorites. (Requires logged in cookies)
-  --favorite-posts            Downloads all posts saved in your favorites. (Requires logged in cookies)
-  -o PATH, --output PATH      Set path to download posts
-  -a FILE, --archive FILE     Downloads only posts that are not in provided archive file. (Can not be used with --update)
-  -u, --update                Updates already downloaded posts. (post must have json log) (can not be used with --archive)
-  -i, --ignore-errors         Continue to download post(s) when an error occurs
-  --yt-dlp                    Tries to Download embeds with yt-dlp. (experimental)
-  --post-timeout SEC          The amount of time in seconds to wait between saving a posts. (default: 0)
-  --retry-download COUNT      The amount of times to try to redownload a file. (automatically ignores errors) (default: 0)
-  --date DATE                 Only download posts from this date.
-  --datebefore DATE           Only download posts from this date and before.
-  --dateafter DATE            Only download posts from this date and after.
-  --min-filesize SIZE         Do not download files smaller than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
-  --max-filesize SIZE         Do not download files larger than SIZE. (ex. 100B, 20KB, 5MB, 1GB)
-  --only-filetypes EXT        Only downloads attachments and post file with given EXTs. Supports comma separated lists. (ex. JPG, mp4, mp3, png)
-  --skip-filetypes EXT        Skips attachments and post file with given EXTs. Supports comma separated lists. (ex. JPG, mp4, mp3, png)
-  --skip-content              Skips saving posts content.
-  --skip-embeds               Skips saving posts embeds.
-  --skip-pfp-banner           Skips saving users pfp and banner.
-  --skip-comments             Skips saving posts comments.
-  --skip-postfile             Skips saving posts post file.
-  --skip-attachments          Skips saving posts attachments.
-  --skip-json                 Skips saving posts json. (--update won't work on posts without json)
-  --force-external            Save all external links in content to a text file.
-  --force-indexing            Adds an indexing value to the attachment file names to preserve ordering.
-  --force-inline              Force download all external inline images found in post content. (experimental)
-  --force-yt-dlp              Tries to Download links in content with yt-dlp. (experimental)
+  -h, --help                    show this help message and exit
+  --version                     Displays current version and exits.
+  --cookies COOKIES             File to read cookies from. (REQUIRED)
+  -l LINKS, --links LINKS       Downloads URLs, can be separated by commas.
+  -f FILE, --fromfile FILE      File containing URLs to download, one URL per line.
+  --favorite-users              Downloads all favorite users. (Requires cookies while logged in)
+  --favorite-posts              Downloads all favorites posts. (Requires cookies while logged in)
+  -o PATH, --output PATH        Path to download location
+  -a FILE, --archive FILE       Downloads only posts that are not in provided archive file. (Can not be used with --update)
+  -u, --update                  Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
+  -i, --ignore-errors           Continue to download posts when an error occurs.
+  --yt-dlp                      Tries to download embeds with yt-dlp. (experimental)
+  --post-timeout SEC            The amount of time in seconds to wait between downloading posts. (default: 0)
+  --retry-download COUNT        The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 0)
+  --date DATE                   Only download posts from this date.
+  --datebefore DATE             Only download posts from this date and before.
+  --dateafter DATE              Only download posts from this date and after.
+  --min-filesize SIZE           Do not download files smaller than SIZE. (ex. #GB | #MB | #KB | #B)
+  --max-filesize SIZE           Do not download files larger than SIZE. (ex. #GB | #MB | #KB | #B)
+  --only-filetypes EXT          Only downloads attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)
+  --skip-filetypes EXT          Skips attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)
+  --skip-content                Skips posts content.
+  --skip-embeds                 Skips posts embeds.
+  --skip-pfp-banner             Skips user pfp and banner.
+  --skip-comments               Skips posts comments.
+  --skip-postfile               Skips post file.
+  --skip-attachments            Skips attachments.
+  --skip-json                   Skips json. (--update requires post json)
+  --force-external              Save all content links to a file.
+  --force-indexing              Attachments and inline images will have indexing numbers added to their file names.
+  --force-inline                Download all external inline images found in post content. (experimental)
+  --force-yt-dlp                Tries to download content links with yt-dlp. (experimental)
 ```
 ### Notes
 -  Default download location is a `Downloads` folder in the current working directory (will be created automatically)
