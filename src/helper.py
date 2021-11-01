@@ -119,15 +119,15 @@ def compare_hash(file_name, hash):
     return False
 
 def print_info(string):
-    if not args['quiet']:
-        print('[info]', string)
+    # if not args['quiet']:
+    print('[info]', string)
 
 def print_error(string):
     print('[Error]', string)
 
 def print_separator():
-    if not args['quiet']:
-        print('-'*100)
+    # if not args['quiet']:
+    print('-'*100)
 
 def print_warning(string):
     print('[Warning]', string)
