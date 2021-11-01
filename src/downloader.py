@@ -3,7 +3,7 @@ import os
 import time
 
 from .arguments import get_args
-from .helper import win_file_name, check_size, compare_hash
+from .helper import win_file_name, check_size, compare_hash, print_info, print_error
 
 args = get_args()
 
@@ -35,7 +35,7 @@ def download_yt_dlp(path, link):
             os.rmdir('./temp')
         return 0
     except (Exception, DownloadError) as e:
-        print('[Error] yt-dlp could not download: {}'.format(link)) # errors always ignored
+        print_error('yt-dlp could not download: {}'.format(link)) # errors always ignored
         if type(e) is DownloadError:
             if (str(e).find('Unsupported URL:') != -1):
                 return 0
@@ -45,7 +45,7 @@ def download_yt_dlp(path, link):
             #     return 0
             else:
                 return 1
-        print('[Error] Something in yt-dl broke! Please report this link to their github: {}'.format(link))
+        print_error('Something in yt-dl broke! Please report this link to their github: {}'.format(link))
         return 1
 
 def download_file(url, file_name, file_path, retry = 0, file_hash = None):
@@ -56,9 +56,9 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
         os.makedirs(file_path)
     if os.path.exists(os.path.join(file_path, file_name)) and file_hash:
         if compare_hash(os.path.join(file_path, file_name), file_hash):
-            print('[info] Skipping download: file with matching hash already exists.')
+            print_info('Skipping download: file with matching hash already exists.')
             return 0
-    print('[Downloading] {}'.format(file_name))
+    print('[Downloading]: {}'.format(file_name))
     try:
         # no idea if the header 'Connection': 'keep-alive' helps or not
         headers = {
@@ -69,12 +69,13 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
             if r.status_code != 200:
                 if r.status_code == 404:
                     flag_404 = 1
-                raise Exception('[Error] Responce status code: {}'.format(r.status_code))
+                print_error('Responce status code: {}'.format(r.status_code))
+                raise Exception
             block_size = 1024
             downloaded = 0
             total = int(r.headers.get('content-length', 0))
             if not check_size(total):
-                print('[info] File size out of range: {} bytes'.format(total))
+                print_info('File size out of range: {} bytes'.format(total))
                 return 0
             with open(os.path.join(file_path, file_name), 'wb') as f:
                 start = time.time()
@@ -90,11 +91,12 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
                         print('[{}] {}/??? MB, {} MB/s'.format('='*50, round(downloaded/(1024*1024),1), dl_rate) + ' '*20, end='\r')
             print()
             if total != 0 and downloaded < total:
-                raise Exception(("[Error] I don't know what causes this!"))
+                print_error("I don't know what causes this!")
+                raise Exception
         # Some of the file hashes kemono has recorded are wrong!?!?!?!
         if file_hash:
             if not compare_hash(os.path.join(file_path, file_name), file_hash):
-                with open('broken_hashes.log','a') as f:
+                with open('broken_hashes.log','r+') as f:
                     for line in f:
                         if (url + '\n') in line:
                             break
@@ -103,19 +105,19 @@ def download_file(url, file_name, file_path, retry = 0, file_hash = None):
                 # raise Exception(("[Error] File hash does not match"))
         return 0
     except Exception as e:
-        print('[Error] downloading: {}'.format(url))
+        print_error('downloading: {}'.format(url))
         print(e)
         # delete failed file
         if os.path.exists(os.path.join(file_path, file_name)):
             os.remove(os.path.join(file_path, file_name))
         if retry:
             if flag_404 == 1:
-                print('[info] Skipping retry because responce status 404')
+                print_info('Skipping retry because responce status 404')
                 return 1
             current_try = 0
             while True:
                 current_try += 1
-                print('[info] Retrying download in 60 seconds. ({}/{})'.format(current_try, retry))
+                print_info('Retrying download in 60 seconds. ({}/{})'.format(current_try, retry))
                 time.sleep(30)
                 if download_file(file_name, url, file_path) == 0:
                     return 0
