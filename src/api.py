@@ -93,7 +93,7 @@ def get_content_links(html, post_path, save = False, download = False):
             with open(os.path.join(post_path, 'links.txt'),'a') as f:
                 f.write(link['href'] + '\n')
         if download:
-            print_info(' Downloading content links with yt_dlp')
+            print_info('Downloading content links with yt_dlp')
             errors += download_yt_dlp(os.path.join(post_path, 'external files'), link['href'])
     return errors
 
