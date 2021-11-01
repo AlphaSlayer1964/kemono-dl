@@ -23,18 +23,17 @@ def download_yt_dlp(path, link):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
         # This is so jank! Needed for when file path length is to long on windows
-        if os.path.isdir('./temp'):
-            if len(os.listdir('./temp')) > 1:
-                print_error('Not a yt-dlp error this should never happen! Please report to ME if it does!')
-                raise Exception
-            if not os.path.exists(path):
-                os.makedirs(path)
-            for x in os.listdir('./temp'):
-                if x.find('.mp4'):
-                    if os.path.exists(os.path.join(path,x)):
-                        os.remove(os.path.join(path,x))
-                    os.rename(os.path.join('./temp',x),os.path.join(path,x))
-            os.rmdir('./temp')
+        if len(os.listdir('./temp')) > 1:
+            print_error('THIS SHOULD NEVER HAPPEN!')
+            raise Exception
+        if not os.path.exists(path):
+            os.makedirs(path)
+        for x in os.listdir('./temp'):
+            if x.find('.mp4'):
+                if os.path.exists(os.path.join(path,x)):
+                    os.remove(os.path.join(path,x))
+                os.rename(os.path.join('./temp',x),os.path.join(path,x))
+        os.rmdir('./temp')
         return 0
     except (Exception, DownloadError) as e:
         print_error('yt-dlp could not download: {}'.format(link)) # errors always ignored
@@ -43,13 +42,14 @@ def download_yt_dlp(path, link):
                 return 0
             elif (str(e).find('Video unavailable') != -1):
                 return 0
-            # elif (str(e).find('HTTP Error 404: Not Found') != -1): # noticed an imgur link 404ed when the link still works
-            #     return 0
+            elif (str(e).find('HTTP Error 404: Not Found') != -1): # noticed an imgur link 404ed when the link still works
+                return 0
             else:
                 return 1
-        for x in os.listdir('./temp'):
-            os.remove(x)
-        os.rmdir('./temp')
+        if os.path.isdir('./temp'):
+            for x in os.listdir('./temp'):
+                os.remove(x)
+            os.rmdir('./temp')
         print_error('Something in yt-dl broke! Please report this link to their github: {}'.format(link))
         return 1
 
