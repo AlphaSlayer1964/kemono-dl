@@ -42,8 +42,8 @@ def download_yt_dlp(path, link):
                 return 0
             elif (str(e).find('Video unavailable') != -1):
                 return 0
-            elif (str(e).find('HTTP Error 404: Not Found') != -1): # noticed an imgur link 404ed when the link still works
-                return 0
+            # elif (str(e).find('HTTP Error 404: Not Found') != -1):
+            #     return 0
             else:
                 return 1
         if os.path.isdir('./temp'):
