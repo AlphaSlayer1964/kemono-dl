@@ -58,7 +58,8 @@ def save_inline(html, file_path, external = False):
 
 def save_attachments(post, post_path):
     errors = 0
-    print_info('Downloading attachments:')
+    if post['attachments']:
+        print_info('Downloading attachments:')
     for index, item in enumerate(post['attachments']):
         if args['force_indexing']:
             file_name = add_indexing(index, item['name'], post['attachments'])
@@ -73,8 +74,8 @@ def save_attachments(post, post_path):
 
 def save_postfile(post, post_path):
     errors = 0
-    print_info('Downloading post file:')
     if post['file']:
+        print_info('Downloading post file:')
         file_name = post['file']['name']
         url = 'https://kemono.party/data{path}'.format(**post['file'])
         file_path = post_path
