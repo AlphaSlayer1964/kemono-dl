@@ -59,8 +59,8 @@ def get_args():
                     help="The amount of time in seconds to wait between downloading posts. (default: 0)")
 
     ap.add_argument("--retry-download",
-                    metavar="COUNT", type=int, default=0,
-                    help="The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 0)")
+                    metavar="COUNT", type=int, default=3,
+                    help="The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 3)")
 
     ap.add_argument("--date",
                     metavar="DATE", type=str, default=None,
