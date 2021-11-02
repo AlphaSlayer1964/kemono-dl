@@ -48,7 +48,7 @@ def download_yt_dlp(path, link):
         print(e)
         return 1
 
-def download_file(url, file_name, file_path, retry = None, file_hash = None):
+def download_file(url, file_name, file_path, retry = None, file_hash = None, post = None):
     # correct file name
     file_name = win_file_name(file_name)
     print('[Downloading]: {}'.format(file_name))
@@ -84,16 +84,17 @@ def download_file(url, file_name, file_path, retry = None, file_hash = None):
             print_error("I don't know what causes this!")
             raise Exception
 
-        # # logging files with broken hashes
-        # if file_hash:
-        #     if file_hash.lower() != get_hash(os.path.join(file_path, file_name)).lower():
-        #         print_warning('File hash does not match!')
-        #         with open('broken_hashes.log','w+') as f:
-        #             for line in f:
-        #                 if (url + '\n') in line:
-        #                     break
-        #             else:
-        #                 f.write((url + '\n'))
+        # logging files with broken hashes
+        if file_hash:
+            if file_hash.lower() != get_hash(os.path.join(file_path, file_name)).lower():
+                print_warning('File hash does not match!')
+                save = '{service},{user},{id},{},{},{}'.format(get_hash(os.path.join(file_path, file_name)).lower(),file_hash.lower(),url,**post)
+                with open('broken_hashes.log','w+') as f:
+                    for line in f:
+                        if (save + '\n') in line:
+                            break
+                    else:
+                        f.write((save + '\n'))
 
         return 0
     except Exception as e:
