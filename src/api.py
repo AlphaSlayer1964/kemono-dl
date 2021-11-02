@@ -69,7 +69,7 @@ def save_attachments(post, post_path):
         file_path = os.path.join(post_path, 'attachments')
         if check_extention(file_name):
             file_hash = url.split('/')[-1].split('.')[0]
-            errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash)
+            errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash, post=post)
     return errors
 
 def save_postfile(post, post_path):
@@ -81,7 +81,7 @@ def save_postfile(post, post_path):
         file_path = post_path
         if check_extention(file_name):
             file_hash = url.split('/')[-1].split('.')[0]
-            errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash)
+            errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash, post=post)
     return errors
 
 def get_content_links(html, post_path, save = False, download = False):
