@@ -2,6 +2,7 @@ import os
 import datetime
 import re
 import json
+import hashlib
 
 from .arguments import get_args
 
@@ -105,18 +106,13 @@ def add_indexing(index, file_name, list):
     index_string = str(index+1).zfill(len(str(len(list))))
     return '[{}]_{}'.format(index_string, file_name)
 
-def compare_hash(file_name, hash):
-    import hashlib
-
+def get_hash(file_name):
     sha256_hash = hashlib.sha256()
     with open(file_name,"rb") as f:
-        # Read and update hash string value in blocks of 4K
         for byte_block in iter(lambda: f.read(4096),b""):
             sha256_hash.update(byte_block)
 
-    if hash.lower() == sha256_hash.hexdigest().lower():
-        return True
-    return False
+    return sha256_hash.hexdigest()
 
 def print_info(string):
     # if not args['quiet']:
