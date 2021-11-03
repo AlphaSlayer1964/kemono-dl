@@ -1,6 +1,7 @@
 import requests
 import os
 import time
+import shutil
 
 from .arguments import get_args
 from .helper import win_file_name, check_size, get_hash, print_info, print_error, print_warning
@@ -9,42 +10,33 @@ args = get_args()
 
 TIMEOUT = 120
 RETRY_WAIT = 30
+LOG_HASHES = False
 
 def download_yt_dlp(path, link):
     import yt_dlp
     from yt_dlp import DownloadError
+
+    temp_folder = os.path.join(os.getcwd(),"ytdlp_temp")
     try:
         ydl_opts = {
-
-            "outtmpl" : "./temp/%(title)s.%(ext)s",
-            "noplaylist" : True, # Actually this does not stops from downloading an entire youtube channel :/
+            "paths": {"temp" : temp_folder, "home": "{}".format(path)},
+            "output": '%(title)s.%(ext)s',
+            "noplaylist" : True,
             "merge_output_format" : "mp4",
-            "quiet" : True
+            "quiet" : True,
+            "verbose": False
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([link])
-        # This is so jank! Needed for when file path length is to long on windows
-        if len(os.listdir('./temp')) > 1:
-            print_error('THIS SHOULD NEVER HAPPEN!')
-            raise Exception
-        if not os.path.exists(path):
-            os.makedirs(path)
-        for x in os.listdir('./temp'):
-            if x.find('.mp4'):
-                if os.path.exists(os.path.join(path,x)):
-                    os.remove(os.path.join(path,x))
-                os.rename(os.path.join('./temp',x),os.path.join(path,x))
-        os.rmdir('./temp')
+        shutil.rmtree(temp_folder)
         return 0
     except (Exception, DownloadError) as e:
+        if os.path.exists(temp_folder):
+            shutil.rmtree(temp_folder)
         print_error('yt-dlp could not download: {}'.format(link))
         if type(e) is DownloadError:
             if (str(e).find('Unsupported URL:') != -1) or (str(e).find('Video unavailable') != -1) or (str(e).find('HTTP Error 404') != -1):
                 return 0
-        if os.path.isdir('./temp'):
-            for x in os.listdir('./temp'):
-                os.remove(x)
-            os.rmdir('./temp')
         print(e)
         return 1
 
@@ -84,17 +76,19 @@ def download_file(url, file_name, file_path, retry = None, file_hash = None, pos
             print_error("I don't know what causes this!")
             raise Exception
 
-        # logging files with broken hashes
-        if file_hash:
-            if file_hash.lower() != get_hash(os.path.join(file_path, file_name)).lower():
-                print_warning('File hash does not match!')
-                save = '{service},{user},{id},{},{},{}'.format(get_hash(os.path.join(file_path, file_name)).lower(),file_hash.lower(),url,**post)
-                with open('broken_hashes.log','w+') as f:
-                    for line in f:
-                        if (save + '\n') in line:
-                            break
-                    else:
-                        f.write((save + '\n'))
+        if LOG_HASHES:
+            # logging files with broken hashes
+            if file_hash:
+                if file_hash.lower() != get_hash(os.path.join(file_path, file_name)).lower():
+                    print_warning('File hash does not match!')
+                    save = '{service},{user},{id},{},{},{}'.format(get_hash(os.path.join(file_path, file_name)).lower(),file_hash.lower(),url,**post)
+                    # format: service, user id, post id, my hash, server hash, link
+                    with open('broken_hashes.csv','a+') as f:
+                        for line in f:
+                            if (save + '\n') in line:
+                                break
+                        else:
+                            f.write((save + '\n'))
 
         return 0
     except Exception as e:
