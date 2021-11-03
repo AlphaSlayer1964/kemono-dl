@@ -2,7 +2,7 @@
 This is a simple kemono.party downloader.
 
 ## How to use
-1.  Install python
+1.  Install python. (Disable path length limit during install)
 2.  Download source code from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases) and extract it
 3.  Then install requirements with  `pip install -r requirements.txt`
 4. Get a cookie.txt file from kemono.party
@@ -50,10 +50,12 @@ This is a simple kemono.party downloader.
 -  Input link format: `https://kemono.party/{service}/user/{user_id}` or `https://kemono.party/{service}/user/{user_id}/post/{post_is}`
 -  Using any date option will not download any gumroad posts because they have no dates
 -  Using `--ignore-errors` posts with errors will not be archived
--  Using `--max-filesize` or `--min-filesize` will cause files that don't have `content-length` in their headers to not download. This mainly includes external inline images, pfp, and banners.
+-  Using `--max-filesize` or `--min-filesize` will cause files that don't have `content-length` in their headers to not download. ie. pfp, banner, etc.
 -  When using `--favorite-users` or `--favorite-posts` you must get your cookies.txt after logging into kemono.party.
 -  You may need to install `ffmpeg` for `yt-dlp` to work
--  If downloading with `yt-dlp` fails that will count as an error and the post won't be archived. This includes yt-dlp failing because the site was just incompatible. I will need to look into seeing if there is a different error for these two circumstances.
+-  If downloading with `yt-dlp` some errors will not count as errors for kemono-dl: Unsupported URL, Video unavailable, and HTTP Error 404
+-  File hashes are check with server before redownloading.
+   - Some files do not have hashes on kemonos website or the file hash is incorrect on their end so some files might re download.    
 
 ### Known Bugs
 - When downloading a file it might just stop downloading, I believe this happens when a large file is downloaded and the site doesn't have it cached so the connection gets timed out after a while. I am still looking into this issue.
