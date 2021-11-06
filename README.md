@@ -54,8 +54,8 @@ This is a simple kemono.party downloader.
 -  When using `--favorite-users` or `--favorite-posts` you must get your cookies.txt after logging into kemono.party.
 -  You may need to install `ffmpeg` for `yt-dlp` to work
 -  If downloading with `yt-dlp` some errors will not count as errors for kemono-dl: Unsupported URL, Video unavailable, and HTTP Error 404
--  File hashes are check with server before redownloading.
-   - Some files do not have hashes on kemonos website or the file hash is incorrect on their end so some files might redownload even though they have not changed.    
+-  File hashes are checked with server before redownloading.
+   - Some files do not have hashes on kemonos website or the file hash is incorrect on their end so some files might redownload even though it is the same.    
 
 ### Known Bugs
 - When downloading a file it might just stop downloading, I believe this happens when a large file is downloaded and the site doesn't have it cached so the connection gets timed out after a while. I am still looking into this issue.
