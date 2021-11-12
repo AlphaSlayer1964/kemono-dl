@@ -4,20 +4,26 @@ about: Create a bug report
 labels: bug
 
 ---
+**If you do not fill out this forum correctly your issue will be closed!**
 
-**Describe the bug**
-A description of the bug.
+**version**
+**To get verion run `python kemono-dl.py --version`**
+version: 
 
-**To Reproduce**
-Steps to reproduce the bug:
-
-**Error messages and tracebacks**
-Please add any error messages and tracebacks that may help.
-
-**Poster and Post ID**
-Please provide the poster ID and post ID and do not link to kemono party directly
-Poster ID: 
+**Service, User ID, Post ID**
+**Your Link: `https://kemono.party/{Service}/user/{User ID}/post/{Post ID}`**
+Service: 
+User ID: 
 Post ID: 
 
-**Additional context**
+**Description of bug**
+A description of the bug.
+
+**How To Reproduce**
+Steps to reproduce the bug.
+
+**Error messages and tracebacks**
+Please include any error messages or tacebacks.
+
+**Additional comments**
 Anything else you think might help.
