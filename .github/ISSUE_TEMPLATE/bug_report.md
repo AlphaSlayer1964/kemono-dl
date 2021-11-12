@@ -10,9 +10,7 @@ labels: bug
 Version: 
 
 ### Service, User ID, Post ID
-<!--
-Your Link: `https://kemono.party/{Service}/user/{User ID}/post/{Post ID}`
--->
+<!-- Your Link: `https://kemono.party/{Service}/user/{User ID}/post/{Post ID}` -->
 - Service: 
 - User ID: 
 - Post ID: 
