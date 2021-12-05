@@ -6,8 +6,9 @@ This is a simple kemono.party downloader.
 2.  Download source code from [releases](https://github.com/AplhaSlayer1964/Kemono.party-Downloader/releases) and extract it
 3.  Then install requirements with  `pip install -r requirements.txt`
 4. Get a cookie.txt file from kemono.party
-   - You can get the cookie text file using this [chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) extension
+   - You can get the cookie text file using a [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) or [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/) extension
    - A cookie.txt file is required to use downloader.
+   - For Firefox users pelase look at [pinned issue](https://github.com/AplhaSlayer1964/kemono-dl/issues/29#issuecomment-986313416)
 5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
 
 ## Options
