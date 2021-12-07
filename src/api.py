@@ -268,16 +268,22 @@ def get_channel_ids(info):
     return response.json()
 
 def get_username(info):
+    response = False
     retry = 0
-    while retry < 5:
+    while retry < 10:
         try:
             url = 'https://kemono.party/api/creators/'
-            response = session.get(url, timeout=TIMEOUT)
+            headers = {'Accept': 'application/json'}
+            response = session.get(url, headers=headers, timeout=TIMEOUT)
             for creator in response.json():
                 if creator['id'] == info['id'] and creator['service'] == info['service']:
                     return creator['name']
         except json.decoder.JSONDecodeError:
             retry += 1
+    print('Problem reading kemono.party creators api!\nPlease make an issue with the output below!')
+    if response:
+        print(response.headers)
+    quit()
 
 def extract_link_info(link):
     found = re.search('https://kemono\.party/([^/]+)/(server|user)/([^/]+)($|/post/([^/]+)$)',link)
