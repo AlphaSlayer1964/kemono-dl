@@ -26,11 +26,27 @@ def get_args():
                     metavar="FILE", type=str, default=[],
                     help="File containing URLs to download, one URL per line.")
 
-    ap.add_argument("--favorite-users",
+    # ap.add_argument("--favorite-users",
+    #                 action='store_true', default=False,
+    #                 help="Downloads all favorite users. (Requires cookies while logged in)")
+
+    # ap.add_argument("--favorite-posts",
+    #                 action='store_true', default=False,
+    #                 help="Downloads all favorites posts. (Requires cookies while logged in)")
+
+    ap.add_argument("--kemono-favorite-users",
                     action='store_true', default=False,
                     help="Downloads all favorite users. (Requires cookies while logged in)")
 
-    ap.add_argument("--favorite-posts",
+    ap.add_argument("--kemono-favorite-posts",
+                    action='store_true', default=False,
+                    help="Downloads all favorites posts. (Requires cookies while logged in)")
+
+    ap.add_argument("--coomer-favorite-users",
+                    action='store_true', default=False,
+                    help="Downloads all favorite users. (Requires cookies while logged in)")
+
+    ap.add_argument("--coomer-favorite-posts",
                     action='store_true', default=False,
                     help="Downloads all favorites posts. (Requires cookies while logged in)")
 
@@ -148,13 +164,31 @@ def get_args():
         print('[Error] Only use one: --archive or --update')
         quit()
 
+    # if args['cookies']:
+    #     try:
+    #         args['cookies'] = MozillaCookieJar(args['cookies'])
+    #         args['cookies'].load()
+    #     except (LoadError, FileNotFoundError) as e:
+    #         print(e)
+    #         quit()
+
     if args['cookies']:
-        try:
-            args['cookies'] = MozillaCookieJar(args['cookies'])
-            args['cookies'].load()
-        except (LoadError, FileNotFoundError) as e:
-            print(e)
-            quit()
+        cookie_files = args['cookies'].split(',')
+        if len(cookie_files) == 1:
+            try:
+                args['cookies'] = MozillaCookieJar(args['cookies'])
+                args['cookies'].load()
+            except (LoadError, FileNotFoundError) as e:
+                print(e)
+                quit()
+        elif len(cookie_files) == 2:
+            try:
+                args['cookies'] = MozillaCookieJar()
+                args['cookies'].load(cookie_files[0])
+                args['cookies'].load(cookie_files[1])
+            except (LoadError, FileNotFoundError) as e:
+                print(e)
+                quit()
 
     if args['output']:
         if not os.path.exists(args['output']):
