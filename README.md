@@ -1,5 +1,5 @@
 # kemono-dl
-This is a simple kemono.party downloader.
+This is a simple kemono.party downloader. Hopefully a new update and full support for coomer.party some time after the 20th.
 
 ## How to use
 1.  Install python. (Disable path length limit during install)
