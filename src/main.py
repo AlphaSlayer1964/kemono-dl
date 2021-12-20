@@ -253,6 +253,7 @@ class downloader:
             if args['yt_dlp']:
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
 
+    # Should I make a resume flag instead of just trying to resume by deafult?
     def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = 5):
         logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
 
@@ -268,14 +269,14 @@ class downloader:
             if file_hash.lower() == get_hash(file_name).lower():
                 logger.info("Skipping download: File on disk has matching hash")
                 return
-            logger.debug(f"Redownloading: File on disk does not match hash: Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
+            logger.warning(f"Redownloading: File on disk does not match hash: Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
 
         # used for resuming downloads
         file_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
 
         headers = {'Accept-Encoding': None,
                    'Range': f'bytes={file_size}-',
-                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
+                   'User-Agent': ''}
 
         response = self.session.get(url=url, stream=True, headers=headers, cookies=args['cookies'], timeout=TIMEOUT)
 
