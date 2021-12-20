@@ -1,367 +1,476 @@
-
-import requests
-import logging
 import re
+import requests
 import os
-import datetime
+import hashlib
 import time
 from bs4 import BeautifulSoup
+import datetime
+import logging
 import json
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+import yt_dlp
+import shutil
+from yt_dlp import DownloadError
 
 from .arguments import get_args
-from .downloader import download_yt_dlp, download_file
-from .helper import check_post_archived, check_date, check_extention, win_folder_name, add_indexing, check_post_edited, print_info, print_error, print_separator, print_warning
+from .logger import logger
 
 args = get_args()
+
 
 TIMEOUT = 180
 
 class downloader:
 
-    def __init__(self, urls:list = [], kfav_artists:bool = False, kfav_posts:bool = False, cfav_artists:bool = False, cfav_posts:bool = False):
-        self.all_creators = self.get_all_creators()
+    def __init__(self):
+        # I read using a session would make things faster.
+        # Does it? I have no idea
+        self.session = requests.Session()
+        retries = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+        )
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
+        self.session.mount('http://', HTTPAdapter(max_retries=retries))
+        self.all_creators = []
         self.download_list = []
-        for url in self.remove_duplicate_urls(urls):
-            self.add_links(url)
-        if kfav_artists:
-            self.add_favorite_artists('kemono')
-        if kfav_posts:
-            self.add_favorite_posts('kemono')
-        if cfav_artists:
-            self.add_favorite_artists('coomer')
-        if cfav_posts:
-            self.add_favorite_posts('coomer')
-        self.download()
+        self.current_post = None
+        self.current_post_path = None
+        self.current_post_errors = 0
+        self._add_all_creators('kemono')
+        self._add_all_creators('coomer')
 
-    def add_links(self, url:str):
-        found = re.search('^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)($|/post/([^/]+)$)', url)
-        if found:
-            username = self.find_username(user_id=found.group(3), service=found.group(2))
-            U = user(domain=found.group(1), user_id=found.group(3), service=found.group(2) , username=username)
-            # make check to see if user exists and if so just add needed posts
-            if found.group(5):
-                U.add_post_id(found.group(5))
-            else:
-                U.add_all_posts()
-            if U in self.download_list:
-                index = self.download_list.index(U)
-                self.download_list[index].merge_posts(U)
-            else:
-                self.download_list.append(U)
-        # print bad links?
+    def _add_all_creators(self, site:str):
+        headers = {'accept': 'application/json'}
+        creators_api_url = f'https://{site}.party/api/creators/'
+        all_creators = self.session.get(url=creators_api_url, headers=headers, timeout=TIMEOUT)
+        self.all_creators += all_creators.json()
 
-    def add_favorite_artists(self, domain:str):
-        headers = {'Accept': 'application/json'}
-        fav_art_api_url = 'https://{}.party/api/favorites?type=artit'.format(domain)
-        response = requests.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
-        if not response.ok:
-            return
-        for favorite in response.json():
-            url = 'https://{domain}.party/{service}/user/{user}'.format(domain=domain,**favorite)
-            self.add_links(url)
-
-    def add_favorite_posts(self, domain:str):
-        headers = {'Accept': 'application/json'}
-        fav_art_api_url = 'https://{}.party/api/favorites?type=post'.format(domain)
-        response = requests.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
-        if not response.ok:
-            return
-        for favorite in response.json():
-            url = 'https://{domain}.party/{service}/user/{user}/post/{id}'.format(domain=domain,**favorite)
-            self.add_links(url)
-
-    def remove_duplicate_urls(self, urls:list):
-        cleaned_urls = []
-        for url in urls:
-            if url.strip() not in cleaned_urls:
-                cleaned_urls.append(url.strip())
-        return cleaned_urls
-
-    def merge_duplicate_users(self):
-        # not really needed
-        pass
-
-    def find_username(self, user_id:str, service:str):
+    def _get_username(self, service:str, user_id:str):
         for creator in self.all_creators:
             if creator['id'] == user_id and creator['service'] == service:
                 return creator['name']
+        logger.critical(f'No username found: user_id: {user_id} service: {service}')
+        return None
 
-    def get_all_creators(self):
-        headers = {'Accept': 'application/json'}
-        creators_api_url = 'https://kemono.party/api/creators/'
-        kemono_creator = requests.get(url=creators_api_url, headers=headers, timeout=TIMEOUT).json()
-        creators_api_url = 'https://coomer.party/api/creators/'
-        coomer_creators = requests.get(url=creators_api_url, headers=headers, timeout=TIMEOUT).json()
-        return kemono_creator + coomer_creators
-
-    def print_download_list_info(self):
-        for user in self.download_list:
-            user.print_user_info()
-            print('*'*60)
-
-    def download(self):
-        for user in self.download_list:
-            user_path = os.path.join(args['output'], user.service, '{} [{}]'.format(user.username, user.user_id))
-            self.download_pfp_banner(user, user_path)
-            for post in user.posts:
-                post['domain'] = user.domain
-                self.download_post(post, user_path)
-
-    def download_pfp_banner(self, user, user_path:str):
-        from PIL import Image
-        from io import BytesIO
-
-        for item in ['icon','banner']:
-            url = 'https://{domain}.party/{}s/{service}/{user_id}'.format(item,
-                                                                          domain=user.domain,
-                                                                          service=user.service,
-                                                                          user_id=user.user_id)
-            response = requests.get(url, cookies=args['cookies'], timeout=TIMEOUT).content
-            try:
-                image = Image.open(BytesIO(response))
-                if not os.path.exists(user_path):
-                    os.makedirs(user_path)
-                image.save(os.path.join(user_path, '{username} [{user_id}] {}.{ext}'.format(item,
-                                                                                            ext=image.format.lower(),
-                                                                                            username=user.username,
-                                                                                            user_id=user.user_id)), format=image.format)
-            except:
-                pass
-
-
-    # all class functions bellow here are old. might look at in future
-
-    def save_inline(self, html, file_path, post, external = False):
-        errors = 0
-        print_info('Downloading inline images:')
-        content_soup = BeautifulSoup(html, 'html.parser')
-        inline_images = content_soup.find_all('img')
-        for index, inline_image in enumerate(inline_images):
-            kemono_hosted = re.search('^/[^*]+', inline_image['src'])
-            if kemono_hosted:
-                file_name = inline_image['src'].split('/')[-1] # might want to check content-disposition
-                url = "https://{domain}.party/data{}".format(inline_image['src'], **post)
-            else:
-                if external: # can't think of a better way of doing this!
-                    Content_Disposition = requests.head(inline_image['src']).headers.get('Content-Disposition', '')
-                    file_name_CD = re.findall('filename="(.+)"', Content_Disposition)
-                    file_name = inline_image['src'].split('?')[0].split('/')[-1]
-                    if file_name_CD:
-                        file_name = file_name_CD[0]
-                    url = inline_image['src']
-                else:
-                    break
-            if args['force_indexing']:
-                file_name = add_indexing(index, file_name, inline_images)
-            if download_file(url, file_name, os.path.join(file_path, 'inline'), args['retry_download']) == 0:
-                inline_image['src'] = os.path.join(file_path, 'inline', file_name)
-            else:
-                errors += 1
-        return (content_soup, errors)
-
-    def save_attachments(self, post, post_path):
-        errors = 0
-        if post['attachments']:
-            print_info('Downloading attachments:')
-        for index, item in enumerate(post['attachments']):
-            if args['force_indexing']:
-                file_name = add_indexing(index, item['name'], post['attachments'])
-            else:
-                file_name = '{}'.format(item['name'])
-            url = 'https://{domain}.party/data{path}'.format(**item, **post)
-            file_path = os.path.join(post_path, 'attachments')
-            if check_extention(file_name):
-                file_hash = url.split('/')[-1].split('.')[0]
-                errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash, post=post)
-        return errors
-
-    def save_postfile(self, post, post_path):
-        errors = 0
-        if post['file']:
-            print_info('Downloading post file:')
-            file_name = post['file']['name']
-            url = 'https://{domain}.party/data{path}'.format(domain=post['domain'], **post['file'])
-            file_path = post_path
-            if check_extention(file_name):
-                file_hash = url.split('/')[-1].split('.')[0]
-                errors += download_file(url, file_name, file_path, args['retry_download'], file_hash=file_hash, post=post)
-        return errors
-
-    def get_content_links(self, html, post_path, save = False, download = False):
-        errors = 0
-        content_soup = BeautifulSoup(html, 'html.parser')
-        links = content_soup.find_all('a', href=True)
-        for link in links:
-            if save:
-                print_info('Saving external content links: links.txt')
-                with open(os.path.join(post_path, 'links.txt'),'a') as f:
-                    f.write(link['href'] + '\n')
-            if download:
-                print_info('Downloading content links with yt_dlp')
-                errors += download_yt_dlp(os.path.join(post_path, 'external files'), link['href'])
-        return errors
-
-    def save_content(self, post, post_path):
-        errors = 0
-        if post['content']:
-            print_info('Saving content: content.html')
-            result = self.save_inline(post['content'], post_path, post, args['force_inline'])
-            errors += result[1]
-            with open(os.path.join(post_path, 'content.html'),'wb') as File:
-                File.write(result[0].prettify().encode("utf-16"))
-            errors += self.get_content_links(post['content'], post_path, args['force_external'], args['force_yt_dlp'])
-        return errors
-
-    def save_embeds(self, post, post_path):
-        errors = 0
-        if post['embed']:
-            print_info('Saving embeds: embeds.txt')
-            with open(os.path.join(post_path, 'embed.txt'),'wb') as f:
-                f.write('{subject}\n{url}\n{description}'.format(**post['embed']).encode('utf-8'))
-            if args['yt_dlp']:
-                print_info('Downloading embed with yt_dlp')
-                errors += download_yt_dlp(os.path.join(post_path, 'embed'), post['embed']['url'])
-        return errors
-
-    def save_comments(self, post, post_path):
-        # no api method to get comments so using from html (not future proof)
-        url = 'https://{domain}.party/{service}/user/{user}/post/{id}'.format(**post)
-        try:
-            responce = requests.get(url=url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
-            page_soup = BeautifulSoup(responce.text, 'html.parser')
-            comment_html = page_soup.find("div", {"class": "post__comments"})
-            if comment_html:
-                not_supported = re.search('[^ ]+ does not support comment scraping yet\.',comment_html.text)
-                if not not_supported:
-                    print_info('Saving comments: comments.html')
-                    with open(os.path.join(post_path, 'comments.html'),'wb') as f:
-                        f.write(comment_html.prettify().encode("utf-16"))
-            return 0
-        except Exception as e:
-            print_error('Could not get post comments: {}'.format(url))
-            if args['ignore_errors']:
-                return 1
-            quit()
-
-
-    def download_post(self, post:dict, user_path:str):
-
-        print_info('Downloading Post: {title}'.format(**post))
-        print_info('service: [{service}] user_id: [{user}] post_id: [{id}]'.format(**post))
-
-        if post['published']:
-            date = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
-            date_string = date.strftime(r'%Y%m%d')
-        else:
-            date = datetime.datetime.min
-            date_string = '00000000'
-
-        post_path = os.path.join(user_path, win_folder_name('[{}] [{id}] {}'.format(date_string, post['title'], **post)))
-
-        if check_post_archived(post):
-
-            if check_post_edited(post, post_path):
-
-                if not check_date(date):
-                    print_info('Date out of range {}\n{}'.format(date_string, '-'*100))
-                    return
-
-                if args['post_timeout']:
-                    print_info('Sleeping for {} seconds...'.format(args['post_timeout']))
-                    time.sleep(args['post_timeout'])
-
-                if not os.path.exists(post_path):
-                    os.makedirs(post_path)
-
-                errors = 0
-                if not args['skip_attachments']:
-                    errors += self.save_attachments(post, post_path)
-                if not args['skip_postfile']:
-                    errors += self.save_postfile(post, post_path)
-                if not args['skip_content']:
-                    errors += self.save_content(post, post_path)
-                if not args['skip_comments']:
-                    errors += self.save_comments(post, post_path)
-                if not args['skip_embeds']:
-                    errors += self.save_embeds(post, post_path)
-
-                if errors == 0:
-                    if not args['skip_json']:
-                        print_info('Saving json: {id}.json'.format(**post))
-                        with open(os.path.join(post_path,'{id}.json'.format(**post)),'w') as f:
-                            json.dump(post, f)
-                    if args['archive']:
-                        with open(args['archive'],'a') as f:
-                            f.write('/{service}/user/{user}/post/{id}\n'.format(**post))
-
-                    print_info('Completed downloading post: {title}'.format(**post))
-                    return
-                print_warning('{} Errors encountered downloading post: {title}'.format(errors, **post))
-                return
-            print_info('Post already up to date: {title}'.format(**post))
+    def add_favorite_artists(self, site:str):
+        headers = {'accept': 'application/json'}
+        fav_art_api_url = f'https://{site}.party/api/favorites?type=artist'
+        response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
+        if not response.ok:
+            logger.warning(f'{response.status_code} {response.reason}: Could not get favorite artists: Make sure you get your cookie file while logged in')
             return
-        print_info('Already archived post: {title}'.format(**post))
-        return
+        for favorite in response.json():
+            self._add_all_user_posts(site,favorite['service'],favorite['id'])
 
+    def add_favorite_posts(self, site:str):
+        headers = {'accept': 'application/json'}
+        fav_art_api_url = f'https://{site}.party/api/favorites?type=post'
+        response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
+        if not response.ok:
+            logger.warning(f'{response.status_code} {response.reason}Could not get favorite posts: Make sure you get your cookie file while logged in')
+            return
+        for favorite in response.json():
+            self._add_single_post(site,favorite['service'],favorite['user'],favorite['id'])
 
-class user():
+    def add_links(self, urls:list):
+        for url in urls:
+            self._parse_links(url)
 
-    def __init__(self, domain:str, user_id:str, service:str, username:str):
-        self.domain = domain
-        self.user_id = user_id
-        self.service = service
-        self.username = username
-        self.posts = []
+    def _parse_links(self, url:str):
+        user = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)$',url)
+        if user:
+            self._add_all_user_posts(user.group(1),user.group(2),user.group(3))
+            return
+        post = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)/post/([^/]+)$',url)
+        if post:
+            self._add_single_post(post.group(1),post.group(2),post.group(3),post.group(4))
+            return
+        logger.warning(f'Invalid URL: {url}')
 
-    def __eq__(self, other:object):
-        if self.domain == other.domain and self.user_id == other.user_id and self.service == other.service:
-            return True
-        return False
-
-    def merge_posts(self, other:object):
-        if self.domain == other.domain and self.user_id == other.user_id and self.service == other.service:
-            for other_post in other.posts:
-                if other_post not in self.posts:
-                    self.posts.append(other_post)
-
-    def print_user_info(self):
-        print('Domain: {domain}.party\nUser ID: {user_id}\nService: {service}\nUsername: {username}\n# of Posts: {posts}'.format(domain=self.domain,
-                                                                                                                           user_id=self.user_id,
-                                                                                                                           service=self.service,
-                                                                                                                           username=self.username,
-                                                                                                                           posts=len(self.posts)))
-
-    def add_post_id(self, post_id:str):
-        headers = {'Accept': 'application/json'}
-        post_api_url = 'https://{domain}.party/api/{service}/user/{user_id}/post/{post_id}'.format(domain=self.domain,
-                                                                                          service=self.service,
-                                                                                          user_id=self.user_id,
-                                                                                          post_id=post_id)
-        post_dict = requests.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()
-        self.posts.append(post_dict[0])
-
-    def add_all_posts(self):
-        headers = {'Accept': 'application/json'}
+    def _add_all_user_posts(self, site:str, service:str, user_id:str):
+        username = self._get_username(service, user_id)
+        if not username:
+            return
+        headers = {'accept': 'application/json'}
         chunk = 0
         while True:
-            user_api_url = 'https://{domain}.party/api/{service}/user/{user_id}?o={chunk}'.format(domain=self.domain,
-                                                                                        service=self.service,
-                                                                                        user_id=self.user_id,
-                                                                                        chunk=chunk)
-            response = requests.get(url=user_api_url, headers=headers, timeout=TIMEOUT).json()
+            user_api_url = f'https://{site}.party/api/{service}/user/{user_id}?o={chunk}'
+            logger.debug(f'User API URL: {user_api_url}')
+            response = self.session.get(url=user_api_url, headers=headers, timeout=TIMEOUT).json()
             if not response:
                 return
             for post_dict in response:
-                self.posts.append(post_dict)
+                post_dict['username'], post_dict['site'] = username, site
+                post_dict['date_object'], post_dict['date_object_string'] = get_post_date(post_dict)
+                if post_dict not in self.download_list:
+                    self.download_list.append(post_dict)
             chunk += 25
 
+    def _add_single_post(self, site:str, service:str, user_id:str, post_id:str):
+        username = self._get_username(service, user_id)
+        if not username:
+            return
+        headers = {'accept': 'application/json'}
+        post_api_url = f'https://{site}.party/api/{service}/user/{user_id}/post/{post_id}'
+        logger.debug(f'Post API URL: {post_api_url}')
+        post_dict = self.session.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()[0]
+        post_dict['username'], post_dict['site'] = username, site
+        post_dict['date_object'], post_dict['date_object_string'] = get_post_date(post_dict)
+        if post_dict not in self.download_list:
+            self.download_list.append(post_dict)
+
+    def download_posts(self):
+        for post in self.download_list:
+            self.current_post = post
+            self._set_current_post_path()
+            if self._should_download():
+                logger.info(f"Post: Title: {win_folder_name(self.current_post['title'])}")
+                # clean this up
+                logger.debug(f"Post: user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
+                if not args['skip_attachments']:
+                    self._download_attachments()
+                if not args['skip_postfile']:
+                    self._download_post_file()
+                if not args['skip_content']:
+                    self._download_content()
+                if not args['skip_comments']:
+                    self._download_comments()
+                if not args['skip_embeds']:
+                    self._download_embeds()
+                if not args['skip_json']:
+                    # json.dump can't handle the datetime object
+                    self.current_post['date_object'] = None
+                    with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
+                        json.dump(self.current_post, f)
+
+                # no errors must have occurred to archive post
+                if not self.current_post_errors:
+                    if args['archive']:
+                        with open(args['archive'],'a') as f:
+                            f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                # reset error count
+                self.current_post_errors = 0
+
+    def _set_current_post_path(self):
+        # when using win_folder_name() on the post title it may return an empty string
+        # for example if the title is "???" then that will return ""
+        # this could cause conflicting folder names if you don't include any other unique info in the folder name
+        self.current_post_path = os.path.join(args['output'],
+                                              self.current_post['service'],
+                                              win_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
+                                              win_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}"))
+        if len(self.current_post_path) > 260:
+            logger.warning(f"Post Path is {len(self.current_post_path)} characters long: Windows might not like that")
+
+    def _should_download(self):
+        # check if post has been updated
+        if args['update']:
+            json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
+            if os.path.exists(json_path):
+                current_edited = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if self.current_post['edited'] else datetime.datetime.min
+                with open(json_path, 'r') as f:
+                    data = json.loads(f.read())
+                recorded_edited = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
+                if current_edited <= recorded_edited:
+                    return False
+
+        # check archive fle
+        if args['archive']:
+            if os.path.exists(args['archive']):
+                with open(args['archive'],'r') as f:
+                    archived = f.read().splitlines()
+                if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
+                    return False
+
+        # check if post date is in range
+        if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+            return True
+        elif self.current_post['date_object'] == datetime.datetime.min and args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+            return False
+        elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']) and  args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+            return False
+        return True
+
+    def _download_attachments(self):
+        for index, attachment in enumerate(self.current_post['attachments']):
+            index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
+            file_name = os.path.join(self.current_post_path,win_file_name(f"[{index_string}]_{attachment['name']}"))
+            file_url = f"https://{self.current_post['site']}.party/data{attachment['path']}?f={attachment['name']}"
+            file_hash = find_hash(attachment['path'])
+            self._requests_download(file_url, file_name, file_hash)
+
+    def _download_post_file(self):
+        if self.current_post['file']:
+            index_string = str(0).zfill(len(str(len(self.current_post['attachments']))))
+            file_name = os.path.join(self.current_post_path,win_file_name(f"[{index_string}]_{self.current_post['file']['name']}"))
+            file_url = f"https://{self.current_post['site']}.party/data{self.current_post['file']['path']}?f={self.current_post['file']['name']}"
+            file_hash = find_hash(self.current_post['file']['path'])
+            self._requests_download(file_url, file_name, file_hash)
+
+    def _download_content(self):
+        if self.current_post['content']:
+            content_soup = self._save_inline(BeautifulSoup(self.current_post['content'], 'html.parser'))
+            with open(os.path.join(self.current_post_path, 'content.html'),'wb') as f:
+                f.write(content_soup.prettify().encode("utf-16"))
+
+    def _save_inline(self, soup):
+        # do these have hashes?
+        inline_images = soup.find_all('img')
+        for index, inline_image in enumerate(inline_images):
+            party_hosted = re.search('^/[^*]+', inline_image['src'])
+            if party_hosted:
+                if not os.path.exists(os.path.join(self.current_post_path, 'inline')):
+                    os.makedirs(os.path.join(self.current_post_path, 'inline'))
+                index_string = str(index).zfill(len(str(len(inline_images))))
+                file_name = os.path.join(self.current_post_path, 'inline', f"[{index_string}]_{inline_image['src'].split('/')[-1]}")
+                file_url = f"https://{self.current_post['site']}.party/data{inline_image['src']}"
+                self._requests_download(file_url, file_name)
+                inline_image['src'] = os.path.join(self.current_post_path, 'inline', file_name)
+        return soup
+
+    def _download_comments(self):
+        # no api method to get comments so using from html (not future proof)
+        post_url = "https://{site}.party/{service}/user/{user}/post/{id}".format(**self.current_post)
+        response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
+        page_soup = BeautifulSoup(response.text, 'html.parser')
+        comment_html = page_soup.find("div", {"class": "post__comments"})
+        if comment_html:
+            do_not_save = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_html.text)
+            if do_not_save:
+                logger.debug(do_not_save.group(1))
+            else:
+                with open(os.path.join(self.current_post_path, 'comments.html'),'wb') as f:
+                    f.write(comment_html.prettify().encode("utf-16"))
+
+    def _download_embeds(self):
+        if self.current_post['embed']:
+            with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
+                f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-8'))
+            if args['yt_dlp']:
+                self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
+
+    def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = 5):
+        logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
+
+        # check file extention
+        if check_file_extention(os.path.split(file_name)[1]):
+            logger.info(f"Skipping download: File extention not supported {os.path.split(file_name)[1].split('.')[-1]}")
+            return
+
+        logger.info(f"Downloading {os.path.split(file_name)[1]}")
+
+        # check if file exists and if hashes match
+        if os.path.exists(file_name) and file_hash:
+            if file_hash.lower() == get_hash(file_name).lower():
+                logger.info("Skipping download: File on disk has matching hash")
+                return
+            logger.debug(f"Redownloading: File on disk does not match hash: Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
+
+        # used for resuming downloads
+        file_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
+
+        headers = {'Accept-Encoding': None,
+                   'Range': f'bytes={file_size}-',
+                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
+
+        response = self.session.get(url=url, stream=True, headers=headers, cookies=args['cookies'], timeout=TIMEOUT)
+
+        # do not retry on a 404
+        if response.status_code == 404:
+            logger.error(f'{response.status_code} {response.reason}: URL {url}')
+            self.current_post_errors += 1
+            return
+
+        # do not retry on a 403. Bad cookies
+        if response.status_code == 403:
+            logger.error(f"{response.status_code} {response.reason}: Update cookie file and re-run script")
+            self.current_post_errors += 1
+            return
+
+        # do not retry on a 416 Range Not Satisfiable
+        # means the requested range is >= the total content-length
+        if response.status_code == 416:
+            logger.debug(f'{response.status_code} {response.reason}: This shouldn\'t be a problem: Will always happen if server hash is wrong!')
+            return
+
+        # retry download if status code is not ok
+        if not response.ok:
+            timeout = 30
+            # 429 Too many requests
+            # wait 5 minutes
+            if response.status_code == 429:
+                timeout = 300
+            if retry > 0:
+                logger.warning(f"{response.status_code} {response.reason}: Retrying in {timeout} seconds")
+                time.sleep(timeout)
+                self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
+                return
+            logger.critical(f'{response.status_code}: All retries failed')
+            self.current_post_errors += 1
+            return
+
+        # get content-length or get 0
+        total = int(response.headers.get('content-length', 0))
+        if total > 0:
+            # if resuming download correct loading bar
+            total += file_size
+
+        # check file content length
+        if check_file_size(total):
+            logger.info(f"Skipping download: Does not meat file size requirements: {total} bytes")
+            return
+
+        # writing response content to file
+        with open(file_name, 'wb') as f:
+            start = time.time()
+            downloaded = 0
+            # what is a good chunk_size????
+            for chunk in response.iter_content(chunk_size=1024*64):
+                downloaded += len(chunk)
+                f.write(chunk)
+                print_download_bar(total, downloaded, start)
+        print()
+        logger.debug(f'Downloading {os.path.split(file_name)[1]} Completed')
+
+        # My futile attempts to check if the file downloaded correctly
+        if os.path.exists(file_name) and file_hash:
+            if file_hash.lower() == get_hash(file_name).lower():
+                logger.debug("Download completed successfully: File on disk has matching hash")
+                return
+            # if hashes don't match retry download
+            if retry > 0:
+                timeout = 5
+                logger.error(f"Redownloading: File on disk does not match hash: Retrying in {timeout} seconds")
+                logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
+                time.sleep(timeout)
+                self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
+                return
+            # some of the hash values on kemono.party (maybe coomer.party) are wrong!!!!!
+            logger.critical(f"All retries failed: Server hash is wrong or server keeps timing out: This is a problem on kemono.party's end: Please report broken hashed files them: URL {url}")
+            self.current_post_errors += 1
+            return
+
+    def download_yt_dlp(self, url:str, file_path:str):
+        temp_folder = os.path.join(os.getcwd(),"ytdlp_temp")
+        try:
+            # please reffer to yt-dlp's github for options
+            ydl_opts = {
+                "paths": {"temp" : temp_folder, "home": f"{file_path}"},
+                "output": '%(title)s.%(ext)s',
+                "noplaylist" : True,
+                "merge_output_format" : "mp4",
+                "quiet" : True,
+                "verbose": False
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            shutil.rmtree(temp_folder)
+        except (Exception, DownloadError) as e:
+            if os.path.exists(temp_folder):
+                shutil.rmtree(temp_folder)
+            logger.warning(f"yt-dlp: could not download URL {url}")
+            if type(e) is DownloadError:
+                if (str(e).find('Unsupported URL:') != -1) or (str(e).find('Video unavailable') != -1):
+                    return
+            logger.error(f"yt-dlp: Please report this error to yt-dlp on github: URL {url}")
+            print(e)
+            return
+
+# Helper functions
+
+# return hash from download url
+def find_hash(url:str):
+    find_hash = re.search(r'^([a-z0-9]{64})$',url.split('/')[-1].split('.')[0])
+    if find_hash:
+        return find_hash.group(1)
+    return None
+
+# return hash from file
+def get_hash(file_name):
+    sha256_hash = hashlib.sha256()
+    with open(file_name,"rb") as f:
+        for byte_block in iter(lambda: f.read(4096),b""):
+            sha256_hash.update(byte_block)
+
+    return sha256_hash.hexdigest()
+
+# prints the stupid pointless download bar that took way to long to make
+def print_download_bar(total, downloaded, start):
+    # have byte scale adjust based on number of bytes. ie GB/s, MB/s, KB/s
+    time_diff = time.time() - start
+    if time_diff == 0:
+        time_diff = 0.000001
+    done = 50
+    total_MB = '???'
+    if total:
+        done = int(50*downloaded/total)
+        total_MB = round(total/(2**20),1)
+    downloaded_MB = round(downloaded/(2**20),1)
+    rate_MBps = round((downloaded/(2**20))/time_diff, 1)
+    bar_fill = '='*done
+    bar_empty = ' '*(50-done)
+    overlap_buffer = ' '*15
+    print(f'[{bar_fill}{bar_empty}] {downloaded_MB}/{total_MB} MB, {rate_MBps} MB/s{overlap_buffer}', end='\r')
+
+# cleans up string to work as windows file names
+def win_file_name(file_name):
+    file_name = re.sub(r'[\\/:\"*?<>|\n\t]','_', file_name)
+    return file_name
+
+# cleans up string to work as windows folder name
+def win_folder_name(folder_name:str):
+    folder_name = re.sub(r'[\\/:\"*?<>|\n\t]','_', folder_name)
+    return folder_name.rstrip('. ')[:248]
+
+# takes post date sting and converts it back to datetime object, and simple datetime string
+def get_post_date(post:dict):
+    if post['published']:
+        date_object = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
+        date_string = date_object.strftime(r'%Y%m%d')
+    else:
+        date_object = datetime.datetime.min
+        date_string = '00000000'
+    return (date_object, date_string)
+
+# check if a number is between two values
+def check_file_size(size):
+    if args['min_filesize'] == '0' and args['max_filesize'] == 'inf':
+        return False
+    elif size == 0:
+        return True
+    elif int(size) <= float(args['max_filesize']) and int(size) >= int(args['min_filesize']):
+        return False
+    return True
+
+# check file extention
+def check_file_extention(file_name):
+    file_extention = file_name.split('.')[-1]
+    if args['only_filetypes']:
+        if not file_extention.lower() in args['only_filetypes']:
+            return True
+    if args['skip_filetypes']:
+        if file_extention.lower() in args['skip_filetypes']:
+            return True
+    return False
+
 def main():
-    input_list = []
-
+    D = downloader()
+    urls = []
     for link in args['links']:
-        input_list.append(link)
-
+        urls.append(link)
     for link in args['fromfile']:
-        input_list.append(link)
-
-    d = downloader(input_list, kfav_artists=args['kemono_favorite_users'], kfav_posts=args['kemono_favorite_posts'])
+        urls.append(link)
+    D.add_links(urls)
+    if args['kemono_favorite_users']:
+        D.add_favorite_artists('kemono')
+    if args['kemono_favorite_posts']:
+        D.add_favorite_posts('kemono')
+    if args['coomer_favorite_users']:
+        D.add_favorite_artists('coomer')
+    if args['coomer_favorite_posts']:
+        D.add_favorite_posts('coomer')
+    D.download_posts()
