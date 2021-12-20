@@ -1,11 +1,8 @@
 
 kemono.party_cookies.txt
-test.py
+coomer.party_cookies.txt
 *.pyc
 update_reqtext.bat
 run.bat
-kemono-dl.py.backup
-kemono-dl_html.py.backup
-broken_hashes.log
-coomer.party_cookies.txt
 links.txt
+debug.log
