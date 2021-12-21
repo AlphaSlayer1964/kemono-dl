@@ -12,7 +12,12 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 logger = logging.getLogger('kemono-dl')
-logger.setLevel(args['verbose'])
+
+logger.setLevel(logging.INFO)
+if args['quiet']:
+    logger.setLevel(logging.WARNING)
+if args['verbose']:
+    logger.setLevel(logging.DEBUG)
 
 file_format = logging.Formatter('%(asctime)s:%(levelname)s: %(message)s')
 stream_format = logging.Formatter('%(levelname)s: %(message)s')

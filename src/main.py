@@ -5,32 +5,28 @@ import hashlib
 import time
 from bs4 import BeautifulSoup
 import datetime
-import logging
 import json
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 import yt_dlp
 import shutil
 from yt_dlp import DownloadError
+from PIL import Image
+from io import BytesIO
 
 from .arguments import get_args
 from .logger import logger
 
 args = get_args()
 
-
-TIMEOUT = 180
-
+TIMEOUT = 300
 class downloader:
 
     def __init__(self):
         # I read using a session would make things faster.
         # Does it? I have no idea
         self.session = requests.Session()
-        retries = Retry(
-            total=3,
-            status_forcelist=[429, 500, 502, 503, 504],
-        )
+        retries = Retry(total=3)
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.all_creators = []
@@ -123,6 +119,7 @@ class downloader:
 
     def download_posts(self):
         for post in self.download_list:
+            time.sleep(args['post_timeout'])
             self.current_post = post
             self._set_current_post_path()
             if self._should_download():
@@ -133,14 +130,16 @@ class downloader:
                     os.makedirs(self.current_post_path)
                 if not args['skip_attachments']:
                     self._download_attachments()
-                if not args['skip_postfile']:
-                    self._download_post_file()
                 if not args['skip_content']:
                     self._download_content()
                 if not args['skip_comments']:
                     self._download_comments()
                 if not args['skip_embeds']:
                     self._download_embeds()
+                if args['save_pfp']:
+                    self._download_pfp_banner('icon')
+                if args['save_banner']:
+                    self._download_pfp_banner('banner')
                 if not args['skip_json']:
                     # json.dump can't handle the datetime object
                     self.current_post['date_object'] = None
@@ -163,8 +162,6 @@ class downloader:
                                               self.current_post['service'],
                                               win_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
                                               win_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}"))
-        if len(self.current_post_path) > 260:
-            logger.warning(f"Post Path is {len(self.current_post_path)} characters long: Windows might not like that")
 
     def _should_download(self):
         # check if post has been updated
@@ -189,31 +186,40 @@ class downloader:
         # check if post date is in range
         if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
             return True
-        elif self.current_post['date_object'] == datetime.datetime.min and args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+        elif self.current_post['date_object'] == datetime.datetime.min:
             return False
-        elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']) and  args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+        elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']):
             return False
         return True
 
+    def _download_pfp_banner(self, icon_banner:str):
+        if (self.current_post['service'] != 'gumroad' and icon_banner == 'banner') or (self.current_post['service'] != 'dlsite' and icon_banner == 'icon'):
+            pfp_url = f"https://{self.current_post['site']}.party/{icon_banner}s/{self.current_post['service']}/{self.current_post['id']}"
+            response = self.session.get(url=pfp_url, cookies=args['cookies'], timeout=TIMEOUT)
+            try:
+                image = Image.open(BytesIO(response.content))
+                if not os.path.exists(os.path.join(self.current_post_path, win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}"))):
+                    image.save(os.path.join(self.current_post_path, win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}")), format=image.format)
+            except:
+                logger.error(f"Unable to download {icon_banner} for {self.current_post['username']}")
+
     def _download_attachments(self):
+        if self.current_post['file']:
+            # kemono.party some times already has the file in attachments so stops duplicates
+            if not self.current_post['file'] in self.current_post['attachments']:
+                self.current_post['attachments'].insert(0, self.current_post['file'])
         for index, attachment in enumerate(self.current_post['attachments']):
             index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
-            file_name = os.path.join(self.current_post_path,win_file_name(f"[{index_string}]_{attachment['name']}"))
+            file_name = os.path.join(self.current_post_path, win_file_name(f"[{index_string}]_{attachment['name']}"))
             file_url = f"https://{self.current_post['site']}.party/data{attachment['path']}?f={attachment['name']}"
             file_hash = find_hash(attachment['path'])
-            self._requests_download(file_url, file_name, file_hash)
-
-    def _download_post_file(self):
-        if self.current_post['file']:
-            index_string = str(0).zfill(len(str(len(self.current_post['attachments']))))
-            file_name = os.path.join(self.current_post_path,win_file_name(f"[{index_string}]_{self.current_post['file']['name']}"))
-            file_url = f"https://{self.current_post['site']}.party/data{self.current_post['file']['path']}?f={self.current_post['file']['name']}"
-            file_hash = find_hash(self.current_post['file']['path'])
             self._requests_download(file_url, file_name, file_hash)
 
     def _download_content(self):
         if self.current_post['content']:
             content_soup = self._save_inline(BeautifulSoup(self.current_post['content'], 'html.parser'))
+            if args['extract_links']:
+               self._save_links(content_soup)
             with open(os.path.join(self.current_post_path, 'content.html'),'wb') as f:
                 f.write(content_soup.prettify().encode("utf-16"))
 
@@ -232,6 +238,12 @@ class downloader:
                 inline_image['src'] = os.path.join(self.current_post_path, 'inline', file_name)
         return soup
 
+    def _save_links(self, soup):
+        href_tags = soup.find_all(href=True)
+        with open(os.path.join(self.current_post_path,'content_links.txt'),'w') as f:
+            for href_tag in href_tags:
+                f.write(href_tags['href'] + '\n')
+
     def _download_comments(self):
         # no api method to get comments so using from html (not future proof)
         post_url = "https://{site}.party/{service}/user/{user}/post/{id}".format(**self.current_post)
@@ -249,12 +261,12 @@ class downloader:
     def _download_embeds(self):
         if self.current_post['embed']:
             with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
-                f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-8'))
+                f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
             if args['yt_dlp']:
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
 
     # Should I make a resume flag instead of just trying to resume by deafult?
-    def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = 5):
+    def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
         logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
 
         # check file extention
@@ -269,14 +281,15 @@ class downloader:
             if file_hash.lower() == get_hash(file_name).lower():
                 logger.info("Skipping download: File on disk has matching hash")
                 return
-            logger.warning(f"Redownloading: File on disk does not match hash: Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
+            logger.warning(f"Resuming download: File on disk does not match hash")
+            logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
 
         # used for resuming downloads
         file_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
 
         headers = {'Accept-Encoding': None,
                    'Range': f'bytes={file_size}-',
-                   'User-Agent': ''}
+                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
 
         response = self.session.get(url=url, stream=True, headers=headers, cookies=args['cookies'], timeout=TIMEOUT)
 
@@ -326,7 +339,7 @@ class downloader:
             return
 
         # writing response content to file
-        with open(file_name, 'wb') as f:
+        with open(file_name, 'ab') as f:
             start = time.time()
             downloaded = 0
             # what is a good chunk_size????
@@ -345,7 +358,7 @@ class downloader:
             # if hashes don't match retry download
             if retry > 0:
                 timeout = 5
-                logger.error(f"Redownloading: File on disk does not match hash: Retrying in {timeout} seconds")
+                logger.error(f"Download failed / was intertupted: File on disk does not match hash: Retrying in {timeout} seconds")
                 logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
                 time.sleep(timeout)
                 self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
@@ -361,24 +374,21 @@ class downloader:
             # please reffer to yt-dlp's github for options
             ydl_opts = {
                 "paths": {"temp" : temp_folder, "home": f"{file_path}"},
-                "output": '%(title)s.%(ext)s',
+                # "output": '%(title)s.%(ext)s',
                 "noplaylist" : True,
-                "merge_output_format" : "mp4",
+                # "merge_output_format" : "mp4",
                 "quiet" : True,
                 "verbose": False
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])
+            # clean up temp folder
             shutil.rmtree(temp_folder)
         except (Exception, DownloadError) as e:
+            # clean up temp folder
             if os.path.exists(temp_folder):
                 shutil.rmtree(temp_folder)
-            logger.warning(f"yt-dlp: could not download URL {url}")
-            if type(e) is DownloadError:
-                if (str(e).find('Unsupported URL:') != -1) or (str(e).find('Video unavailable') != -1):
-                    return
-            logger.error(f"yt-dlp: Please report this error to yt-dlp on github: URL {url}")
-            print(e)
+            logger.error(f"yt-dlp: Could not download URL {url}")
             return
 
 # Helper functions
@@ -401,31 +411,67 @@ def get_hash(file_name):
 
 # prints the stupid pointless download bar that took way to long to make
 def print_download_bar(total, downloaded, start):
-    # have byte scale adjust based on number of bytes. ie GB/s, MB/s, KB/s
     time_diff = time.time() - start
-    if time_diff == 0:
+    if time_diff == 0.0:
         time_diff = 0.000001
     done = 50
-    total_MB = '???'
+
+    rate = downloaded/time_diff
+
+    eta = (total-downloaded) / rate
+
+    if round(eta) < 60:
+        eta = (round(eta),'second') if round(eta) == 1 else (round(eta),'seconds')
+    elif round(eta) < 60*60:
+        eta = (round(eta/60),'minute') if round(eta/60) == 1 else (round(eta/60),'minutes')
+    elif round(eta) < 60*60*24:
+        eta = (round(eta/60*60),'hour') if round(eta/60*60) == 1 else (round(eta/60*60),'hours')
+    else:
+        eta = (round(eta/60*60*24),'day') if round(eta/60*60*24) == 1 else (round(eta/60*60*24),'days')
+
+    if rate/2**10 < 100:
+        rate = (round(rate/2**10, 1), 'KB')
+    elif rate/2**20 < 100:
+        rate = (round(rate/2**20, 1), 'MB')
+    else:
+        rate = (round(rate/2**30, 1), 'GB')
+
     if total:
         done = int(50*downloaded/total)
-        total_MB = round(total/(2**20),1)
-    downloaded_MB = round(downloaded/(2**20),1)
-    rate_MBps = round((downloaded/(2**20))/time_diff, 1)
+        if total/2**10 < 100:
+            total = (round(total/2**10, 1), 'KB')
+            downloaded = round(downloaded/2**10,1)
+        elif total/2**20 < 100:
+            total = (round(total/2**20, 1), 'MB')
+            downloaded = round(downloaded/2**20,1)
+        else:
+            total = (round(total/2**30, 1), 'GB')
+            downloaded = round(downloaded/2**30,1)
+    else:
+        if downloaded/2**10 < 100:
+            total = ('???', 'KB')
+            downloaded = round(downloaded/2**10,1)
+        elif downloaded/2**20 < 100:
+            total = ('???', 'MB')
+            downloaded = round(downloaded/2**20,1)
+        else:
+            total = ('???', 'GB')
+            downloaded = round(downloaded/2**30,1)
+
     bar_fill = '='*done
     bar_empty = ' '*(50-done)
     overlap_buffer = ' '*15
-    print(f'[{bar_fill}{bar_empty}] {downloaded_MB}/{total_MB} MB, {rate_MBps} MB/s{overlap_buffer}', end='\r')
+
+    if not args['quiet']:
+        print(f'[{bar_fill}{bar_empty}] {downloaded}/{total[0]} {total[1]}, {rate[0]} {rate[1]}/s ETA {eta[0]} {eta[1]}{overlap_buffer}', end='\r')
 
 # cleans up string to work as windows file names
 def win_file_name(file_name):
-    file_name = re.sub(r'[\\/:\"*?<>|\n\t]','_', file_name)
-    return file_name
+    return re.sub(r'[\\/:\"*?<>|\n\t]','_', file_name)[:255]
 
 # cleans up string to work as windows folder name
 def win_folder_name(folder_name:str):
-    folder_name = re.sub(r'[\\/:\"*?<>|\n\t]','_', folder_name)
-    return folder_name.rstrip('. ')[:248]
+    return re.sub(r'[\\/:\"*?<>|\n\t]','_', folder_name)[:248].rstrip('. ')
 
 # takes post date sting and converts it back to datetime object, and simple datetime string
 def get_post_date(post:dict):
@@ -475,3 +521,4 @@ def main():
     if args['coomer_favorite_posts']:
         D.add_favorite_posts('coomer')
     D.download_posts()
+    print('done')

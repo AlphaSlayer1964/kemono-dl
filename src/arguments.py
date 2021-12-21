@@ -6,7 +6,6 @@ import logging
 from http.cookiejar import MozillaCookieJar, LoadError
 
 from .version import __version__
-from .logger import logger
 
 def get_args():
 
@@ -31,16 +30,6 @@ def get_args():
     ap.add_argument("-f", "--fromfile",
                     metavar="FILE", type=str, default=[],
                     help="File containing URLs to download, one URL per line.")
-
-    # deprocated
-    ap.add_argument("--favorite-users",
-                    action='store_true', default=False,
-                    help="Downloads all favorite users. (Requires cookies while logged in)")
-
-    # deprocated
-    ap.add_argument("--favorite-posts",
-                    action='store_true', default=False,
-                    help="Downloads all favorites posts. (Requires cookies while logged in)")
 
     ap.add_argument("--kemono-favorite-users",
                     action='store_true', default=False,
@@ -70,10 +59,6 @@ def get_args():
                     action='store_true', default=False,
                     help="Updates already downloaded posts. Post must have json log file. (can not be used with --archive)")
 
-    ap.add_argument("-i", "--ignore-errors",
-                    action='store_true', default=False,
-                    help="Continue to download posts when an error occurs.")
-
     ap.add_argument("--yt-dlp",
                     action='store_true', default=False,
                     help="Tries to download embeds with yt-dlp. (experimental)")
@@ -83,8 +68,8 @@ def get_args():
                     help="The amount of time in seconds to wait between downloading posts. (default: 0)")
 
     ap.add_argument("--retry-download",
-                    metavar="COUNT", type=int, default=3,
-                    help="The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 3)")
+                    metavar="COUNT", type=int, default=5,
+                    help="The amount of times to retry downloading a file. (default: 5)")
 
     ap.add_argument("--date",
                     metavar="DATE", type=str, default=None,
@@ -120,19 +105,11 @@ def get_args():
 
     ap.add_argument("--skip-embeds",
                     action='store_true', default=False,
-                    help="Skips posts embeds.")
-
-    ap.add_argument("--skip-pfp-banner",
-                    action='store_true', default=False,
-                    help="Skips user pfp and banner.")
+                    help="Skips posts embeds. Also skips downloading post embeds using --yt-dlp")
 
     ap.add_argument("--skip-comments",
                     action='store_true', default=False,
                     help="Skips posts comments.")
-
-    ap.add_argument("--skip-postfile",
-                    action='store_true', default=False,
-                    help="Skips post file.")
 
     ap.add_argument("--skip-attachments",
                     action='store_true', default=False,
@@ -142,63 +119,91 @@ def get_args():
                     action='store_true', default=False,
                     help="Skips json. (--update requires post json)")
 
+    ap.add_argument("--extract-links",
+                    action='store_true', default=False,
+                    help="Save all content links to a file.")
+
+    ap.add_argument("--no-indexing",
+                    action='store_true', default=False,
+                    help="Do not index file names.")
+
+    ap.add_argument("--quiet",
+                    action='store_true', default=False,
+                    help="Suppress printing except for warnings, errors, and critical messages")
+
+    ap.add_argument("--save-pfp",
+                    action='store_true', default=False,
+                    help="Downloads user pfp")
+
+    ap.add_argument("--save-banner",
+                    action='store_true', default=False,
+                    help="Downloads user banner")
+
     # renamed
     ap.add_argument("--force-external",
                     action='store_true', default=False,
                     help="Save all content links to a file.")
-
-    ap.add_argument("----extract-links",
+    # deprecated
+    ap.add_argument("-i", "--ignore-errors",
                     action='store_true', default=False,
-                    help="Save all content links to a file.")
-
+                    help="Continue to download posts when an error occurs.")
+    # deprecated
+    ap.add_argument("--skip-postfile",
+                    action='store_true', default=False,
+                    help="Skips post file.")
+    # deprecated
     ap.add_argument("--force-indexing",
                     action='store_true', default=False,
                     help="Attachments and inline images will have indexing numbers added to their file names.")
-
-    # deprocated
+    # deprecated
     ap.add_argument("--force-inline",
                     action='store_true', default=False,
                     help="Download all external inline images found in post content. (experimental)")
-
-    # deprocated
+    # deprecated
     ap.add_argument("--force-yt-dlp",
                     action='store_true', default=False,
                     help="Tries to download content links with yt-dlp. (experimental)")
-
-    # ap.add_argument("--quiet",
-    #                 action='store_true', default=False,
-    #                 help="Suppress printing except for download bar, warnings, and errors")
+    # deprecated
+    ap.add_argument("--favorite-users",
+                    action='store_true', default=False,
+                    help="Downloads all favorite users. (Requires cookies while logged in)")
+    # deprecated
+    ap.add_argument("--favorite-posts",
+                    action='store_true', default=False,
+                    help="Downloads all favorites posts. (Requires cookies while logged in)")
+    # deprecated
+    ap.add_argument("--skip-pfp-banner",
+                    action='store_true', default=False,
+                    help="Skips user pfp and banner.")
 
     args = vars(ap.parse_args())
 
     # deprocated
     if args['favorite_users']:
-        logger.warning('--favorite-users: DEPROCATED use --kemono-favorite-users or --coomer-favorite-users')
+        print('--favorite-users: DEPROCATED use --kemono-favorite-users or --coomer-favorite-users')
     if args['favorite_posts']:
-        logger.warning('--favorite-posts: DEPROCATED use --kemono-favorite-posts or --coomer-favorite-posts')
+        print('--favorite-posts: DEPROCATED use --kemono-favorite-posts or --coomer-favorite-posts')
     if args['force_yt_dlp']:
-        logger.warning('--force-yt-dlp: DEPROCATED I found there were too many incorrect links causing unwanted downloads')
+        print('--force-yt-dlp: DEPROCATED I found there were too many incorrect links causing unwanted downloads')
     if args['force_inline']:
-        logger.warning('--force-inline: DEPROCATED to complicated handling downloading inline images from random places on the internet. Images not saved by party sites should still show up in content.html')
-
+        print('--force-inline: DEPROCATED to complicated handling downloading inline images from random places on the internet. Images not saved by party sites should still show up in content.html')
+    if args['ignore_errors']:
+        print('--ignore-errors: DEPROCATED 404 errors are skipped by default and 429 cause a 5 minute waite time')
+    if args['skip_postfile']:
+        print('--skip-postfile: DEPROCATED post files is merged with attachments')
+    if args['force_indexing']:
+        print('--force-indexing: DEPROCATED files are indexed by default')
     # renamed
     if args['force_external']:
-        logger.warning('--force-external: RENAMED to --extract-links : changed name to better fit action')
+        print('--force-external: RENAMED to --extract-links : changed name to better fit action')
         pass
-
-
 
     if args['version']:
         print(__version__)
         quit()
 
-    if args['verbose']:
-        args['verbose'] = logging.DEBUG
-    else:
-        args['verbose'] = logging.INFO
-
     if args['update'] and args['archive']:
-        logger.error('--archive, --update: Only use one at a time')
+        print('--archive, --update: Only use one at a time')
         quit()
 
     # takes a list of cookie files and marges than and makes them usable by requests
@@ -213,12 +218,12 @@ def get_args():
                 args['cookies'].load(cookie_files[0])
                 args['cookies'].load(cookie_files[1])
             else:
-                logger.warning('--cookies: You should only be passing in two cookie files, one for kemono.party and one for coomer.party')
+                print('--cookies: You should only be passing in two cookie files, one for kemono.party and one for coomer.party')
         except (LoadError, FileNotFoundError) as e:
             print(e)
             quit()
     else:
-        logger.error('--cookies: No file passed')
+        print('--cookies: No file passed')
         quit()
 
     # takes in a file directory
@@ -236,11 +241,11 @@ def get_args():
     if args['archive']:
         archive_path = os.path.dirname(os.path.abspath(args['archive']))
         if not os.path.isdir(archive_path):
-            logger.error(f"--archive {archive_path}: Archive directory does not exist")
+            print(f"--archive {archive_path}: Archive directory does not exist")
             quit()
 
     if args['only_filetypes'] and args['skip_filetypes']:
-        logger.error('--only-filetypes, --skip-filetypes: Only use one at a time')
+        print('--only-filetypes, --skip-filetypes: Only use one at a time')
         quit()
 
     def filetype_list(file_types):
@@ -252,7 +257,6 @@ def get_args():
 
     if args['only_filetypes']:
         args['only_filetypes'] = filetype_list(args['only_filetypes'])
-
     if args['skip_filetypes']:
         args['skip_filetypes'] = filetype_list(args['skip_filetypes'])
 
@@ -260,13 +264,11 @@ def get_args():
         try:
             return datetime.datetime.strptime(date, r'%Y%m%d')
         except:
-            logger.error(f"{arg} {date}: Incorrect format: YYYYMMDD")
+            print(f"{arg} {date}: Incorrect format: YYYYMMDD")
             quit()
 
     args['date'] = valid_date(args['date'], '--date') if args['date'] else datetime.datetime.min
-
     args['datebefore'] = valid_date(args['datebefore'], '--datebefore') if args['datebefore'] else datetime.datetime.min
-
     args['dateafter'] = valid_date(args['dateafter'], '--dateafter') if args['dateafter'] else datetime.datetime.max
 
     def valid_size(size, arg):
@@ -283,12 +285,11 @@ def get_args():
             elif found.group(2) == 'GB':
                 return str(int(found.group(1)) * 10**9)
         else:
-            logger.error(f"{arg} {size}: Incorrect format: ex 1B 1KB 1MB 1GB")
+            print(f"{arg} {size}: Incorrect format: ex 1B 1KB 1MB 1GB")
             quit()
 
     if args['max_filesize']:
         args['max_filesize'] = valid_size(args['max_filesize'], '--max-filesize')
-
     if args['min_filesize']:
         args['min_filesize'] = valid_size(args['min_filesize'], '--min-filesize')
 
@@ -300,12 +301,12 @@ def get_args():
 
     if args['fromfile']:
         if not os.path.isfile(args['fromfile']):
-            logger.error(f"--fromfile {args['fromfile']}: No file found / Not a file")
+            print(f"--fromfile {args['fromfile']}: No file found / Not a file")
             quit()
         with open(args['fromfile'],'r') as f:
             links = f.readlines()
         if not links:
-            logger.warning(f"--fromfile {args['fromfile']}: File is empty")
+            print(f"--fromfile {args['fromfile']}: File is empty")
             quit()
         args['fromfile'] = []
         for link in links:

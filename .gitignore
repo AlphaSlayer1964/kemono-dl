@@ -2,7 +2,8 @@
 kemono.party_cookies.txt
 coomer.party_cookies.txt
 *.pyc
-update_reqtext.bat
-run.bat
+*.log
+*.bat
 links.txt
-debug.log
+test.py
+archive.txt
