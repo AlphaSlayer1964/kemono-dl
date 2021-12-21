@@ -242,7 +242,7 @@ class downloader:
         href_tags = soup.find_all(href=True)
         with open(os.path.join(self.current_post_path,'content_links.txt'),'w') as f:
             for href_tag in href_tags:
-                f.write(href_tags['href'] + '\n')
+                f.write(href_tag['href'] + '\n')
 
     def _download_comments(self):
         # no api method to get comments so using from html (not future proof)
@@ -418,16 +418,7 @@ def print_download_bar(total, downloaded, start):
 
     rate = downloaded/time_diff
 
-    eta = (total-downloaded) / rate
-
-    if round(eta) < 60:
-        eta = (round(eta),'second') if round(eta) == 1 else (round(eta),'seconds')
-    elif round(eta) < 60*60:
-        eta = (round(eta/60),'minute') if round(eta/60) == 1 else (round(eta/60),'minutes')
-    elif round(eta) < 60*60*24:
-        eta = (round(eta/60*60),'hour') if round(eta/60*60) == 1 else (round(eta/60*60),'hours')
-    else:
-        eta = (round(eta/60*60*24),'day') if round(eta/60*60*24) == 1 else (round(eta/60*60*24),'days')
+    eta = time.strftime("%H:%M:%S", time.gmtime((total-downloaded) / rate))
 
     if rate/2**10 < 100:
         rate = (round(rate/2**10, 1), 'KB')
@@ -462,8 +453,8 @@ def print_download_bar(total, downloaded, start):
     bar_empty = ' '*(50-done)
     overlap_buffer = ' '*15
 
-    if not args['quiet']:
-        print(f'[{bar_fill}{bar_empty}] {downloaded}/{total[0]} {total[1]}, {rate[0]} {rate[1]}/s ETA {eta[0]} {eta[1]}{overlap_buffer}', end='\r')
+    if (not args['quiet']) or args['verbose']:
+        print(f'[{bar_fill}{bar_empty}] {downloaded}/{total[0]} {total[1]} at {rate[0]} {rate[1]}/s ETA {eta}{overlap_buffer}', end='\r')
 
 # cleans up string to work as windows file names
 def win_file_name(file_name):
