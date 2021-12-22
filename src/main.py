@@ -51,6 +51,7 @@ class downloader:
         return None
 
     def add_favorite_artists(self, site:str):
+        logger.info('Gathering favorite users')
         headers = {'accept': 'application/json'}
         fav_art_api_url = f'https://{site}.party/api/favorites?type=artist'
         response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
@@ -61,6 +62,7 @@ class downloader:
             self._add_all_user_posts(site,favorite['service'],favorite['id'])
 
     def add_favorite_posts(self, site:str):
+        logger.info('Gathering favorite posts')
         headers = {'accept': 'application/json'}
         fav_art_api_url = f'https://{site}.party/api/favorites?type=post'
         response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
@@ -71,6 +73,8 @@ class downloader:
             self._add_single_post(site,favorite['service'],favorite['user'],favorite['id'])
 
     def add_links(self, urls:list):
+        if urls:
+            logger.info('Gathering posts')
         for url in urls:
             self._parse_links(url)
 
@@ -124,9 +128,9 @@ class downloader:
             self.current_post = post
             self._set_current_post_path()
             if self._should_download():
-                logger.info(f"Post: Title: {win_folder_name(self.current_post['title'])}")
+                logger.info(f"Post: {win_folder_name(self.current_post['title'])}")
                 # clean this up
-                logger.debug(f"Post: user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
+                logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
                 if not args['skip_attachments']:
@@ -138,12 +142,12 @@ class downloader:
                 if not args['skip_embeds']:
                     self._download_embeds()
                 # so we are not downloading the pfp or banner over and over
-                if not (self.current_post['service'], self.current_post['id']) in unique:
+                if not (self.current_post['service'], self.current_post['user']) in unique:
                     if args['save_pfp']:
                         self._download_pfp_banner('icon')
                     if args['save_banner']:
                         self._download_pfp_banner('banner')
-                    unique.append((self.current_post['service'], self.current_post['id']))
+                    unique.append((self.current_post['service'], self.current_post['user']))
                 if not args['skip_json']:
                     # json.dump can't handle the datetime object
                     self.current_post['date_object'] = None
@@ -200,11 +204,12 @@ class downloader:
 
     def _download_pfp_banner(self, icon_banner:str):
         if (self.current_post['service'] != 'gumroad' and icon_banner == 'banner') or (self.current_post['service'] != 'dlsite' and icon_banner == 'icon'):
-            pfp_url = f"https://{self.current_post['site']}.party/{icon_banner}s/{self.current_post['service']}/{self.current_post['id']}"
-            response = self.session.get(url=pfp_url, cookies=args['cookies'], timeout=TIMEOUT)
+            pfp_banner_url = f"https://{self.current_post['site']}.party/{icon_banner}s/{self.current_post['service']}/{self.current_post['user']}"
+            logger.debug(f"pfp or banner URL {pfp_banner_url}")
+            response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
             try:
                 image = Image.open(BytesIO(response.content))
-                image.save(os.path.join(os.path.dirname(self.current_post_path), win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}")), format=image.format)
+                image.save(os.path.join(os.path.dirname(self.current_post_path), win_file_name(f"{self.current_post['username']} [{self.current_post['user']}] {icon_banner}.{image.format.lower()}")), format=image.format)
             except:
                 logger.error(f"Unable to download {icon_banner} for {self.current_post['username']}")
 
@@ -376,6 +381,7 @@ class downloader:
             return
 
     def download_yt_dlp(self, url:str, file_path:str):
+        logger.info(f"Downloading with yt-dlp: URL {url}")
         temp_folder = os.path.join(os.getcwd(),"ytdlp_temp")
         try:
             # please reffer to yt-dlp's github for options
