@@ -72,15 +72,15 @@ def get_args():
                     help="The amount of times to retry downloading a file. (default: 5)")
 
     ap.add_argument("--date",
-                    metavar="DATE", type=str, default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date.")
 
     ap.add_argument("--datebefore",
-                    metavar="DATE", type=str, default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date and before.")
 
     ap.add_argument("--dateafter",
-                    metavar="DATE", type=str, default=None,
+                    metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date and after.")
 
     ap.add_argument("--min-filesize",
