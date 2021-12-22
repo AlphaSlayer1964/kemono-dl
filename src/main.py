@@ -24,7 +24,7 @@ class downloader:
 
     def __init__(self):
         # I read using a session would make things faster.
-        # Does it? I have no idea
+        # Does it? I have no idea and didn't google
         self.session = requests.Session()
         retries = Retry(total=3)
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
@@ -118,6 +118,7 @@ class downloader:
             self.download_list.append(post_dict)
 
     def download_posts(self):
+        unique = []
         for post in self.download_list:
             time.sleep(args['post_timeout'])
             self.current_post = post
@@ -136,10 +137,13 @@ class downloader:
                     self._download_comments()
                 if not args['skip_embeds']:
                     self._download_embeds()
-                if args['save_pfp']:
-                    self._download_pfp_banner('icon')
-                if args['save_banner']:
-                    self._download_pfp_banner('banner')
+                # so we are not downloading the pfp or banner over and over
+                if not (self.current_post['service'], self.current_post['id']) in unique:
+                    if args['save_pfp']:
+                        self._download_pfp_banner('icon')
+                    if args['save_banner']:
+                        self._download_pfp_banner('banner')
+                    unique.append((self.current_post['service'], self.current_post['id']))
                 if not args['skip_json']:
                     # json.dump can't handle the datetime object
                     self.current_post['date_object'] = None
@@ -157,7 +161,9 @@ class downloader:
     def _set_current_post_path(self):
         # when using win_folder_name() on the post title it may return an empty string
         # for example if the title is "???" then that will return ""
-        # this could cause conflicting folder names if you don't include any other unique info in the folder name
+        # this could cause conflicting folder names if you don't include any other unique identifier in the folder name
+        # Note: the pfp and banners are downloaded to the second from last folder
+        # so you might need to change that
         self.current_post_path = os.path.join(args['output'],
                                               self.current_post['service'],
                                               win_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
@@ -198,8 +204,7 @@ class downloader:
             response = self.session.get(url=pfp_url, cookies=args['cookies'], timeout=TIMEOUT)
             try:
                 image = Image.open(BytesIO(response.content))
-                if not os.path.exists(os.path.join(self.current_post_path, win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}"))):
-                    image.save(os.path.join(self.current_post_path, win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}")), format=image.format)
+                image.save(os.path.join(os.path.dirname(self.current_post_path), win_file_name(f"{self.current_post['username']} [{self.current_post['id']}] {icon_banner}.{image.format.lower()}")), format=image.format)
             except:
                 logger.error(f"Unable to download {icon_banner} for {self.current_post['username']}")
 
@@ -211,6 +216,8 @@ class downloader:
         for index, attachment in enumerate(self.current_post['attachments']):
             index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
             file_name = os.path.join(self.current_post_path, win_file_name(f"[{index_string}]_{attachment['name']}"))
+            if args['no_indexing']:
+                file_name = os.path.join(self.current_post_path, win_file_name(f"{attachment['name']}"))
             file_url = f"https://{self.current_post['site']}.party/data{attachment['path']}?f={attachment['name']}"
             file_hash = find_hash(attachment['path'])
             self._requests_download(file_url, file_name, file_hash)
