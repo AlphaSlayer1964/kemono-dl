@@ -4,15 +4,19 @@ about: Suggest a feature
 labels: "feature request"
 
 ---
+<!-- If you do not fill out this forum correctly your issue will be closed! -->
 
-**Describe the feature you'd like**
-A description of what you want the feature to do.
+### Description
+<!-- A description of the feature. -->
 
-**Poster and Post ID**
-Please provide the poster ID and post ID and do not link to kemono party directly
-Poster ID: 
-Post ID: 
 
-**Additional context**
-Add any other context about the feature request here.
+### Service, User ID, Post ID
+<!-- If your feature if for a specific type of post or user please list it here -->
+<!-- Your Link: `https://kemono.party/{Service}/user/{User ID}/post/{Post ID}` -->
+- Service:
+- User ID:
+- Post ID:
+
+### Additional comments
+<!-- Anything else you think might help. -->
 
