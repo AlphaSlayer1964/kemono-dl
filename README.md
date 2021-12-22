@@ -31,9 +31,9 @@ A simple downloader for kemono.party and coomer.party.
   --yt-dlp                      Tries to download embeds with yt-dlp. (experimental)
   --post-timeout SEC            The amount of time in seconds to wait between downloading posts. (default: 0)
   --retry-download COUNT        The amount of times to retry downloading a file. (default: 5)
-  --date DATE                   Only download posts from this date.
-  --datebefore DATE             Only download posts from this date and before.
-  --dateafter DATE              Only download posts from this date and after.
+  --date YYYYMMDD               Only download posts from this date.
+  --datebefore YYYYMMDD         Only download posts from this date and before.
+  --dateafter YYYYMMDD          Only download posts from this date and after.
   --min-filesize SIZE           Do not download files smaller than SIZE. (ex. #GB | #MB | #KB | #B)
   --max-filesize SIZE           Do not download files larger than SIZE. (ex. #GB | #MB | #KB | #B)
   --only-filetypes EXT          Only downloads attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)
