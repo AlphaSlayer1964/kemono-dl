@@ -1,5 +1,5 @@
 # kemono-dl
-This is a simple kemono.party downloader. Hopefully a new update and full support for coomer.party some time after the 20th.
+A simple downloader for kemono.party and coomer.party.
 
 ## How to use
 1.  Install python. (Disable path length limit during install)
@@ -14,20 +14,23 @@ This is a simple kemono.party downloader. Hopefully a new update and full suppor
 
 ## Options
 ```
-  -h, --help                    show this help message and exit
+  -h, --help                    Show this help message and exit
   --version                     Displays current version and exits.
-  --cookies COOKIES             File to read cookies from. (REQUIRED)
+  --verbose                     Display extra debug information and create a debug.log
+  --quiet                       Suppress printing except for warnings, errors, and critical messages
+  --cookies COOKIES             Files to read cookies from, comma separated. (REQUIRED)
   -l LINKS, --links LINKS       Downloads URLs, can be separated by commas.
   -f FILE, --fromfile FILE      File containing URLs to download, one URL per line.
-  --favorite-users              Downloads all favorite users. (Requires cookies while logged in)
-  --favorite-posts              Downloads all favorites posts. (Requires cookies while logged in)
+  --kemono-favorite-users       Downloads all favorite users from kemono.party. (Requires cookies while logged in)
+  --kemono-favorite-posts       Downloads all favorites posts from kemono.party. (Requires cookies while logged in)
+  --coomer-favorite-users       Downloads all favorite users from coomer.party. (Requires cookies while logged in)
+  --coomer-favorite-posts       Downloads all favorites posts from coomer.party. (Requires cookies while logged in)
   -o PATH, --output PATH        Path to download location
   -a FILE, --archive FILE       Downloads only posts that are not in provided archive file. (Can not be used with --update)
   -u, --update                  Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
-  -i, --ignore-errors           Continue to download posts when an error occurs.
   --yt-dlp                      Tries to download embeds with yt-dlp. (experimental)
   --post-timeout SEC            The amount of time in seconds to wait between downloading posts. (default: 0)
-  --retry-download COUNT        The amount of times to retry downloading a file. (acts like --ignores-errors) (default: 0)
+  --retry-download COUNT        The amount of times to retry downloading a file. (default: 5)
   --date DATE                   Only download posts from this date.
   --datebefore DATE             Only download posts from this date and before.
   --dateafter DATE              Only download posts from this date and after.
@@ -37,30 +40,41 @@ This is a simple kemono.party downloader. Hopefully a new update and full suppor
   --skip-filetypes EXT          Skips attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)
   --skip-content                Skips posts content.
   --skip-embeds                 Skips posts embeds.
-  --skip-pfp-banner             Skips user pfp and banner.
   --skip-comments               Skips posts comments.
-  --skip-postfile               Skips post file.
   --skip-attachments            Skips attachments.
   --skip-json                   Skips json. (--update requires post json)
-  --force-external              Save all content links to a file.
-  --force-indexing              Attachments and inline images will have indexing numbers added to their file names.
-  --force-inline                Download all external inline images found in post content. (experimental)
-  --force-yt-dlp                Tries to download content links with yt-dlp. (experimental)
+  --save-pfp                    Downloads user pfp
+  --save-banner                 Downloads user banner
+  --extract-links               Save all content links to a file.
+  --no-indexing                 Do not index file names. Might cause issues if attachments have duplicate names.
+
 ```
 ### Notes
 -  Default download location is a `Downloads` folder in the current working directory (will be created automatically)
--  Input link format: `https://kemono.party/{service}/user/{user_id}` or `https://kemono.party/{service}/user/{user_id}/post/{post_is}`
+-  link format: `https://kemono.party/{service}/user/{user_id}` or `https://kemono.party/{service}/user/{user_id}/post/{post_is}`
 -  Using any date option will not download any gumroad posts because they have no dates
--  Using `--ignore-errors` posts with errors will not be archived
 -  Using `--max-filesize` or `--min-filesize` will cause files that don't have `content-length` in their headers to not download. ie. pfp, banner, etc.
--  When using `--favorite-users` or `--favorite-posts` you must get your cookies.txt after logging into kemono.party.
--  You may need to install `ffmpeg` for `yt-dlp` to work
--  If downloading with `yt-dlp` some errors will not count as errors for kemono-dl: Unsupported URL, Video unavailable, and HTTP Error 404
--  File hashes are checked with server before redownloading.
-   - Some files do not have hashes on kemonos website or the file hash is incorrect on their end so some files might redownload even though it is the same.    
+-  When using `--kemono-favorite-users`, `--kemono-favorite-posts`, `--coomer-favorite-users`, `--coomer-favorite-posts` you must get your cookies.txt after logging into the site.
+-  You may need to install `ffmpeg` for `--yt-dlp` to work
+-  If downloading with `--yt-dlp` any yt-dlp errors don't count as a post encountering an error.
+-  Kemono.party has duplicate attachments on some posts hopefully they should not be downloaded.
+-  Kemono.party has some attachments that have the incorrect hash value. If you get these errors please report them to kemono.party.
+-  File and folder naming based on windows.
 
-### Known Bugs
-- When downloading a file it might just stop downloading, I believe this happens when a large file is downloaded and the site doesn't have it cached so the connection gets timed out after a while. I am still looking into this issue.
+### Deprecated Options
+-  `-i, --ignore-errors` 404 errors are skipped by default and 429 cause a 5 minute waite time. If you get any other errors they probably shouldn't be ignored
+-  `--skip-postfile` post file is merged with attachments
+-  `--force-indexing` files are indexed by default
+-  `--force-inline` causes to many issues. Images not saved by party sites should still show up in content.html
+-  `--force-yt-dlp` I found there were too many incorrect links causing issues
+-  `--favorite-users` use --kemono-favorite-users or --coomer-favorite-users
+-  `--favorite-posts` use --kemono-favorite-posts or --coomer-favorite-posts
+-  `--skip-pfp-banner` decided not to download pfp or banner by default
+
+### Renamed Options
+-  `--force-external` changed name to better fit action, `--extract-links`
+
+
 
 ### Examples
 ```bash
@@ -70,11 +84,8 @@ python kemono-dl.py --cookies "cookie.txt" -o "C:\Users\User\Downloads" --archiv
 # only downloads user posts that were published on 1/1/21
 python kemono-dl.py --cookies "cookie.txt" --date 20210101 --links https://kemono.party/SERVICE/user/USERID
 
-# goes through all favorite users and posts only downloading files smaller than 100MB
-python kemono-dl.py --cookies "cookie.txt" --favorite-users --favorite-posts --max-filesize 100MB
-
-# downloads a post and user while ignoring downloading errors
-python kemono-dl.py --cookies "cookie.txt" -i -l https://kemono.party/SERVICE/user/USERID/post/POSTID,https://kemono.party/SERVICE/user/USERID
+# goes through all favorite users from kemono.party and posts from coomer.party only downloading files smaller than 100MB
+python kemono-dl.py --cookies "cookie.txt" --kemono-favorite-users --coomer-favorite-posts --max-filesize 100MB
 ```
 
 ### Default File Output Format
@@ -87,27 +98,22 @@ CWD
             ├── {username} [{user_id}] icon.ext
             ├── {username} [{user_id}] banner.ext
             └── [{date}] [{post_id}] {post_title}
-                ├── external files
-                │   └── video.mp4
-                ├── attachments
-                │   └── attachment.ext
                 ├── inline
                 │   └── image.ext
+                ├── embeds
+                │   └── video.ext
                 ├── content.html
                 ├── comments.html
                 ├── embeds.txt
-                ├── external_links.txt
-                ├── file.ext
+                ├── content_links.txt
+                ├── [{index}]_file.ext
                 └── {post_id}.json
 ```
 
 ## To do
-- [ ] Allow file naming structure to be changed in command line
-- [ ] Allow file path structure to be changed in command line
-- [ ] Add Discord service (in progress)
+-  [ ]   Allow file naming structure to be changed in command line
+-  [ ]   Allow file path structure to be changed in command line
+-  [ ]   Add Discord service (in progress)
 
 ## Keep in mind
-- Using this might get you IP banned from kemono party.
-  - This is highly unlikely now that I switched to using their API!
-- If the site changes the script might break.
-   - This is also now highly unlikely now that I switched to using their API!
+-  Using this might get you IP banned from kemono.party or coomer.party.
