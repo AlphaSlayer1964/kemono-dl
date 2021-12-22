@@ -19,14 +19,14 @@ A simple downloader for kemono.party and coomer.party.
   --verbose                     Display extra debug information and create a debug.log
   --quiet                       Suppress printing except for warnings, errors, and critical messages
   --cookies COOKIES             Files to read cookies from, comma separated. (REQUIRED)
-  -l, --links LINKS       Downloads URLs, can be separated by commas.
-  -f, --fromfile FILE      File containing URLs to download, one URL per line.
+  -l, --links LINKS             Downloads URLs, can be separated by commas.
+  -f, --fromfile FILE           File containing URLs to download, one URL per line.
   --kemono-favorite-users       Downloads all favorite users from kemono.party. (Requires cookies while logged in)
   --kemono-favorite-posts       Downloads all favorites posts from kemono.party. (Requires cookies while logged in)
   --coomer-favorite-users       Downloads all favorite users from coomer.party. (Requires cookies while logged in)
   --coomer-favorite-posts       Downloads all favorites posts from coomer.party. (Requires cookies while logged in)
-  -o, --output PATH        Path to download location
-  -a, --archive FILE       Downloads only posts that are not in provided archive file. (Can not be used with --update)
+  -o, --output PATH             Path to download location
+  -a, --archive FILE            Downloads only posts that are not in provided archive file. (Can not be used with --update)
   -u, --update                  Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
   --yt-dlp                      Tries to download embeds with yt-dlp. (experimental)
   --post-timeout SEC            The amount of time in seconds to wait between downloading posts. (default: 0)
