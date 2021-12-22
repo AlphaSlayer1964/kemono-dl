@@ -17,11 +17,11 @@ def get_args():
 
     ap.add_argument("--verbose",
                     action='store_true', default=False,
-                    help="Displays current version and exits.")
+                    help="Display extra debug information and create a debug.log")
 
     ap.add_argument("--cookies",
                     metavar="FILE", type=str, default=None,
-                    help="File to read cookies from. (REQUIRED)")
+                    help="Files to read cookies from, comma separated. (REQUIRED)")
 
     ap.add_argument("-l", "--links",
                     default=[],
@@ -142,14 +142,14 @@ def get_args():
     # renamed
     ap.add_argument("--force-external",
                     action='store_true', default=False,
-                    help="RENAMED to --extract-links : changed name to better fit action")
+                    help="RENAMED changed name to better fit action, --extract-links")
     # deprecated
     ap.add_argument("-i", "--ignore-errors",
                     action='store_true', default=False,
                     help="DEPROCATED 404 errors are skipped by default and 429 cause a 5 minute waite time. If you get any other errors they probably shouldn\'t be ignored")
     ap.add_argument("--skip-postfile",
                     action='store_true', default=False,
-                    help="DEPROCATED post files is merged with attachments")
+                    help="DEPROCATED post file is merged with attachments")
     ap.add_argument("--force-indexing",
                     action='store_true', default=False,
                     help="DEPROCATED files are indexed by default")
