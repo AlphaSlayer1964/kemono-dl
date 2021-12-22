@@ -133,6 +133,13 @@ class downloader:
                 logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
+                # so we are not downloading the pfp or banner over and over
+                if not (self.current_post['service'], self.current_post['user']) in unique:
+                    if args['save_pfp']:
+                        self._download_pfp_banner('icon')
+                    if args['save_banner']:
+                        self._download_pfp_banner('banner')
+                    unique.append((self.current_post['service'], self.current_post['user']))
                 if not args['skip_attachments']:
                     self._download_attachments()
                 if not args['skip_content']:
@@ -141,13 +148,6 @@ class downloader:
                     self._download_comments()
                 if not args['skip_embeds']:
                     self._download_embeds()
-                # so we are not downloading the pfp or banner over and over
-                if not (self.current_post['service'], self.current_post['user']) in unique:
-                    if args['save_pfp']:
-                        self._download_pfp_banner('icon')
-                    if args['save_banner']:
-                        self._download_pfp_banner('banner')
-                    unique.append((self.current_post['service'], self.current_post['user']))
                 if not args['skip_json']:
                     # json.dump can't handle the datetime object
                     self.current_post['date_object'] = None
