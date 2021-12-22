@@ -29,23 +29,23 @@ def get_args():
 
     ap.add_argument("-f", "--fromfile",
                     metavar="FILE", type=str, default=[],
-                    help="File containing URLs to download, one URL per line.")
+                    help="File containing URLs to download, one URL per line. Lines starting with a '#' don't count")
 
     ap.add_argument("--kemono-favorite-users",
                     action='store_true', default=False,
-                    help="Downloads all favorite users. (Requires cookies while logged in)")
+                    help="Downloads all favorite users from kemono.party. (Requires cookies while logged in)")
 
     ap.add_argument("--kemono-favorite-posts",
                     action='store_true', default=False,
-                    help="Downloads all favorites posts. (Requires cookies while logged in)")
+                    help="Downloads all favorites posts from kemono.party. (Requires cookies while logged in)")
 
     ap.add_argument("--coomer-favorite-users",
                     action='store_true', default=False,
-                    help="Downloads all favorite users. (Requires cookies while logged in)")
+                    help="Downloads all favorite users from coomer.party. (Requires cookies while logged in)")
 
     ap.add_argument("--coomer-favorite-posts",
                     action='store_true', default=False,
-                    help="Downloads all favorites posts. (Requires cookies while logged in)")
+                    help="Downloads all favorites posts from coomer.party. (Requires cookies while logged in)")
 
     ap.add_argument("-o", "--output",
                     metavar="PATH", type=str, default=None,
@@ -125,7 +125,7 @@ def get_args():
 
     ap.add_argument("--no-indexing",
                     action='store_true', default=False,
-                    help="Do not index file names.")
+                    help="Do not index file names. Might cause issues if attachments have duplicate names.")
 
     ap.add_argument("--quiet",
                     action='store_true', default=False,
@@ -142,39 +142,32 @@ def get_args():
     # renamed
     ap.add_argument("--force-external",
                     action='store_true', default=False,
-                    help="Save all content links to a file.")
+                    help="RENAMED to --extract-links : changed name to better fit action")
     # deprecated
     ap.add_argument("-i", "--ignore-errors",
                     action='store_true', default=False,
-                    help="Continue to download posts when an error occurs.")
-    # deprecated
+                    help="DEPROCATED 404 errors are skipped by default and 429 cause a 5 minute waite time. If you get any other errors they probably shouldn\'t be ignored")
     ap.add_argument("--skip-postfile",
                     action='store_true', default=False,
-                    help="Skips post file.")
-    # deprecated
+                    help="DEPROCATED post files is merged with attachments")
     ap.add_argument("--force-indexing",
                     action='store_true', default=False,
-                    help="Attachments and inline images will have indexing numbers added to their file names.")
-    # deprecated
+                    help="DEPROCATED files are indexed by default")
     ap.add_argument("--force-inline",
                     action='store_true', default=False,
-                    help="Download all external inline images found in post content. (experimental)")
-    # deprecated
+                    help="DEPROCATED causes to many issues. Images not saved by party sites should still show up in content.html")
     ap.add_argument("--force-yt-dlp",
                     action='store_true', default=False,
-                    help="Tries to download content links with yt-dlp. (experimental)")
-    # deprecated
+                    help="DEPROCATED I found there were too many incorrect links causing issues")
     ap.add_argument("--favorite-users",
                     action='store_true', default=False,
-                    help="Downloads all favorite users. (Requires cookies while logged in)")
-    # deprecated
+                    help="DEPROCATED use --kemono-favorite-users or --coomer-favorite-users")
     ap.add_argument("--favorite-posts",
                     action='store_true', default=False,
-                    help="Downloads all favorites posts. (Requires cookies while logged in)")
-    # deprecated
+                    help="DEPROCATED use --kemono-favorite-posts or --coomer-favorite-posts")
     ap.add_argument("--skip-pfp-banner",
                     action='store_true', default=False,
-                    help="Skips user pfp and banner.")
+                    help="DEPROCATED decided not to download pfp or banner by default")
 
     args = vars(ap.parse_args())
 
@@ -184,19 +177,20 @@ def get_args():
     if args['favorite_posts']:
         print('--favorite-posts: DEPROCATED use --kemono-favorite-posts or --coomer-favorite-posts')
     if args['force_yt_dlp']:
-        print('--force-yt-dlp: DEPROCATED I found there were too many incorrect links causing unwanted downloads')
+        print('--force-yt-dlp: DEPROCATED I found there were too many incorrect links causing issues')
     if args['force_inline']:
-        print('--force-inline: DEPROCATED to complicated handling downloading inline images from random places on the internet. Images not saved by party sites should still show up in content.html')
+        print('--force-inline: DEPROCATED causes to many issues. Images not saved by party sites should still show up in content.html')
     if args['ignore_errors']:
-        print('--ignore-errors: DEPROCATED 404 errors are skipped by default and 429 cause a 5 minute waite time')
+        print('--ignore-errors: DEPROCATED 404 errors are skipped by default and 429 cause a 5 minute waite time. If you get any other errors they probably shouldn\'t be ignored')
     if args['skip_postfile']:
         print('--skip-postfile: DEPROCATED post files is merged with attachments')
     if args['force_indexing']:
         print('--force-indexing: DEPROCATED files are indexed by default')
+    if args['skip_pfp_banner']:
+        print('--skip-pfp-banner: DEPROCATED decided not to download pfp or banner by default')
     # renamed
     if args['force_external']:
         print('--force-external: RENAMED to --extract-links : changed name to better fit action')
-        pass
 
     if args['version']:
         print(__version__)
