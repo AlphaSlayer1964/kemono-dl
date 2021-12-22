@@ -19,21 +19,21 @@ A simple downloader for kemono.party and coomer.party.
   --verbose                     Display extra debug information and create a debug.log
   --quiet                       Suppress printing except for warnings, errors, and critical messages
   --cookies COOKIES             Files to read cookies from, comma separated. (REQUIRED)
-  -l LINKS, --links LINKS       Downloads URLs, can be separated by commas.
-  -f FILE, --fromfile FILE      File containing URLs to download, one URL per line.
+  -l, --links LINKS             Downloads URLs, can be separated by commas.
+  -f, --fromfile FILE           File containing URLs to download, one URL per line.
   --kemono-favorite-users       Downloads all favorite users from kemono.party. (Requires cookies while logged in)
   --kemono-favorite-posts       Downloads all favorites posts from kemono.party. (Requires cookies while logged in)
   --coomer-favorite-users       Downloads all favorite users from coomer.party. (Requires cookies while logged in)
   --coomer-favorite-posts       Downloads all favorites posts from coomer.party. (Requires cookies while logged in)
-  -o PATH, --output PATH        Path to download location
-  -a FILE, --archive FILE       Downloads only posts that are not in provided archive file. (Can not be used with --update)
+  -o, --output PATH             Path to download location
+  -a, --archive FILE            Downloads only posts that are not in provided archive file. (Can not be used with --update)
   -u, --update                  Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
   --yt-dlp                      Tries to download embeds with yt-dlp. (experimental)
   --post-timeout SEC            The amount of time in seconds to wait between downloading posts. (default: 0)
   --retry-download COUNT        The amount of times to retry downloading a file. (default: 5)
-  --date DATE                   Only download posts from this date.
-  --datebefore DATE             Only download posts from this date and before.
-  --dateafter DATE              Only download posts from this date and after.
+  --date YYYYMMDD               Only download posts from this date.
+  --datebefore YYYYMMDD         Only download posts from this date and before.
+  --dateafter YYYYMMDD          Only download posts from this date and after.
   --min-filesize SIZE           Do not download files smaller than SIZE. (ex. #GB | #MB | #KB | #B)
   --max-filesize SIZE           Do not download files larger than SIZE. (ex. #GB | #MB | #KB | #B)
   --only-filetypes EXT          Only downloads attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)
