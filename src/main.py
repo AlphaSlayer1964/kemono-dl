@@ -353,14 +353,13 @@ class downloader:
         # writing response content to file
         with open(file_name, 'ab') as f:
             start = time.time()
-            downloaded = 0
+            downloaded = file_size
             # what is a good chunk_size????
             for chunk in response.iter_content(chunk_size=1024*64):
                 downloaded += len(chunk)
                 f.write(chunk)
                 print_download_bar(total, downloaded, start)
         print()
-        logger.debug(f'Downloading {os.path.split(file_name)[1]} Completed')
 
         # My futile attempts to check if the file downloaded correctly
         if os.path.exists(file_name) and file_hash:
