@@ -122,16 +122,19 @@ class downloader:
         if post_dict not in self.download_list:
             self.download_list.append(post_dict)
 
+    # with how slow kemono.party can be sometimes I may want to make this asynchronous
     def download_posts(self):
         unique = []
-        for post in self.download_list:
+        for index, post in enumerate(self.download_list):
+            logger.debug(f"Post: {index+1}/{len(self.download_list)}")
             self.current_post = post
             self._set_current_post_path()
-            time.sleep(args['post_timeout'])
-            logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+
             logger.info(f"Post: {win_folder_name(self.current_post['title'])}")
             logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
             if self._should_download():
+                logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+                time.sleep(args['post_timeout'])
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
                 # so we are not downloading the pfp or banner over and over
@@ -280,7 +283,6 @@ class downloader:
             if args['yt_dlp']:
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
 
-    # Should I make a resume flag instead of just trying to resume by deafult?
     def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
         logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
 
@@ -289,6 +291,7 @@ class downloader:
             logger.info(f"Skipping download: File extention not supported {os.path.split(file_name)[1].split('.')[-1]}")
             return
 
+        # used for resuming downloads
         logger.info(f"Downloading {os.path.split(file_name)[1]}")
 
         # check if file exists and if hashes match
@@ -299,7 +302,6 @@ class downloader:
             logger.warning(f"Resuming download: File on disk does not match hash")
             logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
 
-        # used for resuming downloads
         resume_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
 
         headers = {'Accept-Encoding': None,
@@ -322,6 +324,7 @@ class downloader:
 
         # do not retry on a 416 Range Not Satisfiable
         # means the requested range is >= the total content-length
+        # when kemono.party finishes fixing their bd this will need to cause the file to redwonload
         if response.status_code == 416:
             logger.error(f'{response.status_code} {response.reason}: Will always happen if server hash is wrong! Please check file and report to site owner that file hash might be wrong')
             self.current_post_errors += 1
@@ -510,6 +513,7 @@ def check_file_extention(file_name):
     return False
 
 def main():
+    start = time.time()
     D = downloader()
     urls = []
     for link in args['links']:
@@ -526,4 +530,5 @@ def main():
     if args['coomer_favorite_posts']:
         D.add_favorite_posts('coomer')
     D.download_posts()
-    print('done')
+    logger.debug(f"Completed in {time.time() - start}")
+    logger.info("Completed")
