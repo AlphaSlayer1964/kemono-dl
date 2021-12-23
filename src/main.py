@@ -322,7 +322,8 @@ class downloader:
         # do not retry on a 416 Range Not Satisfiable
         # means the requested range is >= the total content-length
         if response.status_code == 416:
-            logger.debug(f'{response.status_code} {response.reason}: This shouldn\'t be a problem: Will always happen if server hash is wrong!')
+            logger.error(f'{response.status_code} {response.reason}: Will always happen if server hash is wrong! Please check file and report to site owner that file hash might be wrong')
+            self.current_post_errors += 1
             return
 
         # retry download if status code is not ok
@@ -337,7 +338,7 @@ class downloader:
                 time.sleep(timeout)
                 self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
                 return
-            logger.critical(f'{response.status_code}: All retries failed')
+            logger.critical(f"All retries failed: {response.status_code} {response.reason}")
             self.current_post_errors += 1
             return
 
@@ -356,8 +357,7 @@ class downloader:
         with open(file_name, 'ab') as f:
             start = time.time()
             downloaded = resume_size
-            # what is a good chunk_size????
-            for chunk in response.iter_content(chunk_size=1024*64):
+            for chunk in response.iter_content(chunk_size=1024*1024):
                 downloaded += len(chunk)
                 f.write(chunk)
                 print_download_bar(total, downloaded, resume_size, start)
@@ -366,18 +366,17 @@ class downloader:
         # My futile attempts to check if the file downloaded correctly
         if os.path.exists(file_name) and file_hash:
             if file_hash.lower() == get_hash(file_name).lower():
-                logger.debug("Download completed successfully: File on disk has matching hash")
+                logger.debug("Download completed successfully")
                 return
             # if hashes don't match retry download
             if retry > 0:
                 timeout = 5
-                logger.error(f"Download failed / was intertupted: File on disk does not match hash: Retrying in {timeout} seconds")
+                logger.error(f"Download failed / was intertupted: File hash does not match: Retrying in {timeout} seconds")
                 logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
                 time.sleep(timeout)
                 self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
                 return
-            # some of the hash values on kemono.party (maybe coomer.party) are wrong!!!!!
-            logger.critical(f"All retries failed: Server hash is wrong or server keeps timing out: This is a problem on kemono.party's end: Please report broken hashed files them: URL {url}")
+            logger.critical(f"All retries failed: Server hash is wrong or server keeps timing out: This is a problem on the sites end: Please report broken hashed files to them: URL {url}")
             self.current_post_errors += 1
             return
 
