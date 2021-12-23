@@ -254,9 +254,10 @@ class downloader:
 
     def _save_links(self, soup):
         href_tags = soup.find_all(href=True)
-        with open(os.path.join(self.current_post_path,'content_links.txt'),'w') as f:
-            for href_tag in href_tags:
-                f.write(href_tag['href'] + '\n')
+        if href_tags:
+            with open(os.path.join(self.current_post_path,'content_links.txt'),'w') as f:
+                for href_tag in href_tags:
+                    f.write(href_tag['href'] + '\n')
 
     def _download_comments(self):
         # no api method to get comments so using from html (not future proof)
