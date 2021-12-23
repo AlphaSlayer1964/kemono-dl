@@ -25,10 +25,11 @@ class downloader:
     def __init__(self):
         # I read using a session would make things faster.
         # Does it? I have no idea and didn't google
+        retries = Retry(total=6, backoff_factor=15)
+        adapter = HTTPAdapter(max_retries=retries)
         self.session = requests.Session()
-        retries = Retry(total=3)
-        self.session.mount('https://', HTTPAdapter(max_retries=retries))
-        self.session.mount('http://', HTTPAdapter(max_retries=retries))
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
         self.all_creators = []
         self.download_list = []
         self.current_post = None
@@ -124,13 +125,13 @@ class downloader:
     def download_posts(self):
         unique = []
         for post in self.download_list:
-            time.sleep(args['post_timeout'])
             self.current_post = post
             self._set_current_post_path()
+            time.sleep(args['post_timeout'])
+            logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+            logger.info(f"Post: {win_folder_name(self.current_post['title'])}")
+            logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
             if self._should_download():
-                logger.info(f"Post: {win_folder_name(self.current_post['title'])}")
-                # clean this up
-                logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
                 # so we are not downloading the pfp or banner over and over
@@ -191,6 +192,7 @@ class downloader:
                 with open(args['archive'],'r') as f:
                     archived = f.read().splitlines()
                 if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
+                    logger.info("Skipping Post: Post Archived")
                     return False
 
         # check if post date is in range
@@ -297,10 +299,10 @@ class downloader:
             logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
 
         # used for resuming downloads
-        file_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
+        resume_size = os.path.getsize(file_name) if os.path.exists(file_name) else 0
 
         headers = {'Accept-Encoding': None,
-                   'Range': f'bytes={file_size}-',
+                   'Range': f'bytes={resume_size}-',
                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
 
         response = self.session.get(url=url, stream=True, headers=headers, cookies=args['cookies'], timeout=TIMEOUT)
@@ -343,7 +345,7 @@ class downloader:
         total = int(response.headers.get('content-length', 0))
         if total > 0:
             # if resuming download correct loading bar
-            total += file_size
+            total += resume_size
 
         # check file content length
         if check_file_size(total):
@@ -353,12 +355,12 @@ class downloader:
         # writing response content to file
         with open(file_name, 'ab') as f:
             start = time.time()
-            downloaded = file_size
+            downloaded = resume_size
             # what is a good chunk_size????
             for chunk in response.iter_content(chunk_size=1024*64):
                 downloaded += len(chunk)
                 f.write(chunk)
-                print_download_bar(total, downloaded, start)
+                print_download_bar(total, downloaded, resume_size, start)
         print()
 
         # My futile attempts to check if the file downloaded correctly
@@ -422,13 +424,13 @@ def get_hash(file_name):
     return sha256_hash.hexdigest()
 
 # prints the stupid pointless download bar that took way to long to make
-def print_download_bar(total, downloaded, start):
+def print_download_bar(total:int, downloaded:int, resumed:int, start):
     time_diff = time.time() - start
     if time_diff == 0.0:
         time_diff = 0.000001
     done = 50
 
-    rate = downloaded/time_diff
+    rate = (downloaded-resumed)/time_diff
 
     eta = time.strftime("%H:%M:%S", time.gmtime((total-downloaded) / rate))
 
