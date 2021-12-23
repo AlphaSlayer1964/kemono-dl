@@ -2,7 +2,6 @@ import os
 import datetime
 import re
 import argparse
-import logging
 from http.cookiejar import MozillaCookieJar, LoadError
 
 from .version import __version__
