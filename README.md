@@ -56,7 +56,7 @@ A simple downloader for kemono.party and coomer.party.
 -  Using `--max-filesize` or `--min-filesize` will cause files that don't have `content-length` in their headers to not download. ie. pfp, banner, etc.
 -  When using `--kemono-favorite-users`, `--kemono-favorite-posts`, `--coomer-favorite-users`, `--coomer-favorite-posts` you must get your cookies.txt after logging into the site.
 -  You may need to install `ffmpeg` for `--yt-dlp` to work
--  If downloading with `--yt-dlp` any yt-dlp errors don't count as a post encountering an error.
+-  If downloading with `--yt-dlp` any yt-dlp errors don't count as a post encountering an error. This means if using `--archive` and the embed does not download the post will still be archived.
 -  Kemono.party has duplicate attachments on some posts hopefully they should not be downloaded.
 -  Kemono.party has some attachments that have the incorrect hash value. If you get these errors please report them to kemono.party.
 -  File and folder naming based on windows.
