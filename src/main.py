@@ -291,7 +291,6 @@ class downloader:
             logger.info(f"Skipping download: File extention not supported {os.path.split(file_name)[1].split('.')[-1]}")
             return
 
-        # used for resuming downloads
         logger.info(f"Downloading {os.path.split(file_name)[1]}")
 
         # check if file exists and if hashes match
