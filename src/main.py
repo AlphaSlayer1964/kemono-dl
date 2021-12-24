@@ -156,7 +156,7 @@ class downloader:
                     # json.dump can't handle the datetime object
                     self.current_post['date_object'] = None
                     with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
-                        json.dump(self.current_post, f)
+                        json.dump(self.current_post, f, indent=4, sort_keys=True)
 
                 # no errors must have occurred to archive post
                 if not self.current_post_errors:
