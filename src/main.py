@@ -13,13 +13,15 @@ import shutil
 from yt_dlp import DownloadError
 from PIL import Image
 from io import BytesIO
+import platform
 
 from .arguments import get_args
 from .logger import logger
 
 args = get_args()
-
+OS_NAME = platform.system()
 TIMEOUT = 300
+
 class downloader:
 
     def __init__(self):
@@ -60,7 +62,10 @@ class downloader:
             logger.warning(f'{response.status_code} {response.reason}: Could not get favorite artists: Make sure you get your cookie file while logged in')
             return
         for favorite in response.json():
-            self._add_all_user_posts(site,favorite['service'],favorite['id'])
+            last = (datetime.datetime.now().astimezone() - datetime.timedelta(days=args['favorite_users_updated_within'])) if args['favorite_users_updated_within'] else datetime.datetime.min
+            last = last.strftime(r'%a, %d %b %Y %H:%M:%S %Z')
+            if self._is_update_newer(favorite['updated'], last):
+                self._add_user_posts(site,favorite['service'],favorite['id'])
 
     def add_favorite_posts(self, site:str):
         logger.info('Gathering favorite posts')
@@ -82,7 +87,7 @@ class downloader:
     def _parse_links(self, url:str):
         user = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)$',url)
         if user:
-            self._add_all_user_posts(user.group(1),user.group(2),user.group(3))
+            self._add_user_posts(user.group(1),user.group(2),user.group(3))
             return
         post = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)/post/([^/]+)$',url)
         if post:
@@ -90,7 +95,7 @@ class downloader:
             return
         logger.warning(f'Invalid URL: {url}')
 
-    def _add_all_user_posts(self, site:str, service:str, user_id:str):
+    def _add_user_posts(self, site:str, service:str, user_id:str):
         username = self._get_username(service, user_id)
         if not username:
             return
@@ -130,41 +135,42 @@ class downloader:
             self.current_post = post
             self._set_current_post_path()
 
-            logger.info(f"Post: {win_folder_name(self.current_post['title'])}")
+            logger.info(f"Post: {clean_folder_name(self.current_post['title'])}")
             logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
             if self._should_download():
                 logger.debug(f"Sleeping for {args['post_timeout']} seconds")
                 time.sleep(args['post_timeout'])
-                if not os.path.exists(self.current_post_path):
-                    os.makedirs(self.current_post_path)
-                # so we are not downloading the pfp or banner over and over
-                if not (self.current_post['service'], self.current_post['user']) in unique:
-                    if args['save_pfp']:
-                        self._download_pfp_banner('icon')
-                    if args['save_banner']:
-                        self._download_pfp_banner('banner')
-                    unique.append((self.current_post['service'], self.current_post['user']))
-                if not args['skip_attachments']:
-                    self._download_attachments()
-                if not args['skip_content']:
-                    self._download_content()
-                if not args['skip_comments']:
-                    self._download_comments()
-                if not args['skip_embeds']:
-                    self._download_embeds()
-                if not args['skip_json']:
-                    # json.dump can't handle the datetime object
-                    self.current_post['date_object'] = None
-                    with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
-                        json.dump(self.current_post, f, indent=4, sort_keys=True)
+                if not args['simulate']:
+                    if not os.path.exists(self.current_post_path):
+                        os.makedirs(self.current_post_path)
+                    # so we are not downloading the pfp or banner over and over
+                    if not (self.current_post['service'], self.current_post['user']) in unique:
+                        if args['save_pfp']:
+                            self._download_pfp_banner('icon')
+                        if args['save_banner']:
+                            self._download_pfp_banner('banner')
+                        unique.append((self.current_post['service'], self.current_post['user']))
+                    if not args['skip_attachments']:
+                        self._download_attachments()
+                    if not args['skip_content']:
+                        self._download_content()
+                    if not args['skip_comments']:
+                        self._download_comments()
+                    if not args['skip_embeds']:
+                        self._download_embeds()
+                    if not args['skip_json']:
+                        # json.dump can't handle the datetime object
+                        self.current_post['date_object'] = None
+                        with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
+                            json.dump(self.current_post, f, indent=4, sort_keys=True)
 
-                # no errors must have occurred to archive post
-                if not self.current_post_errors:
-                    if args['archive']:
-                        with open(args['archive'],'a') as f:
-                            f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                # reset error count
-                self.current_post_errors = 0
+                    # no errors must have occurred to archive post
+                    if not self.current_post_errors:
+                        if args['archive']:
+                            with open(args['archive'],'a') as f:
+                                f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                    # reset error count
+                    self.current_post_errors = 0
 
     def _set_current_post_path(self):
         # when using win_folder_name() on the post title it may return an empty string
@@ -173,20 +179,18 @@ class downloader:
         # Note: the pfp and banners are downloaded to the second from last folder
         # so you might need to change that
         self.current_post_path = os.path.join(args['output'],
-                                              self.current_post['service'],
-                                              win_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
-                                              win_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}"))
+                                            self.current_post['service'],
+                                            clean_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
+                                            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}"))
 
     def _should_download(self):
         # check if post has been updated
-        if args['update']:
+        if args['update_posts']:
             json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
             if os.path.exists(json_path):
-                current_edited = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if self.current_post['edited'] else datetime.datetime.min
                 with open(json_path, 'r') as f:
                     data = json.loads(f.read())
-                recorded_edited = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
-                if current_edited <= recorded_edited:
+                if not self._is_update_newer(self.current_post['edited'], data['edited']):
                     return False
 
         # check archive fle
@@ -207,6 +211,12 @@ class downloader:
             return False
         return True
 
+    def _is_update_newer(self, current, last = 'Mon, 01 Jan 0001 00:00:00 GMT'):
+        current_dt = datetime.datetime.strptime(current, r'%a, %d %b %Y %H:%M:%S %Z') if current else datetime.datetime.min
+        last_dt = datetime.datetime.strptime(last, r'%a, %d %b %Y %H:%M:%S %Z')
+        if current_dt > last_dt:
+            return True
+
     def _download_pfp_banner(self, icon_banner:str):
         if (self.current_post['service'] != 'gumroad' and icon_banner == 'banner') or (self.current_post['service'] != 'dlsite' and icon_banner == 'icon'):
             pfp_banner_url = f"https://{self.current_post['site']}.party/{icon_banner}s/{self.current_post['service']}/{self.current_post['user']}"
@@ -214,7 +224,7 @@ class downloader:
             response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
             try:
                 image = Image.open(BytesIO(response.content))
-                image.save(os.path.join(os.path.dirname(self.current_post_path), win_file_name(f"{self.current_post['username']} [{self.current_post['user']}] {icon_banner}.{image.format.lower()}")), format=image.format)
+                image.save(os.path.join(os.path.dirname(self.current_post_path), clean_file_name(f"{self.current_post['username']} [{self.current_post['user']}] {icon_banner}.{image.format.lower()}")), format=image.format)
             except:
                 logger.error(f"Unable to download {icon_banner} for {self.current_post['username']}")
 
@@ -225,9 +235,9 @@ class downloader:
                 self.current_post['attachments'].insert(0, self.current_post['file'])
         for index, attachment in enumerate(self.current_post['attachments']):
             index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
-            file_name = os.path.join(self.current_post_path, win_file_name(f"[{index_string}]_{attachment['name']}"))
+            file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
             if args['no_indexing']:
-                file_name = os.path.join(self.current_post_path, win_file_name(f"{attachment['name']}"))
+                file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
             file_url = f"https://{self.current_post['site']}.party/data{attachment['path']}?f={attachment['name']}"
             file_hash = find_hash(attachment['path'])
             self._requests_download(file_url, file_name, file_hash)
@@ -305,7 +315,7 @@ class downloader:
 
         headers = {'Accept-Encoding': None,
                    'Range': f'bytes={resume_size}-',
-                   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
+                   'User-Agent': args['user_agent']}
 
         response = self.session.get(url=url, stream=True, headers=headers, cookies=args['cookies'], timeout=TIMEOUT)
 
@@ -385,7 +395,7 @@ class downloader:
 
     def download_yt_dlp(self, url:str, file_path:str):
         logger.info(f"Downloading with yt-dlp: URL {url}")
-        temp_folder = os.path.join(os.getcwd(),"ytdlp_temp")
+        temp_folder = os.path.join(os.getcwd(),"yt_dlp_temp")
         try:
             # please reffer to yt-dlp's github for options
             ydl_opts = {
@@ -472,13 +482,21 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
     if (not args['quiet']) or args['verbose']:
         print(f'[{bar_fill}{bar_empty}] {downloaded}/{total[0]} {total[1]} at {rate[0]} {rate[1]}/s ETA {eta}{overlap_buffer}', end='\r')
 
-# cleans up string to work as windows file names
-def win_file_name(file_name):
-    return re.sub(r'[\\/:\"*?<>|\n\t]','_', file_name)[:255]
+def clean_file_name(string:str):
+    if args['restrict_names']:
+        string = restrict_names(string)
+    # if OS_NAME == 'Windows':
+    return re.sub(r'[\\/:\"*?<>|\n\t]','_',string)[:255]
 
-# cleans up string to work as windows folder name
-def win_folder_name(folder_name:str):
-    return re.sub(r'[\\/:\"*?<>|\n\t]','_', folder_name)[:248].rstrip('. ')
+def clean_folder_name(string:str):
+    if args['restrict_names']:
+        string = restrict_names(string)
+    # if OS_NAME == 'Windows':
+    return re.sub(r'[\\/:\"*?<>|\n\t]','_',string)[:248].rstrip('. ')
+
+# returns string replacing non ascii characters, spaces, and "&"
+def restrict_names(string:str):
+    return re.sub(r'[^\x00-\x7f]|[ &]','_',string)
 
 # takes post date sting and converts it back to datetime object, and simple datetime string
 def get_post_date(post:dict):
@@ -529,5 +547,6 @@ def main():
     if args['coomer_favorite_posts']:
         D.add_favorite_posts('coomer')
     D.download_posts()
-    logger.debug(f"Completed in {time.time() - start}")
+    final_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start))
+    logger.debug(f"Completed in {final_time}")
     logger.info("Completed")
