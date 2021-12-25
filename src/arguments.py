@@ -22,11 +22,11 @@ def get_args():
                     metavar="FILE", type=str, default=None,
                     help="Files to read cookies from, comma separated. (REQUIRED)")
 
-    ap.add_argument("-l", "--links",
+    ap.add_argument("--links",
                     default=[],
                     help="Downloads URLs, can be separated by commas.")
 
-    ap.add_argument("-f", "--fromfile",
+    ap.add_argument("--fromfile",
                     metavar="FILE", type=str, default=[],
                     help="File containing URLs to download, one URL per line. Lines starting with a '#' don't count")
 
@@ -34,27 +34,31 @@ def get_args():
                     action='store_true', default=False,
                     help="Downloads all favorite users from kemono.party. (Requires cookies while logged in)")
 
-    ap.add_argument("--kemono-favorite-posts",
-                    action='store_true', default=False,
-                    help="Downloads all favorites posts from kemono.party. (Requires cookies while logged in)")
-
     ap.add_argument("--coomer-favorite-users",
                     action='store_true', default=False,
                     help="Downloads all favorite users from coomer.party. (Requires cookies while logged in)")
+
+    ap.add_argument("--favorite-users-updated-within",
+                    metavar="N_DAYS", type=int, default=0,
+                    help="Only download favorite users that have been updated within the last N days.")
+
+    ap.add_argument("--kemono-favorite-posts",
+                    action='store_true', default=False,
+                    help="Downloads all favorites posts from kemono.party. (Requires cookies while logged in)")
 
     ap.add_argument("--coomer-favorite-posts",
                     action='store_true', default=False,
                     help="Downloads all favorites posts from coomer.party. (Requires cookies while logged in)")
 
-    ap.add_argument("-o", "--output",
+    ap.add_argument("--output",
                     metavar="PATH", type=str, default=None,
                     help="Path to download location")
 
-    ap.add_argument("-a", "--archive",
+    ap.add_argument("--archive",
                     metavar="FILE", type=str, default=None,
-                    help="Downloads only posts that are not in provided archive file. (Can not be used with --update)")
+                    help="Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)")
 
-    ap.add_argument("-u", "--update",
+    ap.add_argument("--update-posts",
                     action='store_true', default=False,
                     help="Updates already downloaded posts. Post must have json log file. (can not be used with --archive)")
 
@@ -98,6 +102,10 @@ def get_args():
                     metavar="EXT", type=str, default=[],
                     help="Skips attachments and post file with given EXTs, can be separated by commas. (ex. JPG,mp4,mp3,png)")
 
+    ap.add_argument("--simulate",
+                    action='store_true', default=False,
+                    help="Simulate Downloads")
+
     ap.add_argument("--skip-content",
                     action='store_true', default=False,
                     help="Skips posts content.")
@@ -116,7 +124,7 @@ def get_args():
 
     ap.add_argument("--skip-json",
                     action='store_true', default=False,
-                    help="Skips json. (--update requires post json)")
+                    help="Skips json. (--update-posts requires post json)")
 
     ap.add_argument("--extract-links",
                     action='store_true', default=False,
@@ -137,6 +145,22 @@ def get_args():
     ap.add_argument("--save-banner",
                     action='store_true', default=False,
                     help="Downloads user banner")
+
+    ap.add_argument("--restrict-names",
+                    action='store_true', default=False,
+                    help='Restrict filenames and foldernames to only ASCII characters, and remove "&" and spaces')
+
+    ap.add_argument("--user-agent",
+                    metavar="UA", type=str, default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+                    help="Set a custom user agent")
+
+    # want to add
+    # --windows-filenames
+    # --trim-filenames LENGTH
+    # --force-overwrites
+    # --no-continue
+    # --part
+    # --no-part
 
     # renamed
     ap.add_argument("--force-external",
@@ -195,8 +219,8 @@ def get_args():
         print(__version__)
         quit()
 
-    if args['update'] and args['archive']:
-        print('--archive, --update: Only use one at a time')
+    if args['update_posts'] and args['archive']:
+        print('--archive, --update-posts: Only use one at a time')
         quit()
 
     # takes a list of cookie files and marges than and makes them usable by requests
