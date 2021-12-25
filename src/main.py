@@ -169,6 +169,7 @@ class downloader:
                         if args['archive']:
                             with open(args['archive'],'a') as f:
                                 f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                            logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
                     # reset error count
                     self.current_post_errors = 0
 
