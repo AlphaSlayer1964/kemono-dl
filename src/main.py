@@ -134,21 +134,18 @@ class downloader:
             logger.debug(f"Post: {index+1}/{len(self.download_list)}")
             self.current_post = post
             self._set_current_post_path()
-
             logger.info(f"Post: {clean_folder_name(self.current_post['title'])}")
             logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
             if self._should_download():
                 logger.debug(f"Sleeping for {args['post_timeout']} seconds")
                 time.sleep(args['post_timeout'])
                 if not args['simulate']:
-                    if not os.path.exists(self.current_post_path):
-                        os.makedirs(self.current_post_path)
-                    # so we are not downloading the pfp or banner over and over
+                    # so we are not downloading the icon or banner over and over
                     if not (self.current_post['service'], self.current_post['user']) in unique:
-                        if args['save_pfp']:
-                            self._download_pfp_banner('icon')
+                        if args['save_icon']:
+                            self._download_profile_icon()
                         if args['save_banner']:
-                            self._download_pfp_banner('banner')
+                            self._download_profile_banner()
                         unique.append((self.current_post['service'], self.current_post['user']))
                     if not args['skip_attachments']:
                         self._download_attachments()
@@ -159,6 +156,8 @@ class downloader:
                     if not args['skip_embeds']:
                         self._download_embeds()
                     if not args['skip_json']:
+                        if not os.path.exists(self.current_post_path):
+                            os.makedirs(self.current_post_path)
                         # json.dump can't handle the datetime object
                         self.current_post['date_object'] = None
                         with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
@@ -218,22 +217,44 @@ class downloader:
         if current_dt > last_dt:
             return True
 
-    def _download_pfp_banner(self, icon_banner:str):
-        if (self.current_post['service'] != 'gumroad' and icon_banner == 'banner') or (self.current_post['service'] != 'dlsite' and icon_banner == 'icon'):
-            pfp_banner_url = f"https://{self.current_post['site']}.party/{icon_banner}s/{self.current_post['service']}/{self.current_post['user']}"
-            logger.debug(f"pfp or banner URL {pfp_banner_url}")
-            response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
-            try:
-                image = Image.open(BytesIO(response.content))
-                image.save(os.path.join(os.path.dirname(self.current_post_path), clean_file_name(f"{self.current_post['username']} [{self.current_post['user']}] {icon_banner}.{image.format.lower()}")), format=image.format)
-            except:
-                logger.error(f"Unable to download {icon_banner} for {self.current_post['username']}")
+    def _download_profile_icon(self):
+        if self.current_post['service'] in {'dlsite'}:
+            logger.warning(f"Profile icons are not supported for {self.current_post['service']} users")
+            return
+        pfp_banner_url = f"https://{self.current_post['site']}.party/icons/{self.current_post['service']}/{self.current_post['user']}"
+        logger.debug(f"Profile icon URL {pfp_banner_url}")
+        response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
+        try:
+            image = Image.open(BytesIO(response.content))
+            if not os.path.exists(os.path.dirname(self.current_post_path)):
+                os.makedirs(os.path.dirname(self.current_post_path))
+            image.save(os.path.join(os.path.dirname(self.current_post_path), f"Profile_icon.{image.format.lower()}"), format=image.format)
+        except:
+            logger.error(f"Unable to download profile icon for {self.current_post['username']}")
+
+    def _download_profile_banner(self):
+        if self.current_post['service'] in {'gumroad','dlsite'}:
+            logger.warning(f"Profile banners are not supported for {self.current_post['service']} users")
+            return
+        pfp_banner_url = f"https://{self.current_post['site']}.party/banners/{self.current_post['service']}/{self.current_post['user']}"
+        logger.debug(f"Profile banner URL {pfp_banner_url}")
+        response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
+        try:
+            image = Image.open(BytesIO(response.content))
+            if not os.path.exists(os.path.dirname(self.current_post_path)):
+                os.makedirs(os.path.dirname(self.current_post_path))
+            image.save(os.path.join(os.path.dirname(self.current_post_path), f"Profile_banner.{image.format.lower()}"), format=image.format)
+        except:
+            logger.error(f"Unable to download profile banner for {self.current_post['username']}")
 
     def _download_attachments(self):
         if self.current_post['file']:
             # kemono.party some times already has the file in attachments so stops duplicates
             if not self.current_post['file'] in self.current_post['attachments']:
                 self.current_post['attachments'].insert(0, self.current_post['file'])
+        if self.current_post['attachments']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
         for index, attachment in enumerate(self.current_post['attachments']):
             index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
             file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
@@ -245,6 +266,8 @@ class downloader:
 
     def _download_content(self):
         if self.current_post['content']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
             content_soup = self._save_inline(BeautifulSoup(self.current_post['content'], 'html.parser'))
             if args['extract_links']:
                self._save_links(content_soup)
@@ -284,11 +307,15 @@ class downloader:
             if do_not_save:
                 logger.debug(do_not_save.group(1))
             else:
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
                 with open(os.path.join(self.current_post_path, 'comments.html'),'wb') as f:
                     f.write(comment_html.prettify().encode("utf-16"))
 
     def _download_embeds(self):
         if self.current_post['embed']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
             with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
                 f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
             if args['yt_dlp']:
