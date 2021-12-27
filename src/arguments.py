@@ -30,9 +30,9 @@ def get_args():
                     metavar="LINKS", type=str, default=[],
                     help="URLs to be downloaded, can take a comma seperated list.")
 
-    ap.add_argument("-f","--fromfile",
+    ap.add_argument("-f","--from-file","--fromfile",
                     metavar="FILE", type=str, default=[],
-                    help="File containing URLs to download, one URL per line. Lines starting with a \"#\" are counted as comments")
+                    help="File containing URLs to download, one URL per line. Lines starting with a \"#\" are counted as comments (Aliese: --fromfile)")
 
     ap.add_argument("--kemono-favorite-users",
                     action='store_true', default=False,
@@ -76,7 +76,7 @@ def get_args():
 
     ap.add_argument("--yt-dlp",
                     action='store_true', default=False,
-                    help="Tries to download embeds with yt-dlp. (experimental)")
+                    help="Tries to download embed with yt-dlp. (experimental)")
 
     ap.add_argument("--post-timeout",
                     metavar="SEC", type=int, default=0,
@@ -116,35 +116,35 @@ def get_args():
 
     ap.add_argument("--skip-content",
                     action='store_true', default=False,
-                    help="Skips posts content.")
-
-    ap.add_argument("--extract-links",
-                    action='store_true', default=False,
-                    help="Save all content links to a file.")
+                    help="Skips saving post content to a file.")
 
     ap.add_argument("--skip-comments",
                     action='store_true', default=False,
-                    help="Skips posts comments.")
+                    help="Skips saving post comments to file.")
 
     ap.add_argument("--skip-attachments",
                     action='store_true', default=False,
-                    help="Skips attachments.")
+                    help="Skips downloading ost attachments.")
 
-    ap.add_argument("--skip-embeds",
+    ap.add_argument("--skip-embed","--skip-embeds",
                     action='store_true', default=False,
-                    help="Skips posts embeds. Also skips downloading post embeds using --yt-dlp")
+                    help="Skips saving post embed to file. (--yt-dlp is ignored) (Aliese: --skip-embeds)")
 
     ap.add_argument("--skip-json",
                     action='store_true', default=False,
-                    help="Skips json. (--update-posts requires post json)")
+                    help="Skips saving post json. (--update-posts requires post json)")
 
-    ap.add_argument("--save-pfp",
+    ap.add_argument("--save-icon","--save-pfp",
                     action='store_true', default=False,
-                    help="Downloads user pfp")
+                    help="Downloads user icon (Aliese: --save-pfp)")
 
     ap.add_argument("--save-banner",
                     action='store_true', default=False,
                     help="Downloads user banner")
+
+    ap.add_argument("--extract-links",
+                    action='store_true', default=False,
+                    help="Save all content links to a file.")
 
     # add more simulation options
     ap.add_argument("--simulate",
