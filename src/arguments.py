@@ -287,19 +287,19 @@ def get_args():
         for link in links:
             args['links'].append(link.strip().lstrip(' ').split('?')[0])
 
-    if args['fromfile']:
-        if not os.path.isfile(args['fromfile']):
-            print(f"--fromfile {args['fromfile']}: No file found / Not a file")
+    if args['from_file']:
+        if not os.path.isfile(args['from_file']):
+            print(f"--from-file {args['from_file']}: No file found / Not a file")
             quit()
-        with open(args['fromfile'],'r') as f:
+        with open(args['from_file'],'r') as f:
             links = f.readlines()
         if not links:
-            print(f"--fromfile {args['fromfile']}: File is empty")
+            print(f"--from-file {args['from_file']}: File is empty")
             quit()
-        args['fromfile'] = []
+        args['from_file'] = []
         for link in links:
             # lines starting with '#' are ignored
             if link[0] != '#':
-                args['fromfile'].append(link.strip().lstrip().split('?')[0])
+                args['from_file'].append(link.strip().lstrip().split('?')[0])
 
     return args
