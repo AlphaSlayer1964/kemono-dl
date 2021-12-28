@@ -17,6 +17,7 @@ import platform
 
 from .arguments import get_args
 from .logger import logger
+from .version import __version__
 
 args = get_args()
 OS_NAME = platform.system()
@@ -34,6 +35,8 @@ class downloader:
         self.session.mount('http://', adapter)
         self.all_creators = []
         self.download_list = []
+        self.current_user = None
+        self.current_user_path = None
         self.current_post = None
         self.current_post_path = None
         self.current_post_errors = 0
@@ -99,6 +102,7 @@ class downloader:
         username = self._get_username(service, user_id)
         if not username:
             return
+        new_user = {'site':site,'service':service,'user_id':user_id,'username':username,'posts':[]}
         headers = {'accept': 'application/json'}
         chunk = 0
         while True:
@@ -106,54 +110,65 @@ class downloader:
             logger.debug(f'User API URL: {user_api_url}')
             response = self.session.get(url=user_api_url, headers=headers, timeout=TIMEOUT).json()
             if not response:
-                return
-            for post_dict in response:
-                post_dict['username'], post_dict['site'] = username, site
-                post_dict['date_object'], post_dict['date_object_string'] = get_post_date(post_dict)
-                if post_dict not in self.download_list:
-                    self.download_list.append(post_dict)
+                break
+            for post in response:
+                post['date_object'], post['date_object_string'] = get_post_date(post)
+                new_user['posts'].append(post)
+                if post not in self.download_list:
+                    new_user['posts'].append(post)
             chunk += 25
+        self._add_user(new_user)
 
     def _add_single_post(self, site:str, service:str, user_id:str, post_id:str):
         username = self._get_username(service, user_id)
         if not username:
             return
+        new_user = {'site':site,'service':service,'user_id':user_id,'username':username,'posts':[]}
         headers = {'accept': 'application/json'}
         post_api_url = f'https://{site}.party/api/{service}/user/{user_id}/post/{post_id}'
         logger.debug(f'Post API URL: {post_api_url}')
-        post_dict = self.session.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()[0]
-        post_dict['username'], post_dict['site'] = username, site
-        post_dict['date_object'], post_dict['date_object_string'] = get_post_date(post_dict)
-        if post_dict not in self.download_list:
-            self.download_list.append(post_dict)
+        post = self.session.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()[0]
+        post['date_object'], post['date_object_string'] = get_post_date(post)
+        new_user['posts'].append(post)
+        self._add_user(new_user)
+
+    # merge posts lists if user is already in self.download_list
+    # else add user to self.download_list
+    def _add_user(self, new_user:dict):
+        for user in self.download_list:
+            if new_user['site'] == user['site'] and new_user['service'] == user['service'] and new_user['user_id'] == user['user_id'] and new_user['username'] == user['username']:
+                user['posts'] = list(set(new_user['posts'] + user['posts']))
+        self.download_list.append(new_user)
 
     # with how slow kemono.party can be sometimes I may want to make this asynchronous
     def download_posts(self):
-        unique = []
-        for index, post in enumerate(self.download_list):
-            logger.debug(f"Post: {index+1}/{len(self.download_list)}")
-            self.current_post = post
-            self._set_current_post_path()
-            logger.info(f"Post: {clean_folder_name(self.current_post['title'])}")
-            logger.debug(f"user_id: {self.current_post['user']} service: {self.current_post['service']} post_id: {self.current_post['id']} url: https://{self.current_post['site']}.party/{self.current_post['service']}/user/{self.current_post['user']}/post/{self.current_post['id']}")
-            if self._should_download():
-                logger.debug(f"Sleeping for {args['post_timeout']} seconds")
-                time.sleep(args['post_timeout'])
-                if not args['simulate']:
-                    # so we are not downloading the icon or banner over and over
-                    if not (self.current_post['service'], self.current_post['user']) in unique:
-                        if args['save_icon']:
-                            self._download_profile_icon()
-                        if args['save_banner']:
-                            self._download_profile_banner()
-                        unique.append((self.current_post['service'], self.current_post['user']))
+
+        for index, user in enumerate(self.download_list):
+            logger.debug(f"User: {index+1}/{len(self.download_list)}")
+            logger.info(f"User: {user['username']}")
+            logger.debug(f"user_id: {user['user_id']} service: {user['service']} url: https://{user['site']}.party/{user['service']}/user/{user['user_id']}")
+            self.current_user = user
+            self._set_current_user_path()
+            if args['save_icon']:
+                self._download_profile_icon_banner('icon')
+            if args['save_banner']:
+                self._download_profile_icon_banner('banner')
+            for index, post in enumerate(user['posts']):
+                logger.debug(f"Post: {index+1}/{len(user['posts'])}")
+                logger.info(f"Post: {clean_folder_name(post['title'])}")
+                logger.debug(f"user_id: {user['user_id']} service: {user['service']} post_id: {post['id']} url: https://{user['site']}.party/{user['service']}/user/{user['user_id']}/post/{post['id']}")
+                self.current_post = post
+                self._set_current_post_path()
+                if self._should_download():
+                    logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+                    time.sleep(args['post_timeout'])
                     if not args['skip_attachments']:
                         self._download_attachments()
                     if not args['skip_content']:
                         self._download_content()
                     if not args['skip_comments']:
                         self._download_comments()
-                    if not args['skip_embeds']:
+                    if not args['skip_embed']:
                         self._download_embeds()
                     if not args['skip_json']:
                         if not os.path.exists(self.current_post_path):
@@ -172,16 +187,23 @@ class downloader:
                     # reset error count
                     self.current_post_errors = 0
 
+
+    def _set_current_user_path(self):
+        # Note: the profile icon and banner are downloaded to this folder
+        self.current_user_path = os.path.join(args['output'],
+                                            self.current_user['service'],
+                                            clean_folder_name(f"{self.current_user['username']} [{self.current_user['user_id']}]")
+        )
+
     def _set_current_post_path(self):
-        # when using win_folder_name() on the post title it may return an empty string
+        # when using clean_folder_name() on the post title it may return an empty string
         # for example if the title is "???" then that will return ""
         # this could cause conflicting folder names if you don't include any other unique identifier in the folder name
         # Note: the pfp and banners are downloaded to the second from last folder
         # so you might need to change that
-        self.current_post_path = os.path.join(args['output'],
-                                            self.current_post['service'],
-                                            clean_folder_name(f"{self.current_post['username']} [{self.current_post['user']}]"),
-                                            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}"))
+        self.current_post_path = os.path.join(self.current_user_path,
+                                            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}")
+        )
 
     def _should_download(self):
         # check if post has been updated
@@ -217,35 +239,23 @@ class downloader:
         if current_dt > last_dt:
             return True
 
-    def _download_profile_icon(self):
-        if self.current_post['service'] in {'dlsite'}:
-            logger.warning(f"Profile icons are not supported for {self.current_post['service']} users")
+    def _download_profile_icon_banner(self, _item:str):
+        if self.current_user['service'] in {'dlsite'}:
+            logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
             return
-        pfp_banner_url = f"https://{self.current_post['site']}.party/icons/{self.current_post['service']}/{self.current_post['user']}"
-        logger.debug(f"Profile icon URL {pfp_banner_url}")
+        elif self.current_user['service'] in {'gumroad'} and _item == 'banner':
+            logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
+            return
+        pfp_banner_url = f"https://{self.current_user['site']}.party/{_item}s/{self.current_user['service']}/{self.current_user['user_id']}"
+        logger.debug(f"Profile {_item} URL {pfp_banner_url}")
         response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
         try:
             image = Image.open(BytesIO(response.content))
-            if not os.path.exists(os.path.dirname(self.current_post_path)):
-                os.makedirs(os.path.dirname(self.current_post_path))
-            image.save(os.path.join(os.path.dirname(self.current_post_path), f"Profile_icon.{image.format.lower()}"), format=image.format)
+            if not os.path.exists(self.current_user_path):
+                os.makedirs(self.current_user_path)
+            image.save(os.path.join(self.current_user_path, f"Profile_{_item}.{image.format.lower()}"), format=image.format)
         except:
-            logger.error(f"Unable to download profile icon for {self.current_post['username']}")
-
-    def _download_profile_banner(self):
-        if self.current_post['service'] in {'gumroad','dlsite'}:
-            logger.warning(f"Profile banners are not supported for {self.current_post['service']} users")
-            return
-        pfp_banner_url = f"https://{self.current_post['site']}.party/banners/{self.current_post['service']}/{self.current_post['user']}"
-        logger.debug(f"Profile banner URL {pfp_banner_url}")
-        response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
-        try:
-            image = Image.open(BytesIO(response.content))
-            if not os.path.exists(os.path.dirname(self.current_post_path)):
-                os.makedirs(os.path.dirname(self.current_post_path))
-            image.save(os.path.join(os.path.dirname(self.current_post_path), f"Profile_banner.{image.format.lower()}"), format=image.format)
-        except:
-            logger.error(f"Unable to download profile banner for {self.current_post['username']}")
+            logger.error(f"Unable to download profile {_item} for {self.current_user['username']}")
 
     def _download_attachments(self):
         if self.current_post['file']:
@@ -260,7 +270,7 @@ class downloader:
             file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
             if args['no_indexing']:
                 file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
-            file_url = f"https://{self.current_post['site']}.party/data{attachment['path']}?f={attachment['name']}"
+            file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
             file_hash = find_hash(attachment['path'])
             self._requests_download(file_url, file_name, file_hash)
 
@@ -284,7 +294,7 @@ class downloader:
                     os.makedirs(os.path.join(self.current_post_path, 'inline'))
                 index_string = str(index).zfill(len(str(len(inline_images))))
                 file_name = os.path.join(self.current_post_path, 'inline', f"[{index_string}]_{inline_image['src'].split('/')[-1]}")
-                file_url = f"https://{self.current_post['site']}.party/data{inline_image['src']}"
+                file_url = f"https://{self.current_user['site']}.party/data{inline_image['src']}"
                 self._requests_download(file_url, file_name)
                 inline_image['src'] = os.path.join(self.current_post_path, 'inline', file_name)
         return soup
@@ -298,7 +308,7 @@ class downloader:
 
     def _download_comments(self):
         # no api method to get comments so using from html (not future proof)
-        post_url = "https://{site}.party/{service}/user/{user}/post/{id}".format(**self.current_post)
+        post_url = f"https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}/post/{self.current_post['id']}"
         response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
         page_soup = BeautifulSoup(response.text, 'html.parser')
         comment_html = page_soup.find("div", {"class": "post__comments"})
@@ -557,13 +567,27 @@ def check_file_extention(file_name):
             return True
     return False
 
+def check_version():
+    current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
+    github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
+    responce = requests.get(url=github_api_url)
+    if not responce.ok:
+        logger.warning(f"Could not check github for latest release.")
+        return
+    latest_version = responce.json()['tag_name']
+    latest_version = datetime.datetime.strptime(latest_version, r'%Y.%m.%d')
+    if current_version < latest_version:
+        logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {responce}")
+        logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release.")
+
 def main():
+    check_version()
     start = time.time()
     D = downloader()
     urls = []
     for link in args['links']:
         urls.append(link)
-    for link in args['fromfile']:
+    for link in args['from_file']:
         urls.append(link)
     D.add_links(urls)
     if args['kemono_favorite_users']:
