@@ -24,11 +24,11 @@ def get_args():
 
     ap.add_argument("--cookies",
                     metavar="FILE", type=str, default=None,
-                    help="Files to read cookies from, can take a comma seperated list. (REQUIRED)")
+                    help="Files to read cookies from, can take a comma separated list. (REQUIRED)")
 
     ap.add_argument("-l","--links",
                     metavar="LINKS", type=str, default=[],
-                    help="URLs to be downloaded, can take a comma seperated list.")
+                    help="URLs to be downloaded, can take a comma separated list.")
 
     ap.add_argument("-f","--from-file","--fromfile",
                     metavar="FILE", type=str, default=[],
@@ -108,11 +108,11 @@ def get_args():
 
     ap.add_argument("--only-filetypes",
                     metavar="EXT", type=str, default=[],
-                    help="Only downloads files with the given extention(s), can take a comma seperated list. (ex. \"JPG,mp4,mp3,png\")")
+                    help="Only downloads files with the given extension(s), can take a comma separated list. (ex. \"JPG,mp4,mp3,png\")")
 
     ap.add_argument("--skip-filetypes",
                     metavar="EXT", type=str, default=[],
-                    help="Skips files with the given extention(s), can take a comma seperated list. (ex. \"JPG,mp4,mp3,png\")")
+                    help="Skips files with the given extension(s), can take a comma separated list. (ex. \"JPG,mp4,mp3,png\")")
 
     ap.add_argument("--skip-content",
                     action='store_true', default=False,
@@ -142,9 +142,9 @@ def get_args():
                     action='store_true', default=False,
                     help="Downloads user banner")
 
-    ap.add_argument("--extract-links",
+    ap.add_argument("--extract-links","--force-external",
                     action='store_true', default=False,
-                    help="Save all content links to a file.")
+                    help="Save all content links to a file. (Aliese: --force-external)")
 
     # add more simulation options
     ap.add_argument("--simulate",
@@ -165,7 +165,6 @@ def get_args():
 
     # deprecated
     deprecated_list = (
-        "--force-external",
         "--ignore-errors",
         "--skip-postfile",
         "--force-indexing",
@@ -175,7 +174,6 @@ def get_args():
         "--favorite-posts",
         "--skip-pfp-banner"
     )
-    ap.add_argument("--force-external",action='store_true',default=False,help="DEPROCATED")
     ap.add_argument("-i", "--ignore-errors",action='store_true',default=False,help="DEPROCATED")
     ap.add_argument("--skip-postfile",action='store_true',default=False,help="DEPROCATED")
     ap.add_argument("--force-indexing",action='store_true',default=False,help="DEPROCATED")
