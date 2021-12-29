@@ -212,16 +212,8 @@ def get_args():
         print('--cookies: No file passed')
         quit()
 
-    # takes in a file directory
-    if args['output']:
-        if not os.path.exists(args['output']):
-            try:
-                os.makedirs(args['output'])
-                args['output']= os.path.abspath(args['output'])
-            except OSError as e:
-                print(e)
-                quit()
-    else:
+    # set default path
+    if not args['output']:
         args['output'] = os.path.join(os.getcwd(), 'Downloads')
 
     if args['archive']:
@@ -299,5 +291,19 @@ def get_args():
             # lines starting with '#' are ignored
             if link[0] != '#':
                 args['from_file'].append(link.strip().lstrip().split('?')[0])
+
+    if args['favorite_users_updated_within']:
+        args['favorite_users_updated_within'] = (datetime.datetime.now() - datetime.timedelta(days=args['favorite_users_updated_within']))
+    else:
+        args['favorite_users_updated_within'] = datetime.datetime.min
+
+    if args['simulate']:
+        args['skip_content'] = True
+        args['skip_comments'] = True
+        args['skip_attachments'] = True
+        args['skip_embed'] = True
+        args['skip_json'] = True
+        args['save_icon'] = False
+        args['save_banner'] = False
 
     return args
