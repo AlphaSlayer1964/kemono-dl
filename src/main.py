@@ -65,8 +65,11 @@ class downloader:
             logger.warning(f'{response.status_code} {response.reason}: Could not get favorite artists: Make sure you get your cookie file while logged in')
             return
         for favorite in response.json():
-            last = (datetime.datetime.now().astimezone() - datetime.timedelta(days=args['favorite_users_updated_within'])) if args['favorite_users_updated_within'] else datetime.datetime.min
-            last = last.strftime(r'%a, %d %b %Y %H:%M:%S %Z')
+            if args['favorite_users_updated_within']:
+                last = (datetime.datetime.now().astimezone() - datetime.timedelta(days=args['favorite_users_updated_within']))
+                last = last.strftime(r'%a, %d %b %Y %H:%M:%S %Z')
+            else:
+                last = 'Mon, 01 Jan 0001 00:00:00 GMT'
             if self._is_update_newer(favorite['updated'], last):
                 self._add_user_posts(site,favorite['service'],favorite['id'])
 
@@ -566,14 +569,20 @@ def check_file_extention(file_name):
     return False
 
 def check_version():
-    current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
+    try:
+        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
+    except:
+        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d.%H')
     github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
     responce = requests.get(url=github_api_url, timeout=TIMEOUT)
     if not responce.ok:
         logger.warning(f"Could not check github for latest release.")
         return
     latest_tag = responce.json()['tag_name']
-    latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
+    try:
+        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
+    except:
+        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d.%H')
     if current_version < latest_version:
         logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
         logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
