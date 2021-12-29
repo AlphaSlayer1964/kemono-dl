@@ -140,9 +140,8 @@ class downloader:
                 user['posts'] = list(set(new_user['posts'] + user['posts']))
         self.download_list.append(new_user)
 
-    # with how slow kemono.party can be sometimes I may want to make this asynchronous
+    # with how slow kemono.party can be sometimes, I may want to make this asynchronous
     def download_posts(self):
-
         for index, user in enumerate(self.download_list):
             logger.debug(f"User: {index+1}/{len(self.download_list)}")
             logger.info(f"User: {user['username']}")
@@ -186,7 +185,6 @@ class downloader:
                             logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
                     # reset error count
                     self.current_post_errors = 0
-
 
     def _set_current_user_path(self):
         # Note: the profile icon and banner are downloaded to this folder
@@ -570,15 +568,15 @@ def check_file_extention(file_name):
 def check_version():
     current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
     github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
-    responce = requests.get(url=github_api_url)
+    responce = requests.get(url=github_api_url, timeout=TIMEOUT)
     if not responce.ok:
         logger.warning(f"Could not check github for latest release.")
         return
-    latest_version = responce.json()['tag_name']
-    latest_version = datetime.datetime.strptime(latest_version, r'%Y.%m.%d')
+    latest_tag = responce.json()['tag_name']
+    latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
     if current_version < latest_version:
-        logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {responce}")
-        logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release.")
+        logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
+        logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
 
 def main():
     check_version()
