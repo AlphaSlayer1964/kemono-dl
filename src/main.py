@@ -65,12 +65,8 @@ class downloader:
             logger.warning(f'{response.status_code} {response.reason}: Could not get favorite artists: Make sure you get your cookie file while logged in')
             return
         for favorite in response.json():
-            if args['favorite_users_updated_within']:
-                last = (datetime.datetime.now().astimezone() - datetime.timedelta(days=args['favorite_users_updated_within']))
-                last = last.strftime(r'%a, %d %b %Y %H:%M:%S %Z')
-            else:
-                last = 'Mon, 01 Jan 0001 00:00:00 GMT'
-            if self._is_update_newer(favorite['updated'], last):
+            current_updated = datetime.datetime.strptime(favorite['updated'], r'%a, %d %b %Y %H:%M:%S %Z')
+            if current_updated > args['favorite_users_updated_within']:
                 self._add_user_posts(site,favorite['service'],favorite['id'])
 
     def add_favorite_posts(self, site:str):
@@ -115,6 +111,7 @@ class downloader:
             if not response:
                 break
             for post in response:
+                # probably shouldn't mix this in the post json
                 post['date_object'], post['date_object_string'] = get_post_date(post)
                 new_user['posts'].append(post)
                 if post not in self.download_list:
@@ -131,6 +128,7 @@ class downloader:
         post_api_url = f'https://{site}.party/api/{service}/user/{user_id}/post/{post_id}'
         logger.debug(f'Post API URL: {post_api_url}')
         post = self.session.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()[0]
+        # probably shouldn't mix this in the post json
         post['date_object'], post['date_object_string'] = get_post_date(post)
         new_user['posts'].append(post)
         self._add_user(new_user)
@@ -213,7 +211,9 @@ class downloader:
             if os.path.exists(json_path):
                 with open(json_path, 'r') as f:
                     data = json.loads(f.read())
-                if not self._is_update_newer(self.current_post['edited'], data['edited']):
+                current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
+                old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
+                if old_post_date > current_post_date:
                     return False
 
         # check archive fle
@@ -233,12 +233,6 @@ class downloader:
         elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']):
             return False
         return True
-
-    def _is_update_newer(self, current, last = 'Mon, 01 Jan 0001 00:00:00 GMT'):
-        current_dt = datetime.datetime.strptime(current, r'%a, %d %b %Y %H:%M:%S %Z') if current else datetime.datetime.min
-        last_dt = datetime.datetime.strptime(last, r'%a, %d %b %Y %H:%M:%S %Z')
-        if current_dt > last_dt:
-            return True
 
     def _download_profile_icon_banner(self, _item:str):
         if self.current_user['service'] in {'dlsite'}:
