@@ -50,7 +50,7 @@ A simple downloader for kemono.party and coomer.party.
 --save-icon                               Downloads user icon (Aliese: --save-pfp)
 --save-banner                             Downloads user banner
 --extract-links                           Save all content links to a file. (Aliese: --force-external)
---simulate                                Simulate Downloads
+--simulate                                Simulate Downloads (Removed temporarily)
 --user-agent UA                           Set a custom user agent
 ```
 ### Notes
