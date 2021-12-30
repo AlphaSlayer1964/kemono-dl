@@ -14,6 +14,7 @@ from yt_dlp import DownloadError
 from PIL import Image
 from io import BytesIO
 import platform
+import sys
 
 from .arguments import get_args
 from .logger import logger
@@ -582,6 +583,7 @@ def check_version():
         logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
 
 def main():
+    logger.debug(f"Given command: python {' '.join(sys.argv)}")
     check_version()
     start = time.time()
     D = downloader()
