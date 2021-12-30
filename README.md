@@ -21,7 +21,7 @@ A simple downloader for kemono.party and coomer.party.
 --quiet                                   Suppress printing except for warnings, errors, and critical messages
 --cookies FILE                            Files to read cookies from, can take a comma separated list. (REQUIRED)
 -l, --links LINKS                         URLs to be downloaded, can take a comma separated list.
--f, --from-file FILE                      File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Aliese:--fromfile)
+-f, --from-file FILE                      File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Alias:--fromfile)
 --kemono-favorite-users                   Adds all favorite users posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-users                   Adds all favorite users posts from coomer.party. (Requires cookies while logged in)
 --favorite-users-updated-within N_DAYS    Only download favorite users that have been updated within the last N days.
@@ -43,14 +43,15 @@ A simple downloader for kemono.party and coomer.party.
 --only-filetypes EXT                      Only downloads files with the given extension(s), can take a comma separated list. (ex. "JPG,mp4,mp3,png")
 --skip-filetypes EXT                      Skips files with the given extension(s), can take a comma separated list. (ex. "JPG,mp4,mp3,png")
 --skip-content                            Skips saving post content to a file.
+--skip-inline                             Skips saving post content inline images.
 --skip-comments                           Skips saving post comments to file.
 --skip-attachments                        Skips downloading ost attachments.
---skip-embed                              Skips saving post embed to file. (--yt-dlp is ignored) (Aliese: --skip-embeds)
+--skip-embed                              Skips saving post embed to file. (Alias: --skip-embeds)
 --skip-json                               Skips saving post json. (--update-posts requires post json)
---save-icon                               Downloads user icon (Aliese: --save-pfp)
+--save-icon                               Downloads user icon (Alias: --save-pfp)
 --save-banner                             Downloads user banner
---extract-links                           Save all content links to a file. (Aliese: --force-external)
---simulate                                Simulate Downloads (Applies all --skip commands and ignores --save-icon and --save-banner) (If using --archive file will still be written too)
+--extract-links                           Save all content links to a file. (Alias: --force-external)
+--simulate                                Simulate Downloads (Applies all --skip commands and ignores --save-icon, --save-banner, --extract-links, --yt-dlp) (If using --archive file will be read from but not written to)
 --user-agent UA                           Set a custom user agent
 ```
 ### Notes
