@@ -215,6 +215,7 @@ class downloader:
                 current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
                 old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
                 if old_post_date > current_post_date:
+                    logger.info("Skipping Post: Post is up to date")
                     return False
 
         # check archive fle
@@ -230,8 +231,10 @@ class downloader:
         if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
             return True
         elif self.current_post['date_object'] == datetime.datetime.min:
+            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
             return False
         elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']):
+            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
             return False
         return True
 
