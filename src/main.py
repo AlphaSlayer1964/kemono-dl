@@ -148,10 +148,8 @@ class downloader:
             logger.debug(f"user_id: {user['user_id']} service: {user['service']} url: https://{user['site']}.party/{user['service']}/user/{user['user_id']}")
             self.current_user = user
             self._set_current_user_path()
-            if args['save_icon']:
-                self._download_profile_icon_banner('icon')
-            if args['save_banner']:
-                self._download_profile_icon_banner('banner')
+            self._download_profile_icon_banner('icon')
+            self._download_profile_icon_banner('banner')
             for index, post in enumerate(user['posts']):
                 logger.debug(f"Post: {index+1}/{len(user['posts'])}")
                 logger.info(f"Post: {clean_folder_name(post['title'])}")
@@ -161,14 +159,10 @@ class downloader:
                 if self._should_download():
                     logger.debug(f"Sleeping for {args['post_timeout']} seconds")
                     time.sleep(args['post_timeout'])
-                    if not args['skip_attachments']:
-                        self._download_attachments()
-                    if not args['skip_content']:
-                        self._download_content()
-                    if not args['skip_comments']:
-                        self._download_comments()
-                    if not args['skip_embed']:
-                        self._download_embeds()
+                    self._download_content()
+                    self._download_attachments()
+                    self._download_comments()
+                    self._download_embeds()
                     if not args['skip_json']:
                         if not os.path.exists(self.current_post_path):
                             os.makedirs(self.current_post_path)
@@ -237,49 +231,56 @@ class downloader:
         return True
 
     def _download_profile_icon_banner(self, _item:str):
-        if self.current_user['service'] in {'dlsite'}:
-            logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
-            return
-        elif self.current_user['service'] in {'gumroad'} and _item == 'banner':
-            logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
-            return
-        pfp_banner_url = f"https://{self.current_user['site']}.party/{_item}s/{self.current_user['service']}/{self.current_user['user_id']}"
-        logger.debug(f"Profile {_item} URL {pfp_banner_url}")
-        response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
-        try:
-            image = Image.open(BytesIO(response.content))
-            if not os.path.exists(self.current_user_path):
-                os.makedirs(self.current_user_path)
-            image.save(os.path.join(self.current_user_path, f"Profile_{_item}.{image.format.lower()}"), format=image.format)
-        except:
-            logger.error(f"Unable to download profile {_item} for {self.current_user['username']}")
+        if (args['save_banner'] and _item == 'banner') or (args['save_icon'] and _item == 'icon'):
+            if self.current_user['service'] in {'dlsite'}:
+                logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
+                return
+            elif self.current_user['service'] in {'gumroad'} and _item == 'banner':
+                logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
+                return
+            pfp_banner_url = f"https://{self.current_user['site']}.party/{_item}s/{self.current_user['service']}/{self.current_user['user_id']}"
+            logger.debug(f"Profile {_item} URL {pfp_banner_url}")
+            response = self.session.get(url=pfp_banner_url, cookies=args['cookies'], timeout=TIMEOUT)
+            try:
+                image = Image.open(BytesIO(response.content))
+                if not os.path.exists(self.current_user_path):
+                    os.makedirs(self.current_user_path)
+                image.save(os.path.join(self.current_user_path, f"Profile_{_item}.{image.format.lower()}"), format=image.format)
+            except:
+                logger.error(f"Unable to download profile {_item} for {self.current_user['username']}")
 
     def _download_attachments(self):
-        if self.current_post['file']:
-            # kemono.party some times already has the file in attachments so stops duplicates
-            if not self.current_post['file'] in self.current_post['attachments']:
-                self.current_post['attachments'].insert(0, self.current_post['file'])
-        if self.current_post['attachments']:
-            if not os.path.exists(self.current_post_path):
-                os.makedirs(self.current_post_path)
-        for index, attachment in enumerate(self.current_post['attachments']):
-            index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
-            file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
-            if args['no_indexing']:
-                file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
-            file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
-            file_hash = find_hash(attachment['path'])
-            self._requests_download(file_url, file_name, file_hash)
+        if not args['skip_attachments']:
+            if self.current_post['file']:
+                # kemono.party some times already has the file in attachments so stops duplicates
+                if not self.current_post['file'] in self.current_post['attachments']:
+                    self.current_post['attachments'].insert(0, self.current_post['file'])
+            if self.current_post['attachments']:
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
+            for index, attachment in enumerate(self.current_post['attachments']):
+                index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
+                file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
+                if args['no_indexing']:
+                    file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
+                file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
+                file_hash = find_hash(attachment['path'])
+                self._requests_download(file_url, file_name, file_hash)
 
     def _download_content(self):
         if self.current_post['content']:
-            if not os.path.exists(self.current_post_path):
-                os.makedirs(self.current_post_path)
-            content_soup = self._save_inline(BeautifulSoup(self.current_post['content'], 'html.parser'))
+            content_soup = BeautifulSoup(self.current_post['content'], 'html.parser')
+            if not args['skip_inline']:
+                content_soup = self._save_inline(content_soup)
             if args['extract_links']:
-               self._save_links(content_soup)
-            with open(os.path.join(self.current_post_path, 'content.html'),'wb') as f:
-                f.write(content_soup.prettify().encode("utf-16"))
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
+                self._save_links(content_soup)
+            if not args['skip_content']:
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
+                with open(os.path.join(self.current_post_path, 'content.html'),'wb') as f:
+                    f.write(content_soup.prettify().encode("utf-16"))
 
     def _save_inline(self, soup):
         # do these have hashes?
@@ -304,28 +305,32 @@ class downloader:
                     f.write(href_tag['href'] + '\n')
 
     def _download_comments(self):
-        # no api method to get comments so using from html (not future proof)
-        post_url = f"https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}/post/{self.current_post['id']}"
-        response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
-        page_soup = BeautifulSoup(response.text, 'html.parser')
-        comment_html = page_soup.find("div", {"class": "post__comments"})
-        if comment_html:
-            do_not_save = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_html.text)
-            if do_not_save:
-                logger.debug(do_not_save.group(1))
-            else:
-                if not os.path.exists(self.current_post_path):
-                    os.makedirs(self.current_post_path)
-                with open(os.path.join(self.current_post_path, 'comments.html'),'wb') as f:
-                    f.write(comment_html.prettify().encode("utf-16"))
+        if not args['skip_comments']:
+            # no api method to get comments so using from html (not future proof)
+            post_url = f"https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}/post/{self.current_post['id']}"
+            response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
+            page_soup = BeautifulSoup(response.text, 'html.parser')
+            comment_html = page_soup.find("div", {"class": "post__comments"})
+            if comment_html:
+                do_not_save = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_html.text)
+                if do_not_save:
+                    logger.debug(do_not_save.group(1).strip())
+                else:
+                    if not os.path.exists(self.current_post_path):
+                        os.makedirs(self.current_post_path)
+                    with open(os.path.join(self.current_post_path, 'comments.html'),'wb') as f:
+                        f.write(comment_html.prettify().encode("utf-16"))
 
     def _download_embeds(self):
         if self.current_post['embed']:
-            if not os.path.exists(self.current_post_path):
-                os.makedirs(self.current_post_path)
-            with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
-                f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
+            if not args['skip_embed']:
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
+                with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
+                    f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
             if args['yt_dlp']:
+                if not os.path.exists(self.current_post_path):
+                    os.makedirs(self.current_post_path)
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
 
     def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
