@@ -118,6 +118,10 @@ def get_args():
                     action='store_true', default=False,
                     help="Skips saving post content to a file.")
 
+    ap.add_argument("--skip-inline",
+                    action='store_true', default=False,
+                    help="Skips saving post content inline images.")
+
     ap.add_argument("--skip-comments",
                     action='store_true', default=False,
                     help="Skips saving post comments to file.")
@@ -297,13 +301,17 @@ def get_args():
     else:
         args['favorite_users_updated_within'] = datetime.datetime.min
 
+    # do not download anything
     if args['simulate']:
         args['skip_content'] = True
+        args['skip_inline'] = True
+        args['extract_links'] = False
         args['skip_comments'] = True
         args['skip_attachments'] = True
         args['skip_embed'] = True
         args['skip_json'] = True
         args['save_icon'] = False
         args['save_banner'] = False
+        args['yt_dlp'] = False
 
     return args
