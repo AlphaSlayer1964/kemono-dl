@@ -115,8 +115,6 @@ class downloader:
                 # probably shouldn't mix this in the post json
                 post['date_object'], post['date_object_string'] = get_post_date(post)
                 new_user['posts'].append(post)
-                if post not in self.download_list:
-                    new_user['posts'].append(post)
             chunk += 25
         self._add_user(new_user)
 
