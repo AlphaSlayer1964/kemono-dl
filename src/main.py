@@ -179,7 +179,7 @@ class downloader:
 
                     # no errors must have occurred to archive post
                     if not self.current_post_errors:
-                        if args['archive']:
+                        if args['archive'] and not args['simulate']:
                             with open(args['archive'],'a') as f:
                                 f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
                             logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
