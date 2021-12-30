@@ -20,17 +20,17 @@ A simple downloader for kemono.party and coomer.party.
 --verbose                                 Display extra debug information and create a debug.log
 --quiet                                   Suppress printing except for warnings, errors, and critical messages
 --cookies FILE                            Files to read cookies from, can take a comma separated list. (REQUIRED)
--l LINKS, --links LINKS                   URLs to be downloaded, can take a comma separated list.
--f FILE, --from-file FILE                 File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Aliese:--fromfile)
+-l, --links LINKS                         URLs to be downloaded, can take a comma separated list.
+-f, --from-file FILE                      File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Aliese:--fromfile)
 --kemono-favorite-users                   Adds all favorite users posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-users                   Adds all favorite users posts from coomer.party. (Requires cookies while logged in)
 --favorite-users-updated-within N_DAYS    Only download favorite users that have been updated within the last N days.
 --kemono-favorite-posts                   Adds all favorites posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-posts                   Adds all favorites posts from coomer.party. (Requires cookies while logged in)
--o PATH, --output PATH                    Path to download location
+-o, --output PATH                         Path to download location
 --restrict-names                          Restrict file names and folder names to only ASCII characters, and remove "&" and spaces
 --no-indexing                             Do not index file names. Might cause issues if attachments have duplicate names.
--a FILE, --archive FILE                   Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)
+-a, --archive FILE                        Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)
 --update-posts                            Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
 --yt-dlp                                  Tries to download embed with yt-dlp. (experimental)
 --post-timeout SEC                        The amount of time in seconds to wait between downloading posts. (default: 0)
@@ -50,7 +50,7 @@ A simple downloader for kemono.party and coomer.party.
 --save-icon                               Downloads user icon (Aliese: --save-pfp)
 --save-banner                             Downloads user banner
 --extract-links                           Save all content links to a file. (Aliese: --force-external)
---simulate                                Simulate Downloads (Removed temporarily)
+--simulate                                Simulate Downloads (Applies all --skip commands and ignores --save-icon and --save-banner) (If using --archive file will still be written too)
 --user-agent UA                           Set a custom user agent
 ```
 ### Notes
