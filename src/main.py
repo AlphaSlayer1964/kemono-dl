@@ -198,28 +198,39 @@ class downloader:
         )
 
     def _should_download(self):
-        # check if post has been updated
-        if args['update_posts']:
-            json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
-            if os.path.exists(json_path):
-                with open(json_path, 'r') as f:
-                    data = json.loads(f.read())
-                current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
-                old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z')
-                if old_post_date > current_post_date:
-                    logger.info("Skipping Post: Post is up to date")
-                    return False
+        if self._check_date_in_range():
+            if args['update_posts']:
+                return self._check_updated()
+            elif args['archive']:
+                return self._check_archived()
+            return True
+        return False
 
-        # check archive fle
-        if args['archive']:
-            if os.path.exists(args['archive']):
-                with open(args['archive'],'r') as f:
-                    archived = f.read().splitlines()
-                if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
-                    logger.info("Skipping Post: Post Archived")
-                    return False
+    def _check_updated(self):
+        json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.loads(f.read())
+            current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if self.current_post['edited'] else datetime.datetime.min
+            old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
+            if old_post_date >= current_post_date:
+                logger.info("Skipping Post: Post is up to date")
+                return False
+            return True
+        logger.info(f"Skipping Post: {self.current_post['id']}.json not found")
+        return False
 
-        # check if post date is in range
+    def _check_archived(self):
+        if os.path.exists(args['archive']):
+            with open(args['archive'],'r') as f:
+                archived = f.read().splitlines()
+            if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
+                logger.info("Skipping Post: Post Archived")
+                return False
+        logger.debug("Archive file does not exist: File will be created when writing post data")
+        return True
+
+    def _check_date_in_range(self):
         if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
             return True
         elif self.current_post['date_object'] == datetime.datetime.min:
@@ -333,6 +344,7 @@ class downloader:
                     os.makedirs(self.current_post_path)
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
 
+    # TODO save file as .part until completed
     def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
         logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
 
