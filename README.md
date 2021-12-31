@@ -59,6 +59,7 @@ A simple downloader for kemono.party and coomer.party.
 -   Excepted link formats:
     -   `https://{site}.party/{service}/user/{user_id}`
     -   `https://{site}.party/{service}/user/{user_id}/post/{post_id}`
+    -   kemono.party Discord links are not supported 
 -   Gumroad posts are not compatible with any date options.
 -   You must get your cookie file while logged in to use:
     -   `--kemono-favorite-users`
