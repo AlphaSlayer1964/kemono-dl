@@ -109,8 +109,6 @@ class downloader:
             self._find_posts(site,favorite['service'],favorite['user'],favorite['id'])
 
     def add_links(self):
-        if self.urls:
-            logger.info('Gathering posts')
         for url in self.urls:
             self._parse_links(url)
 
