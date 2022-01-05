@@ -26,7 +26,7 @@ TIMEOUT = 300
 
 class downloader:
 
-    def __init__(self):
+    def __init__(self, urls:list = None):
         # I read using a session would make things faster.
         # Does it? I have no idea and didn't google
         retries = Retry(total=6, backoff_factor=15)
@@ -34,30 +34,57 @@ class downloader:
         self.session = requests.Session()
         self.session.mount('https://', adapter)
         self.session.mount('http://', adapter)
-        self.all_creators = []
-        self.download_list = []
+        self.kemono_creators = []
+        self.coomer_creators = []
+
         self.current_user = None
         self.current_user_path = None
         self.current_post = None
         self.current_post_path = None
         self.current_post_errors = 0
-        self._add_all_creators('kemono')
-        self._add_all_creators('coomer')
+
+        self.server_download_list = []
+
+        self.downloaded_posts = []
+
+        if args['kemono_favorite_users']:
+            self.add_favorite_artists('kemono')
+        if args['kemono_favorite_posts']:
+            self.add_favorite_posts('kemono')
+        if args['coomer_favorite_users']:
+            self.add_favorite_artists('coomer')
+        if args['coomer_favorite_posts']:
+            self.add_favorite_posts('coomer')
+
+        if urls:
+            self.urls = urls
+            self.add_links()
 
     def _add_all_creators(self, site:str):
+        if site == 'kemono':
+            if self.kemono_creators:
+                return
+        if site == 'coomer':
+            if self.coomer_creators:
+                return
         headers = {'accept': 'application/json'}
         creators_api_url = f'https://{site}.party/api/creators/'
         all_creators = self.session.get(url=creators_api_url, headers=headers, timeout=TIMEOUT)
-        self.all_creators += all_creators.json()
+        if site == 'kemono':
+            self.kemono_creators = all_creators.json()
+        if site == 'coomer':
+            self.coomer_creators = all_creators.json()
 
     def _get_username(self, service:str, user_id:str):
-        for creator in self.all_creators:
-            if creator['id'] == user_id and creator['service'] == service:
-                return creator['name']
-        logger.critical(f'No username found: user_id: {user_id} service: {service}')
+        all_creators = [self.kemono_creators, self.coomer_creators]
+        for site in all_creators:
+            for creator in site:
+                if creator['id'] == user_id and creator['service'] == service:
+                    return creator['name']
         return None
 
     def add_favorite_artists(self, site:str):
+        self._add_all_creators(site)
         logger.info('Gathering favorite users')
         headers = {'accept': 'application/json'}
         fav_art_api_url = f'https://{site}.party/api/favorites?type=artist'
@@ -68,7 +95,7 @@ class downloader:
         for favorite in response.json():
             current_updated = datetime.datetime.strptime(favorite['updated'], r'%a, %d %b %Y %H:%M:%S %Z')
             if current_updated > args['favorite_users_updated_within']:
-                self._add_user_posts(site,favorite['service'],favorite['id'])
+                self._find_posts(site,favorite['service'],favorite['id'])
 
     def add_favorite_posts(self, site:str):
         logger.info('Gathering favorite posts')
@@ -79,132 +106,132 @@ class downloader:
             logger.warning(f'{response.status_code} {response.reason}Could not get favorite posts: Make sure you get your cookie file while logged in')
             return
         for favorite in response.json():
-            self._add_single_post(site,favorite['service'],favorite['user'],favorite['id'])
+            self._find_posts(site,favorite['service'],favorite['user'],favorite['id'])
 
-    def add_links(self, urls:list):
-        if urls:
+    def add_links(self):
+        if self.urls:
             logger.info('Gathering posts')
-        for url in urls:
+        for url in self.urls:
             self._parse_links(url)
 
     def _parse_links(self, url:str):
         user = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)$',url)
-        if user:
-            self._add_user_posts(user.group(1),user.group(2),user.group(3))
-            return
         post = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)/post/([^/]+)$',url)
-        if post:
-            self._add_single_post(post.group(1),post.group(2),post.group(3),post.group(4))
+        discord = re.search(r'^https://(kemono)\.party/([^/]+)/server/([^/]+)$',url)
+        if user:
+            self._add_all_creators(user.group(1))
+            self._find_posts(user.group(1),user.group(2),user.group(3))
             return
+        if post:
+            self._add_all_creators(post.group(1))
+            self._find_posts(post.group(1),post.group(2),post.group(3),post.group(4))
+            return
+        if discord:
+            logger.warning("Saving Discord servers is not yet supported.")
+            return
+            # self._add_all_creators(discord.group(1))
+            # self._add_server(discord.group(1),discord.group(2),discord.group(3))
+            # return
         logger.warning(f'Invalid URL: {url}')
 
-    def _add_user_posts(self, site:str, service:str, user_id:str):
+    def _find_posts(self, site:str, service:str, user_id:str, post_id:str = None):
         username = self._get_username(service, user_id)
         if not username:
+            logger.critical(f'No username found: user_id: {user_id} service: {service}')
             return
-        new_user = {'site':site,'service':service,'user_id':user_id,'username':username,'posts':[]}
+        self.current_user = {'site':site,'service':service,'user_id':user_id,'username':username}
+        self._set_current_user_path()
+        if not post_id:
+            logger.info(f"Downloading User: {self.current_user['username']}")
+            logger.debug(f"user_id: {self.current_user['user_id']} service: {self.current_user['service']} url: https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}")
+            self._download_profile_icon_banner()
         headers = {'accept': 'application/json'}
         chunk = 0
         while True:
-            user_api_url = f'https://{site}.party/api/{service}/user/{user_id}?o={chunk}'
-            logger.debug(f'User API URL: {user_api_url}')
-            response = self.session.get(url=user_api_url, headers=headers, timeout=TIMEOUT).json()
-            if not response:
+            if post_id:
+                api_url = f'https://{site}.party/api/{service}/user/{user_id}/post/{post_id}'
+                logger.debug(f'Post API URL: {api_url}')
+            else:
+                api_url = f'https://{site}.party/api/{service}/user/{user_id}?o={chunk}'
+                logger.debug(f'User API URL: {api_url}')
+
+            response = self.session.get(url=api_url, headers=headers, timeout=TIMEOUT).json()
+            if not response and chunk == 0 and not post_id:
+                logger.error(f"Skipping User: No api information: URL {api_url}")
+                return
+            elif not response and post_id:
+                logger.error(f"Skipping Post: No api information: URL {api_url}")
+                return
+            elif not response:
                 break
             for post in response:
                 # probably shouldn't mix this in the post json
                 post['date_object'], post['date_object_string'] = get_post_date(post)
-                new_user['posts'].append(post)
-            chunk += 25
-        self._add_user(new_user)
-
-    def _add_single_post(self, site:str, service:str, user_id:str, post_id:str):
-        username = self._get_username(service, user_id)
-        if not username:
-            return
-        new_user = {'site':site,'service':service,'user_id':user_id,'username':username,'posts':[]}
-        headers = {'accept': 'application/json'}
-        post_api_url = f'https://{site}.party/api/{service}/user/{user_id}/post/{post_id}'
-        logger.debug(f'Post API URL: {post_api_url}')
-        post = self.session.get(url=post_api_url, headers=headers, timeout=TIMEOUT).json()[0]
-        # probably shouldn't mix this in the post json
-        post['date_object'], post['date_object_string'] = get_post_date(post)
-        new_user['posts'].append(post)
-        self._add_user(new_user)
-
-    # merge posts lists if user is already in self.download_list
-    # else add user to self.download_list
-    def _add_user(self, new_user:dict):
-        for user in self.download_list:
-            if new_user['site'] == user['site'] and new_user['service'] == user['service'] and new_user['user_id'] == user['user_id'] and new_user['username'] == user['username']:
-                user['posts'] = list(set(new_user['posts'] + user['posts']))
-        self.download_list.append(new_user)
-
-    # with how slow kemono.party can be sometimes, I may want to make this asynchronous
-    def download_posts(self):
-        for index, user in enumerate(self.download_list):
-            logger.debug(f"User: {index+1}/{len(self.download_list)}")
-            logger.info(f"User: {user['username']}")
-            logger.debug(f"user_id: {user['user_id']} service: {user['service']} url: https://{user['site']}.party/{user['service']}/user/{user['user_id']}")
-            self.current_user = user
-            self._set_current_user_path()
-            self._download_profile_icon_banner('icon')
-            self._download_profile_icon_banner('banner')
-            for index, post in enumerate(user['posts']):
-                logger.debug(f"Post: {index+1}/{len(user['posts'])}")
-                logger.info(f"Post: {clean_folder_name(post['title'])}")
-                logger.debug(f"user_id: {user['user_id']} service: {user['service']} post_id: {post['id']} url: https://{user['site']}.party/{user['service']}/user/{user['user_id']}/post/{post['id']}")
                 self.current_post = post
                 self._set_current_post_path()
                 if self._should_download():
-                    logger.debug(f"Sleeping for {args['post_timeout']} seconds")
-                    time.sleep(args['post_timeout'])
-                    self._download_content()
-                    self._download_attachments()
-                    self._download_comments()
-                    self._download_embeds()
-                    if not args['skip_json']:
-                        if not os.path.exists(self.current_post_path):
-                            os.makedirs(self.current_post_path)
-                        # json.dump can't handle the datetime object
-                        self.current_post['date_object'] = None
-                        with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
-                            json.dump(self.current_post, f, indent=4, sort_keys=True)
+                    self.download_post()
+                self.downloaded_posts.append(post['id'])
+            if len(response) < 25:
+                break
+            chunk += 25
 
-                    # no errors must have occurred to archive post
-                    if not self.current_post_errors:
-                        if args['archive'] and not args['simulate']:
-                            with open(args['archive'],'a') as f:
-                                f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                            logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                    # reset error count
-                    self.current_post_errors = 0
+    def download_post(self):
+        logger.info(f"Downloading Post: {clean_folder_name(self.current_post['title'])}")
+        logger.debug("user_id: {user} service: {service} post_id: {id} url: https://{site}.party/{service}/user/{user}/post/{id}".format(site=self.current_user['site'],**self.current_post))
+        logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+        time.sleep(args['post_timeout'])
+        self._download_content()
+        self._download_attachments()
+        self._download_comments()
+        self._download_embeds()
+        if not args['skip_json']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
+            # json.dump can't handle the datetime object
+            self.current_post['date_object'] = None
+            with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
+                json.dump(self.current_post, f, indent=4, sort_keys=True)
+        # no errors must have occurred to archive post
+        if not self.current_post_errors:
+            if args['archive'] and not args['simulate']:
+                with open(args['archive'],'a') as f:
+                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+        # reset error count
+        self.current_post_errors = 0
 
     def _set_current_user_path(self):
-        # Note: the profile icon and banner are downloaded to this folder
-        self.current_user_path = os.path.join(args['output'],
-                                            self.current_user['service'],
-                                            clean_folder_name(f"{self.current_user['username']} [{self.current_user['user_id']}]")
+        # the profile icon and banner are downloaded to this folder
+        self.current_user_path = os.path.join(
+            args['output'],
+            self.current_user['service'],
+            clean_folder_name(f"{self.current_user['username']} [{self.current_user['user_id']}]")
         )
 
     def _set_current_post_path(self):
-        # when using clean_folder_name() on the post title it may return an empty string
-        # for example if the title is "???" then that will return ""
+        # clean_folder_name removes illegal windows file name characters and replaces them with "_"
         # this could cause conflicting folder names if you don't include any other unique identifier in the folder name
-        # Note: the pfp and banners are downloaded to the second from last folder
-        # so you might need to change that
-        self.current_post_path = os.path.join(self.current_user_path,
-                                            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}")
+        self.current_post_path = os.path.join(
+            self.current_user_path,
+            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}")
         )
 
     def _should_download(self):
-        if self._check_date_in_range():
-            if args['update_posts']:
-                return self._check_updated()
-            elif args['archive']:
-                return self._check_archived()
-            return True
+        if self._check_duplicate_post():
+            if self._check_date_in_range():
+                if args['update_posts']:
+                    return self._check_updated()
+                elif args['archive']:
+                    return self._check_archived()
+                return True
         return False
+
+    def _check_duplicate_post(self):
+        if self.current_post['id'] in self.downloaded_posts:
+            logger.info("Skipping Post: Post was already downloaded this session")
+            return False
+        return True
 
     def _check_updated(self):
         json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
@@ -241,8 +268,14 @@ class downloader:
             return False
         return True
 
-    def _download_profile_icon_banner(self, _item:str):
-        if (args['save_banner'] and _item == 'banner') or (args['save_icon'] and _item == 'icon'):
+    def _download_profile_icon_banner(self):
+        _item = None
+        if args['save_banner']:
+            _item == 'banner'
+        elif args['save_icon']:
+            _item == 'icon'
+
+        if _item:
             if self.current_user['service'] in {'dlsite'}:
                 logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
                 return
@@ -301,6 +334,7 @@ class downloader:
             if party_hosted:
                 if not os.path.exists(os.path.join(self.current_post_path, 'inline')):
                     os.makedirs(os.path.join(self.current_post_path, 'inline'))
+                # indexing might be wonky if non party hosted images are in between party hosted images
                 index_string = str(index).zfill(len(str(len(inline_images))))
                 file_name = os.path.join(self.current_post_path, 'inline', f"[{index_string}]_{inline_image['src'].split('/')[-1]}")
                 file_url = f"https://{self.current_user['site']}.party/data{inline_image['src']}"
@@ -343,6 +377,47 @@ class downloader:
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
                 self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
+
+
+
+    def _add_server(self, site:str, service:str, server_id:str):
+        username = self._get_username(service, server_id)
+        if not username:
+            logger.critical(f'No servername found: server_id: {server_id} service: {service}')
+            return
+        new_server = {'site':site,'service':service,'server_id':server_id,'username':username,'channels':[]}
+        headers = {'accept': 'application/json'}
+        server_api_url = f"https://{site}.party/api/{service}/channels/lookup?q={server_id}"
+        sever_response = self.session.get(url=server_api_url, headers=headers, timeout=TIMEOUT).json()
+        if not sever_response:
+            logger.error(f"Server has no api information: URL {server_api_url}")
+            return
+        for channel in sever_response:
+            skip = 0
+            channel_messages = []
+            while True:
+                channel_api_url = f"https://{site}.party/api/{service}/channel/{channel['id']}?skip={skip}"
+                channel_response = self.session.get(url=channel_api_url, headers=headers, timeout=TIMEOUT).json()
+                if not channel_response and skip == 0:
+                    logger.error(f"Channel has no api information: URL {channel_api_url}")
+                    return
+                if not channel_response:
+                    break
+                channel_messages += channel_response
+                if len(channel_response) < 10:
+                    break
+                skip += 10
+            # maybe I should process this in chunks don't know how big channel_messages list could be
+            new_server['channels'].append(channel_messages)
+        self.server_download_list.append(new_server)
+
+    def download_servers(self):
+        pass
+
+
+
+
+
 
     # TODO save file as .part until completed
     def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
@@ -391,6 +466,7 @@ class downloader:
             self.current_post_errors += 1
             return
 
+        # might want to add try except to be able to Ctrl C and skip download
         # retry download if status code is not ok
         if not response.ok:
             timeout = 30
@@ -603,23 +679,13 @@ def check_version():
 def main():
     logger.debug(f"Given command: python {' '.join(sys.argv)}")
     check_version()
-    start = time.time()
-    D = downloader()
+    start_time = time.time()
     urls = []
     for link in args['links']:
         urls.append(link)
     for link in args['from_file']:
         urls.append(link)
-    D.add_links(urls)
-    if args['kemono_favorite_users']:
-        D.add_favorite_artists('kemono')
-    if args['kemono_favorite_posts']:
-        D.add_favorite_posts('kemono')
-    if args['coomer_favorite_users']:
-        D.add_favorite_artists('coomer')
-    if args['coomer_favorite_posts']:
-        D.add_favorite_posts('coomer')
-    D.download_posts()
-    final_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start))
+    downloader(urls)
+    final_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
     logger.debug(f"Completed in {final_time}")
     logger.info("Completed")
