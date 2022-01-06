@@ -12,6 +12,7 @@ A simple downloader for kemono.party and coomer.party.
     - For Firefox users pelase look at [pinned issue](https://github.com/AplhaSlayer1964/kemono-dl/issues/29#issuecomment-986313416)
 5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
     - If the script doesn't run try replacing `python` with `python3` or `py`
+    - Here are more [examples](https://github.com/AplhaSlayer1964/kemono-dl#examples) of how to run the script
 
 ## Options
 ```
