@@ -71,6 +71,7 @@ A simple downloader for kemono.party and coomer.party.
 -   If you get an error with yt-dlp please report it to their [github](https://github.com/yt-dlp/yt-dlp)
 -   If you get a 416 this should be fine, it should only happen if the file hash on the server is wrong.
     -   If this happens please check that the file downloaded correctly, if so report that the hash is incorrect to the appropriate site.
+-   Kemono.party sometimes gives attachments filenames that are links (seems to only happen on patreon posts). This will remove the correct extension making it seem like an extensionless file. Hopefully they fix this or I will try to make a work around for it. 
 ### Examples
 ```bash
 # downloads all users and posts from "users.txt" to "C:\Users\User\Downloads" while skipping saved posts in "archive.txt"
