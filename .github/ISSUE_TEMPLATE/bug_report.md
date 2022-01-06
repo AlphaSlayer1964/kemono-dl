@@ -5,19 +5,14 @@ labels: bug
 
 ---
 <!-- If you do not fill out this forum correctly your issue will be closed! -->
-<!-- Please run the script using --verbose and attach the debug.log -->
+
+<!-- You must run the script using --verbose and attach the debug.log -->
+
+<!-- Before submitting please click "Preview" at the top to make sure everything is formatted properly. Thank you :) -->
 
 ### Version
 <!-- To get version run `python kemono-dl.py --version` -->
 Version:
-
-### Site, Service, User ID, Post ID
-<!-- Your Link: `https://{Site}.party/{Service}/user/{User ID}/post/{Post ID}` -->
-<!-- If you are using multiple links please list the information for the one that the error occurs on -->
-- Site: 
-- Service: 
-- User ID: 
-- Post ID: 
 
 ### Your Command
 <!-- Please list the entire command that was used -->
