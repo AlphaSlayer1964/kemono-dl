@@ -183,20 +183,8 @@ class downloader:
         self._download_attachments()
         self._download_comments()
         self._download_embeds()
-        if not args['skip_json']:
-            if not os.path.exists(self.current_post_path):
-                os.makedirs(self.current_post_path)
-            # json.dump can't handle the datetime object
-            self.current_post['date_object'] = None
-            with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
-                json.dump(self.current_post, f, indent=4, sort_keys=True)
-        # no errors must have occurred to archive post
-        if not self.current_post_errors:
-            if args['archive'] and not args['simulate']:
-                with open(args['archive'],'a') as f:
-                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-        # reset error count
+        self._save_json()
+        self._write_archive()
         self.current_post_errors = 0
 
     def _set_current_user_path(self):
@@ -266,14 +254,29 @@ class downloader:
             return False
         return True
 
-    def _download_profile_icon_banner(self):
-        _item = None
-        if args['save_banner']:
-            _item == 'banner'
-        elif args['save_icon']:
-            _item == 'icon'
+    def _save_json(self):
+        if not args['skip_json']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
+            # json.dump can't handle the datetime object
+            self.current_post['date_object'] = None
+            with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
+                json.dump(self.current_post, f, indent=4, sort_keys=True)
 
-        if _item:
+    def _write_archive(self):
+        if not self.current_post_errors:
+            if args['archive'] and not args['simulate']:
+                with open(args['archive'],'a') as f:
+                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+
+    def _download_profile_icon_banner(self):
+        to_download = []
+        if args['save_banner']:
+            to_download += ['banner']
+        if args['save_icon']:
+            to_download += ['icon']
+        for _item in to_download:
             if self.current_user['service'] in {'dlsite'}:
                 logger.warning(f"Profile {_item}s are not supported for {self.current_user['service']} users")
                 return
@@ -423,7 +426,7 @@ class downloader:
 
         # check file extention
         if check_file_extention(os.path.split(file_name)[1]):
-            logger.info(f"Skipping download: File extention not supported {os.path.split(file_name)[1].split('.')[-1]}")
+            logger.info(f"Skipping download: File extention excluded: {os.path.split(file_name)[1].split('.')[-1]}")
             return
 
         logger.info(f"Downloading {os.path.split(file_name)[1]}")
