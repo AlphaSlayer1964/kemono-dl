@@ -42,10 +42,17 @@ class downloader:
         self.current_post = None
         self.current_post_path = None
         self.current_post_errors = 0
-
-        self.server_download_list = []
-
         self.downloaded_posts = []
+
+        self.current_server = None
+        self.current_server_path = None
+        self.current_channel = None
+        self.current_channel_path = None
+        self.current_channel_errors = 0
+        self.current_message = None
+        self.current_message_path = None
+        self.current_message_errors = 0
+        self.downloaded_messages = []
 
         if args['kemono_favorite_users']:
             self.add_favorite_artists('kemono')
@@ -125,11 +132,10 @@ class downloader:
             self._find_posts(post.group(1),post.group(2),post.group(3),post.group(4))
             return
         if discord:
-            logger.warning("Saving Discord servers is not yet supported.")
+            logger.warning("Saving Discord servers is experimental!.")
+            self._add_all_creators(discord.group(1))
+            self._find_channels(discord.group(1),discord.group(2),discord.group(3))
             return
-            # self._add_all_creators(discord.group(1))
-            # self._add_server(discord.group(1),discord.group(2),discord.group(3))
-            # return
         logger.warning(f'Invalid URL: {url}')
 
     def _find_posts(self, site:str, service:str, user_id:str, post_id:str = None):
@@ -137,8 +143,8 @@ class downloader:
         if not username:
             logger.critical(f'No username found: user_id: {user_id} service: {service}')
             return
-        self.current_user = {'site':site,'service':service,'user_id':user_id,'username':username}
-        self._set_current_user_path()
+        user = {'site':site,'service':service,'user_id':user_id,'username':username}
+        self._set_current_user(user)
         if not post_id:
             logger.info(f"Downloading User: {self.current_user['username']}")
             logger.debug(f"user_id: {self.current_user['user_id']} service: {self.current_user['service']} url: https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}")
@@ -165,9 +171,8 @@ class downloader:
             for post in response:
                 # probably shouldn't mix this in the post json
                 post['date_object'], post['date_object_string'] = get_post_date(post)
-                self.current_post = post
-                self._set_current_post_path()
-                if self._should_download():
+                self._set_current_post(post)
+                if self._should_download_post():
                     self.download_post()
                 self.downloaded_posts.append(post['id'])
             if len(response) < 25:
@@ -187,23 +192,22 @@ class downloader:
         self._write_archive()
         self.current_post_errors = 0
 
-    def _set_current_user_path(self):
-        # the profile icon and banner are downloaded to this folder
+    def _set_current_user(self, user:dict):
+        self.current_user = user
         self.current_user_path = os.path.join(
             args['output'],
-            self.current_user['service'],
-            clean_folder_name(f"{self.current_user['username']} [{self.current_user['user_id']}]")
+            user['service'],
+            clean_folder_name(f"{user['username']} [{user['user_id']}]")
         )
 
-    def _set_current_post_path(self):
-        # clean_folder_name removes illegal windows file name characters and replaces them with "_"
-        # this could cause conflicting folder names if you don't include any other unique identifier in the folder name
+    def _set_current_post(self, post:dict):
+        self.current_post = post
         self.current_post_path = os.path.join(
             self.current_user_path,
-            clean_folder_name(f"[{self.current_post['date_object_string']}] [{self.current_post['id']}] {self.current_post['title']}")
+            clean_folder_name(f"[{post['date_object_string']}] [{post['id']}] {post['title']}")
         )
 
-    def _should_download(self):
+    def _should_download_post(self):
         if self._check_duplicate_post():
             if self._check_date_in_range():
                 if args['update_posts']:
@@ -381,12 +385,13 @@ class downloader:
 
 
 
-    def _add_server(self, site:str, service:str, server_id:str):
+    def _find_channels(self, site:str, service:str, server_id:str):
         username = self._get_username(service, server_id)
         if not username:
             logger.critical(f'No servername found: server_id: {server_id} service: {service}')
             return
-        new_server = {'site':site,'service':service,'server_id':server_id,'username':username,'channels':[]}
+        server = {'site':site,'service':service,'server_id':server_id,'username':username}
+        self._set_current_server(server)
         headers = {'accept': 'application/json'}
         server_api_url = f"https://{site}.party/api/{service}/channels/lookup?q={server_id}"
         sever_response = self.session.get(url=server_api_url, headers=headers, timeout=TIMEOUT).json()
@@ -394,8 +399,8 @@ class downloader:
             logger.error(f"Server has no api information: URL {server_api_url}")
             return
         for channel in sever_response:
+            self._set_current_channel(channel)
             skip = 0
-            channel_messages = []
             while True:
                 channel_api_url = f"https://{site}.party/api/{service}/channel/{channel['id']}?skip={skip}"
                 channel_response = self.session.get(url=channel_api_url, headers=headers, timeout=TIMEOUT).json()
@@ -404,17 +409,68 @@ class downloader:
                     return
                 if not channel_response:
                     break
-                channel_messages += channel_response
+                for message in channel_response:
+                    self._set_current_message(message)
+                    if self._should_download_message():
+                        self._download_message()
+                    self.downloaded_messages.append(message['id'])
+                    pass
                 if len(channel_response) < 10:
                     break
                 skip += 10
-            # maybe I should process this in chunks don't know how big channel_messages list could be
-            new_server['channels'].append(channel_messages)
-        self.server_download_list.append(new_server)
 
-    def download_servers(self):
+    def _set_current_server(self, server:dict):
+        self.current_server = server
+        self.current_server_path = os.path.join(
+            args['output'],
+            server['service'],
+            clean_folder_name(f"{server['username']} [{server['server_id']}]")
+        )
+
+    def _set_current_channel(self, channel:dict):
+        self.current_channel = channel
+        self.current_channel_path = os.path.join(
+            self.current_server_path,
+            clean_folder_name(f"{channel['name']} [{channel['id']}]")
+        )
+
+    def _set_current_message(self, message:dict):
+        self.current_message = message
+        self.current_message_path = os.path.join(
+            self.current_channel_path,
+            clean_folder_name(f"{message['author']['username']} [{message['author']['id']}]")
+        )
+
+    def _should_download_message(self):
+        if self._check_duplicate_message():
+            return True
+        return False
+
+    def _check_duplicate_message(self):
+        if self.current_message['id'] in self.downloaded_messages:
+            logger.info("Skipping Message: Message was already downloaded this session")
+            return False
+        return True
+
+    def _download_message(self):
+        # download message attachments to message folder
+        self._download_message_attachments()
+        # write data to html in channel folder in discord format
         pass
 
+    def _download_message_attachments(self):
+        if not args['skip_attachments']:
+            if self.current_message['attachments']:
+                if not os.path.exists(self.current_message_path):
+                    os.makedirs(self.current_message_path)
+            for index, attachment in enumerate(self.current_message['attachments']):
+                index_string = str(index+1).zfill(len(str(len(self.current_message['attachments']))))
+                file_name = os.path.join(self.current_message_path, clean_file_name(f"[{index_string}]_[{self.current_message['id']}]_{attachment['name']}"))
+                if args['no_indexing']:
+                    file_name = os.path.join(self.current_message_path, clean_file_name(f"[{self.current_message['id']}]_{attachment['name']}"))
+                file_url = f"https://{self.current_server['site']}.party/data{attachment['path']}?f={attachment['name']}"
+                file_hash = find_hash(attachment['path'])
+                self._requests_download(file_url, file_name, file_hash)
 
 
 
