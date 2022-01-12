@@ -1,5 +1,5 @@
 # kemono-dl
-A simple downloader for kemono.party and coomer.party.
+A simple downloader for kemono.party and coomer.party. I will be adding support for discord soon, if you could please let me know how you want those images stored by commenting [here](https://github.com/AplhaSlayer1964/kemono-dl/issues/48).
 
 ## How to use
 1.  Install python. (Disable path length limit during install)
