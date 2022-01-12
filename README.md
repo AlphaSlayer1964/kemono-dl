@@ -108,8 +108,13 @@ CWD
 ```
 If you wish to change the folder path for now you will need to edit these two functions in `main.py`
 
--   _set_current_user_path()
--   _set_current_post_path()
+-   _set_current_user()
+-   _set_current_post()
+
+For discord servers you need to edit these functions in `main.py`
+-   _set_current_server()
+-   _set_current_channel()
+-   _set_current_message()
 
 If you edit these functions and the program doesn't work correctly you will have to figure out the problem yourself. Do not file an issue in this case.
 ### Deprecated Options
