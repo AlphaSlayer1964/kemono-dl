@@ -1,5 +1,5 @@
 # kemono-dl
-A simple downloader for kemono.party and coomer.party. I will be adding support for discord soon, if you could please let me know how you want those images stored by commenting [here](https://github.com/AplhaSlayer1964/kemono-dl/issues/48).
+A simple downloader for kemono.party and coomer.party.
 
 ## How to use
 1.  Install python. (Disable path length limit during install)
@@ -70,9 +70,11 @@ A simple downloader for kemono.party and coomer.party. I will be adding support 
 -   You may need to install `ffmpeg` for `--yt-dlp` to work.
 -   If you get an error with yt-dlp the post will still be archived when using `--archive`.
 -   If you get an error with yt-dlp please report it to their [github](https://github.com/yt-dlp/yt-dlp)
--   If you get a 416 this should be fine, it should only happen if the file hash on the server is wrong.
-    -   If this happens please check that the file downloaded correctly, if so report that the hash is incorrect to the appropriate site.
--   Kemono.party sometimes gives attachments filenames that are links (seems to only happen on patreon posts). This will remove the correct extension making it seem like an extensionless file. Hopefully they fix this or I will try to make a work around for it. 
+-   Kemono.party sometimes gives attachments filenames that are links (seems to only happen on patreon posts). This will remove the correct extension making it seem like an extensionless file. Hopefully they fix this or I will try to make a work around for it.
+
+### 416 Warning
+If you get a 416 this should be fine, it should only happen if the file hash on the server is wrong. If this happens please check that the file downloaded correctly, if so report that the hash in the file name is incorrect to the appropriate sites message board.
+
 ### Examples
 ```bash
 # downloads all users and posts from "users.txt" to "C:\Users\User\Downloads" while skipping saved posts in "archive.txt"
