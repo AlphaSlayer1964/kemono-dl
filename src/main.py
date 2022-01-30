@@ -519,8 +519,8 @@ class downloader:
         # means the requested range is >= the total content-length
         # when kemono.party finishes fixing their bd this will need to cause the file to redwonload
         if response.status_code == 416:
-            logger.error(f'{response.status_code} {response.reason}: Will always happen if server hash is wrong! Please check file and report to site owner that file hash might be wrong')
-            self.current_post_errors += 1
+            logger.warning(f'{response.status_code} {response.reason}: Will always happen if server hash is wrong! Please check file and report to site owner that file hash might be wrong')
+            # self.current_post_errors += 1
             return
 
         # might want to add try except to be able to Ctrl C and skip download
