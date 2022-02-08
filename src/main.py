@@ -716,22 +716,25 @@ def check_file_extention(file_name):
 
 def check_version():
     try:
-        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
+        try:
+            current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
+        except:
+            current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d.%H')
+        github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
+        responce = requests.get(url=github_api_url, timeout=TIMEOUT)
+        if not responce.ok:
+            logger.warning(f"Could not check github for latest release.")
+            return
+        latest_tag = responce.json()['tag_name']
+        try:
+            latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
+        except:
+            latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d.%H')
+        if current_version < latest_version:
+            logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
+            logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
     except:
-        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d.%H')
-    github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
-    responce = requests.get(url=github_api_url, timeout=TIMEOUT)
-    if not responce.ok:
-        logger.warning(f"Could not check github for latest release.")
-        return
-    latest_tag = responce.json()['tag_name']
-    try:
-        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
-    except:
-        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d.%H')
-    if current_version < latest_version:
-        logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
-        logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
+        logger.error('There was a problem checking for updates.\nThe downloader will continue as normal.')
 
 def main():
     logger.debug(f"Given command: python {' '.join(sys.argv)}")
