@@ -671,13 +671,13 @@ def clean_file_name(string:str):
     if args['restrict_names']:
         string = restrict_names(string)
     # if OS_NAME == 'Windows':
-    return re.sub(r'[\\/:\"*?<>|\n\t]','_',string)[:255]
+    return re.sub(r'[\\/:\"*?<>|\n\t\b]','_',string)[:255]
 
 def clean_folder_name(string:str):
     if args['restrict_names']:
         string = restrict_names(string)
     # if OS_NAME == 'Windows':
-    return re.sub(r'[\\/:\"*?<>|\n\t]','_',string)[:248].rstrip('. ')
+    return re.sub(r'[\\/:\"*?<>|\n\t\b]','_',string)[:248].rstrip('. ')
 
 # returns string replacing non ascii characters, spaces, and "&"
 def restrict_names(string:str):
