@@ -309,8 +309,10 @@ class downloader:
                     os.makedirs(self.current_post_path)
             for index, attachment in enumerate(self.current_post['attachments']):
                 index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
+                file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
                 broken_file_name = re.search(r'https://www\.patreon\.com/media-u/([^/]+)',attachment['name'])
                 if broken_file_name:
+                    logger.warning(f"Report this file to kemono.party for having a URL as a file name! file URL: {file_url}")
                     file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{broken_file_name.group(1)}.{attachment['path'].rsplit('.', 1)[-1]}"))
                     if args['no_indexing']:
                         file_name = os.path.join(self.current_post_path, clean_file_name(f"{broken_file_name.group(1)}.{attachment['path'].rsplit('.', 1)[-1]}"))
@@ -318,7 +320,6 @@ class downloader:
                     file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
                     if args['no_indexing']:
                         file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
-                file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
                 file_hash = find_hash(attachment['path'])
                 self._requests_download(file_url, file_name, file_hash)
 
