@@ -34,8 +34,8 @@ class downloader:
         self.session = requests.Session()
         self.session.mount('https://', adapter)
         self.session.mount('http://', adapter)
-        self.kemono_creators = []
-        self.coomer_creators = []
+
+        self.all_creators = self.get_all_creators()
 
         self.current_user = None
         self.current_user_path = None
@@ -55,100 +55,84 @@ class downloader:
         self.downloaded_messages = []
 
         if args['kemono_favorite_users']:
-            self.add_favorite_artists('kemono')
+            self.add_favorite('kemono','artist')
         if args['kemono_favorite_posts']:
-            self.add_favorite_posts('kemono')
+            self.add_favorite('kemono','post')
         if args['coomer_favorite_users']:
-            self.add_favorite_artists('coomer')
+            self.add_favorite('coomer','artist')
         if args['coomer_favorite_posts']:
-            self.add_favorite_posts('coomer')
+            self.add_favorite('coomer','post')
 
         if urls:
             self.urls = urls
             self.add_links()
 
-    def _add_all_creators(self, site:str):
-        if site == 'kemono':
-            if self.kemono_creators:
-                return
-        if site == 'coomer':
-            if self.coomer_creators:
-                return
+    def get_all_creators(self):
+        all_creators = []
         headers = {'accept': 'application/json'}
-        creators_api_url = f'https://{site}.party/api/creators/'
-        all_creators = self.session.get(url=creators_api_url, headers=headers, timeout=TIMEOUT)
-        if site == 'kemono':
-            self.kemono_creators = all_creators.json()
-        if site == 'coomer':
-            self.coomer_creators = all_creators.json()
+        for site in {'kemono','coomer'}:
+            creators_api_url = f'https://{site}.party/api/creators/'
+            try:
+                all_creators += self.session.get(url=creators_api_url, headers=headers, timeout=TIMEOUT).json()
+            except:
+                logger.error(f"Failed to get creator info from {site}.party")
+        return all_creators
 
-    def _get_username(self, service:str, user_id:str):
-        all_creators = [self.kemono_creators, self.coomer_creators]
-        for site in all_creators:
-            for creator in site:
-                if creator['id'] == user_id and creator['service'] == service:
-                    return creator['name']
+    def get_user_info(self, service:str, user_id:str):
+        for creator in self.all_creators:
+            if creator['id'] == user_id and creator['service'] == service:
+                return creator
+        logger.error(f"Failed to find user for service:{service} user_id:{user_id}")
         return None
 
-    def add_favorite_artists(self, site:str):
-        self._add_all_creators(site)
-        logger.info('Gathering favorite users')
+    def add_favorite(self, site:str, type:str):
+        logger.info(f'Adding favorite {type} from {site}.party')
         headers = {'accept': 'application/json'}
-        fav_art_api_url = f'https://{site}.party/api/favorites?type=artist'
-        response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
-        if not response.ok:
-            logger.warning(f'{response.status_code} {response.reason}: Could not get favorite artists: Make sure you get your cookie file while logged in')
-            return
-        for favorite in response.json():
-            current_updated = datetime.datetime.strptime(favorite['updated'], r'%a, %d %b %Y %H:%M:%S %Z')
-            if current_updated > args['favorite_users_updated_within']:
-                self._find_posts(site,favorite['service'],favorite['id'])
-
-    def add_favorite_posts(self, site:str):
-        logger.info('Gathering favorite posts')
-        headers = {'accept': 'application/json'}
-        fav_art_api_url = f'https://{site}.party/api/favorites?type=post'
-        response = self.session.get(url=fav_art_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
-        if not response.ok:
-            logger.warning(f'{response.status_code} {response.reason}Could not get favorite posts: Make sure you get your cookie file while logged in')
-            return
-        for favorite in response.json():
-            self._find_posts(site,favorite['service'],favorite['user'],favorite['id'])
+        fav_api_url = f'https://{site}.party/api/favorites?type={type}'
+        logger.debug(f"{site}.party favorite {type}s api url: {fav_api_url}")
+        try:
+            logger.debug(f"Requests getting url: {fav_api_url}")
+            response = self.session.get(url=fav_api_url, cookies=args['cookies'], headers=headers, timeout=TIMEOUT)
+            if not response.ok:
+                logger.error(f'{response.status_code} {response.reason}Could not get favorite posts: Make sure you get your cookie file while logged in')
+                return
+            for favorite in response.json():
+                if type == 'post':
+                    self.get_posts(site=site,service=favorite['service'],user_id=favorite['user'],post_id=favorite['id'])
+                if type == 'artist':
+                    self.get_posts(site=site,service=favorite['service'],user_id=favorite['id'])
+        except:
+            logger.error(f"Failed to get favorite {type}s from {site}.party")
 
     def add_links(self):
         for url in self.urls:
-            self._parse_links(url)
+            self.parse_links(url)
 
-    def _parse_links(self, url:str):
+    def parse_links(self, url:str):
         user = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)$',url)
         post = re.search(r'^https://(kemono|coomer)\.party/([^/]+)/user/([^/]+)/post/([^/]+)$',url)
         discord = re.search(r'^https://(kemono)\.party/([^/]+)/server/([^/]+)$',url)
         if user:
-            self._add_all_creators(user.group(1))
-            self._find_posts(user.group(1),user.group(2),user.group(3))
+            self.get_posts(site=user.group(1),service=user.group(2),user_id=user.group(3))
             return
         if post:
-            self._add_all_creators(post.group(1))
-            self._find_posts(post.group(1),post.group(2),post.group(3),post.group(4))
+            self.get_posts(site=post.group(1),service=post.group(2),user_id=post.group(3),post_id=post.group(4))
             return
         if discord:
             logger.warning("Saving Discord servers is experimental!.")
-            self._add_all_creators(discord.group(1))
             self._find_channels(discord.group(1),discord.group(2),discord.group(3))
             return
         logger.warning(f'Invalid URL: {url}')
 
-    def _find_posts(self, site:str, service:str, user_id:str, post_id:str = None):
-        username = self._get_username(service, user_id)
-        if not username:
-            logger.critical(f'No username found: user_id: {user_id} service: {service}')
+    def get_posts(self, site:str, service:str, user_id:str, post_id:str = None):
+        user = self.get_user_info(service, user_id)
+        if not user:
             return
-        user = {'site':site,'service':service,'user_id':user_id,'username':username}
-        self._set_current_user(user)
+        user['site'] = site
         if not post_id:
-            logger.info(f"Downloading User: {self.current_user['username']}")
-            logger.debug(f"user_id: {self.current_user['user_id']} service: {self.current_user['service']} url: https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}")
-            self._download_profile_icon_banner()
+            logger.info(f"Downloading User: {user['name']}")
+            logger.debug(f"user_id: {user_id} service: {service} url: https://{site}.party/{service}/user/{user_id}")
+            # self.download_profile_icon_banner()
         headers = {'accept': 'application/json'}
         chunk = 0
         while True:
@@ -158,123 +142,65 @@ class downloader:
             else:
                 api_url = f'https://{site}.party/api/{service}/user/{user_id}?o={chunk}'
                 logger.debug(f'User API URL: {api_url}')
-
-            response = self.session.get(url=api_url, headers=headers, timeout=TIMEOUT).json()
+            try:
+                response = self.session.get(url=api_url, headers=headers, timeout=TIMEOUT).json()
+            except:
+                logger.error(f"Failed to get api json: URL {api_url}")
+                return
             if not response and chunk == 0 and not post_id:
-                logger.error(f"Skipping User: No api information: URL {api_url}")
+                logger.error(f"Skipping User: No api json found: URL {api_url}")
                 return
             elif not response and post_id:
-                logger.error(f"Skipping Post: No api information: URL {api_url}")
+                logger.error(f"Skipping Post: No api json found: URL {api_url}")
                 return
             elif not response:
-                break
+                logger.debug("End of json reached")
+                return
             for post in response:
-                # probably shouldn't mix this in the post json
-                post['date_object'], post['date_object_string'] = get_post_date(post)
-                self._set_current_post(post)
-                if self._should_download_post():
-                    self.download_post()
+                post['date_object'], post['date_object_string'] = get_post_date(post['published']) # probably shouldn't mix this in the post json
+                self.set_current_post(post, user)
+                self.download_post()
                 self.downloaded_posts.append(post['id'])
             if len(response) < 25:
-                break
+                logger.debug("End of json reached")
+                return
             chunk += 25
 
-    def download_post(self):
-        logger.info(f"Downloading Post: {clean_folder_name(self.current_post['title'])}")
-        logger.debug("user_id: {user} service: {service} post_id: {id} url: https://{site}.party/{service}/user/{user}/post/{id}".format(site=self.current_user['site'],**self.current_post))
-        logger.debug(f"Sleeping for {args['post_timeout']} seconds")
-        time.sleep(args['post_timeout'])
-        self._download_content()
-        self._download_attachments()
-        self._download_comments()
-        self._download_embeds()
-        self._save_json()
-        self._write_archive()
-        self.current_post_errors = 0
+    def set_current_post(self, post:dict, user:dict):
 
-    def _set_current_user(self, user:dict):
+        test = {}
+        test['title'] = post['title']
+        test['added_object'], test['added'] = get_post_date(post['added'])
+        test['edited_object'], test['edited'] = get_post_date(post['edited'])
+        test['published_object'], test['published'] = get_post_date(post['published'])
+        test['id'] = post['id']
+        test['attachments'] = post['attachments']
+        test['file'] = post['file']
+        test['content_html'] = post['content']
+        test['shared_file'] = post['shared_file']
+        test['embed'] = post['embed']
+        test['user_id'] = user['id']
+        test['username'] = user['name']
+        test['service'] = user['service']
+        test['user_updated_object'], test['user_updated'] = get_post_date(user['updated'])
+        test['site'] = user['site']
+
+        drive, tail = os.path.splitdrive(args['output'])
+        tail_split = re.split(r'\\|/', tail)
+        if drive:
+            final_output = drive + os.path.sep
+        else:
+            final_output = tail_split[0]
+        for folder in tail_split[1:]:
+            final_output = os.path.join(final_output, clean_folder_name(folder % test))
+
+        self.current_post_path = final_output
+        # print(self.current_post_path)
+        # quit()
         self.current_user = user
-        self.current_user_path = os.path.join(
-            args['output'],
-            user['service'],
-            clean_folder_name(f"{user['username']} [{user['user_id']}]")
-        )
-
-    def _set_current_post(self, post:dict):
         self.current_post = post
-        self.current_post_path = os.path.join(
-            self.current_user_path,
-            clean_folder_name(f"[{post['date_object_string']}] [{post['id']}] {post['title']}")
-        )
 
-    def _should_download_post(self):
-        if self._check_duplicate_post():
-            if self._check_date_in_range():
-                if args['update_posts']:
-                    return self._check_updated()
-                elif args['archive']:
-                    return self._check_archived()
-                return True
-        return False
-
-    def _check_duplicate_post(self):
-        if self.current_post['id'] in self.downloaded_posts:
-            logger.info("Skipping Post: Post was already downloaded this session")
-            return False
-        return True
-
-    def _check_updated(self):
-        json_path = os.path.join(self.current_post_path, f"{self.current_post['id']}.json")
-        if os.path.exists(json_path):
-            with open(json_path, 'r') as f:
-                data = json.loads(f.read())
-            current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if self.current_post['edited'] else datetime.datetime.min
-            old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
-            if old_post_date >= current_post_date:
-                logger.info("Skipping Post: Post is up to date")
-                return False
-            return True
-        logger.info(f"Skipping Post: {self.current_post['id']}.json not found")
-        return False
-
-    def _check_archived(self):
-        if os.path.exists(args['archive']):
-            with open(args['archive'],'r') as f:
-                archived = f.read().splitlines()
-            if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
-                logger.info("Skipping Post: Post Archived")
-                return False
-        logger.debug("Archive file does not exist: File will be created when writing post data")
-        return True
-
-    def _check_date_in_range(self):
-        if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
-            return True
-        elif self.current_post['date_object'] == datetime.datetime.min:
-            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
-            return False
-        elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']):
-            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
-            return False
-        return True
-
-    def _save_json(self):
-        if not args['skip_json']:
-            if not os.path.exists(self.current_post_path):
-                os.makedirs(self.current_post_path)
-            # json.dump can't handle the datetime object
-            self.current_post['date_object'] = None
-            with open(os.path.join(self.current_post_path,f"{self.current_post['id']}.json"),'w') as f:
-                json.dump(self.current_post, f, indent=4, sort_keys=True)
-
-    def _write_archive(self):
-        if not self.current_post_errors:
-            if args['archive'] and not args['simulate']:
-                with open(args['archive'],'a') as f:
-                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-
-    def _download_profile_icon_banner(self):
+    def download_profile_icon_banner(self):
         to_download = []
         if args['save_banner']:
             to_download += ['banner']
@@ -298,73 +224,146 @@ class downloader:
             except:
                 logger.error(f"Unable to download profile {_item} for {self.current_user['username']}")
 
-    def _download_attachments(self):
+    def download_post(self):
+        if self.should_download_post():
+            logger.info(f"Downloading Post: {clean_folder_name(self.current_post['title'])}")
+            logger.debug("user_id: {user} service: {service} post_id: {id} url: https://{site}.party/{service}/user/{user}/post/{id}".format(site=self.current_user['site'],**self.current_post))
+            logger.debug(f"Sleeping for {args['post_timeout']} seconds")
+            time.sleep(args['post_timeout'])
+            self.current_post_errors = 0
+            self.download_attachments()
+            self.download_content()
+            self.download_comments()
+            self.download_embeds()
+            self.save_json()
+            self.write_archive()
+
+    def should_download_post(self):
+        if self.check_duplicate_post():
+            if self.check_date_in_range():
+                if args['update_posts']:
+                    return self.check_updated()
+                elif args['archive']:
+                    return self.check_archived()
+                return True
+        return False
+
+    def check_user_last_updated(self):
+        # if current_updated > args['favorite_users_updated_within']:
+        #     self._find_posts(site,favorite['service'],favorite['id'])
+        pass
+
+    def check_duplicate_post(self):
+        if self.current_post['id'] in self.downloaded_posts:
+            logger.info("Skipping Post: Post was already downloaded this session")
+            return False
+        return True
+
+    # TODO handle old files
+    def check_updated(self):
+        json_path = os.path.join(self.current_post_path, f"[{self.current_post['id']}].json")
+        if os.path.exists(json_path):
+            with open(json_path, 'r') as f:
+                data = json.loads(f.read())
+            current_post_date = datetime.datetime.strptime(self.current_post['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if self.current_post['edited'] else datetime.datetime.min
+            old_post_date = datetime.datetime.strptime(data['edited'], r'%a, %d %b %Y %H:%M:%S %Z') if data['edited'] else datetime.datetime.min
+            if old_post_date >= current_post_date:
+                logger.info("Skipping Post: Post is up to date")
+                return False
+            return True
+        logger.info(f"Skipping Post: {self.current_post['id']}.json not found")
+        return False
+
+    def check_archived(self):
+        if os.path.exists(args['archive']):
+            with open(args['archive'],'r') as f:
+                archived = f.read().splitlines()
+            if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
+                logger.info("Skipping Post: Post Archived")
+                return False
+        logger.debug("Archive file does not exist: File will be created when writing post data")
+        return True
+
+    def check_date_in_range(self):
+        if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
+            return True
+        elif self.current_post['date_object'] == datetime.datetime.min:
+            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
+            return False
+        elif not(self.current_post['date_object'] == args['date'] or self.current_post['date_object'] <= args['datebefore'] or self.current_post['date_object'] >= args['dateafter']):
+            logger.info(f"Skipping Post: Date out of range {self.current_post['date_object_string']}")
+            return False
+        return True
+
+    def download_attachments(self):
         if not args['skip_attachments']:
             if self.current_post['file']:
-                # kemono.party some times already has the file in attachments so stops duplicates
+                # if the post file is not already in the attachments add it at the front of the list
                 if not self.current_post['file'] in self.current_post['attachments']:
                     self.current_post['attachments'].insert(0, self.current_post['file'])
-            if self.current_post['attachments']:
+            for index, attachment in enumerate(self.current_post['attachments']):
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
-            for index, attachment in enumerate(self.current_post['attachments']):
                 index_string = str(index+1).zfill(len(str(len(self.current_post['attachments']))))
                 file_url = f"https://{self.current_user['site']}.party/data{attachment['path']}?f={attachment['name']}"
+                file_name = os.path.join(self.current_post_path, clean_file_name(f"[{self.current_post['id']}]_[{index_string}]_{attachment['name']}"))
+                if args['no_indexing']:
+                    file_name = os.path.join(self.current_post_path, clean_file_name(f"[{self.current_post['id']}]_{attachment['name']}"))
+                file_hash = find_hash(attachment['path'])
+                # Some patreon files have a patreon url as the file name with no extention
+                # this hopefully adds the correct extention to the file name
                 broken_file_name = re.search(r'https://www\.patreon\.com/media-u/([^/]+)',attachment['name'])
                 if broken_file_name:
                     logger.warning(f"Report this file to kemono.party for having a URL as a file name! file URL: {file_url}")
-                    file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}.{attachment['path'].rsplit('.', 1)[-1]}"))
+                    file_name = os.path.join(self.current_post_path, clean_file_name(f"[{self.current_post['id']}]_[{index_string}]_{attachment['name']}.{attachment['path'].rsplit('.', 1)[-1]}"))
                     if args['no_indexing']:
-                        file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}.{attachment['path'].rsplit('.', 1)[-1]}"))
-                else:
-                    file_name = os.path.join(self.current_post_path, clean_file_name(f"[{index_string}]_{attachment['name']}"))
-                    if args['no_indexing']:
-                        file_name = os.path.join(self.current_post_path, clean_file_name(f"{attachment['name']}"))
-                file_hash = find_hash(attachment['path'])
-                self._requests_download(file_url, file_name, file_hash)
+                        file_name = os.path.join(self.current_post_path, clean_file_name(f"[{self.current_post['id']}]_{attachment['name']}.{attachment['path'].rsplit('.', 1)[-1]}"))
+                self.requests_download(file_url, file_name, file_hash)
 
-    def _download_content(self):
+    def download_content(self):
         if self.current_post['content']:
             content_soup = BeautifulSoup(self.current_post['content'], 'html.parser')
             if not args['skip_inline']:
-                content_soup = self._save_inline(content_soup)
+                content_soup = self.save_inline(content_soup)
             if args['extract_links']:
-                if not os.path.exists(self.current_post_path):
-                    os.makedirs(self.current_post_path)
-                self._save_links(content_soup)
+                self.save_links(content_soup)
             if not args['skip_content']:
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
-                with open(os.path.join(self.current_post_path, 'content.html'),'wb') as f:
+                with open(os.path.join(self.current_post_path, f"[{self.current_post['id']}]_content.html"),'wb') as f:
                     f.write(content_soup.prettify().encode("utf-16"))
 
-    def _save_inline(self, soup):
+    def save_inline(self, soup):
         # do these have hashes?
+        inline_folder = os.path.join(self.current_post_path, f"[{self.current_post['id']}]_inline")
         inline_images = soup.find_all('img')
         for index, inline_image in enumerate(inline_images):
             party_hosted = re.search('^/[^*]+', inline_image['src'])
             if party_hosted:
-                if not os.path.exists(os.path.join(self.current_post_path, 'inline')):
-                    os.makedirs(os.path.join(self.current_post_path, 'inline'))
+                if not os.path.exists(inline_folder):
+                    os.makedirs(inline_folder)
                 # indexing might be wonky if non party hosted images are in between party hosted images
+                # indexing always enabled to stop file name collitions
                 index_string = str(index).zfill(len(str(len(inline_images))))
-                file_name = os.path.join(self.current_post_path, 'inline', f"[{index_string}]_{inline_image['src'].split('/')[-1]}")
+                file_name = os.path.join(inline_folder, f"[{index_string}]_{inline_image['src'].split('/')[-1]}")
                 file_url = f"https://{self.current_user['site']}.party/data{inline_image['src']}"
-                self._requests_download(file_url, file_name)
-                inline_image['src'] = os.path.join(self.current_post_path, 'inline', file_name)
+                self.requests_download(file_url, file_name)
+                inline_image['src'] = os.path.join(inline_folder, file_name)
         return soup
 
-    def _save_links(self, soup):
+    def save_links(self, soup):
         href_tags = soup.find_all(href=True)
         if href_tags:
-            with open(os.path.join(self.current_post_path,'content_links.txt'),'w') as f:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
+            with open(os.path.join(self.current_post_path, f"[{self.current_post['id']}]_content_links.txt"),'w') as f:
                 for href_tag in href_tags:
                     f.write(href_tag['href'] + '\n')
 
-    def _download_comments(self):
+    def download_comments(self):
         if not args['skip_comments']:
             # no api method to get comments so using from html (not future proof)
-            post_url = f"https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['user_id']}/post/{self.current_post['id']}"
+            post_url = f"https://{self.current_user['site']}.party/{self.current_user['service']}/user/{self.current_user['id']}/post/{self.current_post['id']}"
             response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
             page_soup = BeautifulSoup(response.text, 'html.parser')
             comment_html = page_soup.find("div", {"class": "post__comments"})
@@ -375,22 +374,38 @@ class downloader:
                 else:
                     if not os.path.exists(self.current_post_path):
                         os.makedirs(self.current_post_path)
-                    with open(os.path.join(self.current_post_path, 'comments.html'),'wb') as f:
+                    with open(os.path.join(self.current_post_path, f"[{self.current_post['id']}]_comments.html"),'wb') as f:
                         f.write(comment_html.prettify().encode("utf-16"))
 
-    def _download_embeds(self):
+    def download_embeds(self):
         if self.current_post['embed']:
             if not args['skip_embed']:
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
-                with open(os.path.join(self.current_post_path, 'embed.txt'),'wb') as f:
+                with open(os.path.join(self.current_post_path, f"[{self.current_post['id']}]_embed.txt"),'wb') as f:
                     f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
             if args['yt_dlp']:
                 if not os.path.exists(self.current_post_path):
                     os.makedirs(self.current_post_path)
-                self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, 'embed'))
+                self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post_path, f"[{self.current_post['id']}]_embed"))
 
+    def save_json(self):
+        if not args['skip_json']:
+            if not os.path.exists(self.current_post_path):
+                os.makedirs(self.current_post_path)
+            # json.dump can't handle the datetime object
+            self.current_post['date_object'] = None
+            with open(os.path.join(self.current_post_path,f"[{self.current_post['id']}].json"),'w') as f:
+                json.dump(self.current_post, f, indent=4, sort_keys=True)
 
+    def write_archive(self):
+        if not self.current_post_errors:
+            if args['archive'] and not args['simulate']:
+                with open(args['archive'],'a') as f:
+                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+
+######################### DISCORD STUFF #########################
 
     def _find_channels(self, site:str, service:str, server_id:str):
         username = self._get_username(service, server_id)
@@ -477,14 +492,12 @@ class downloader:
                     file_name = os.path.join(self.current_message_path, clean_file_name(f"[{self.current_message['id']}]_{attachment['name']}"))
                 file_url = f"https://{self.current_server['site']}.party/data{attachment['path']}?f={attachment['name']}"
                 file_hash = find_hash(attachment['path'])
-                self._requests_download(file_url, file_name, file_hash)
+                self.requests_download(file_url, file_name, file_hash)
 
-
-
-
+######################### END OF DISCORD STUFF #########################
 
     # TODO save file as .part until completed
-    def _requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
+    def requests_download(self, url:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
         logger.debug(f"Preparing download: File Name: {os.path.split(file_name)[1]} URL: {url}")
 
         # check file extention
@@ -493,6 +506,7 @@ class downloader:
             return
 
         logger.info(f"Downloading {os.path.split(file_name)[1]}")
+        logger.debug(f"Download location: {os.path.split(file_name)[0]}")
 
         # check if file exists and if hashes match
         if os.path.exists(file_name) and file_hash:
@@ -541,7 +555,7 @@ class downloader:
             if retry > 0:
                 logger.warning(f"{response.status_code} {response.reason}: Retrying in {timeout} seconds")
                 time.sleep(timeout)
-                self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
+                self.requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
                 return
             logger.critical(f"All retries failed: {response.status_code} {response.reason}")
             self.current_post_errors += 1
@@ -579,7 +593,7 @@ class downloader:
                 logger.error(f"Download failed / was intertupted: File hash does not match: Retrying in {timeout} seconds")
                 logger.debug(f"Local Hash: {get_hash(file_name).lower()} Server Hash: {file_hash.lower()}")
                 time.sleep(timeout)
-                self._requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
+                self.requests_download(url=url, file_name=file_name, file_hash=file_hash, retry=retry-1)
                 return
             logger.critical(f"All retries failed: Server hash is wrong or server keeps timing out: This is a problem on the sites end: Please report broken hashed files to them: URL {url}")
             self.current_post_errors += 1
@@ -609,7 +623,7 @@ class downloader:
             logger.error(f"yt-dlp: Could not download URL {url}")
             return
 
-# Helper functions
+######################### HELPER FUNCTIONS #########################
 
 # return hash from download url
 def find_hash(url:str):
@@ -701,9 +715,9 @@ def restrict_names(string:str):
     return re.sub(r'[^\x00-\x7f]|[ &]','_',string)
 
 # takes post date sting and converts it back to datetime object, and simple datetime string
-def get_post_date(post:dict):
-    if post['published']:
-        date_object = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z')
+def get_post_date(date:str):
+    if date:
+        date_object = datetime.datetime.strptime(date, r'%a, %d %b %Y %H:%M:%S %Z')
         date_string = date_object.strftime(r'%Y%m%d')
     else:
         date_object = datetime.datetime.min
@@ -733,25 +747,28 @@ def check_file_extention(file_name):
 
 def check_version():
     try:
-        try:
-            current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
-        except:
-            current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d.%H')
-        github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
-        responce = requests.get(url=github_api_url, timeout=TIMEOUT)
-        if not responce.ok:
-            logger.warning(f"Could not check github for latest release.")
-            return
-        latest_tag = responce.json()['tag_name']
-        try:
-            latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
-        except:
-            latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d.%H')
-        if current_version < latest_version:
-            logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
-            logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
+        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d')
     except:
-        logger.error('There was a problem checking for updates.\nThe downloader will continue as normal.')
+        current_version = datetime.datetime.strptime(__version__, r'%Y.%m.%d.%H')
+    github_api_url = 'https://api.github.com/repos/AplhaSlayer1964/kemono-dl/releases/latest'
+    try:
+        responce = requests.get(url=github_api_url, timeout=TIMEOUT)
+    except:
+        logger.error("Failed to get github latest release")
+        return
+    if not responce.ok:
+        logger.error("Failed to get github latest release")
+        return
+    latest_tag = responce.json()['tag_name']
+    try:
+        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d')
+    except:
+        latest_version = datetime.datetime.strptime(latest_tag, r'%Y.%m.%d.%H')
+    if current_version < latest_version:
+        logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
+        logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
+
+######################### END OF HELPER FUNCTIONS #########################
 
 def main():
     logger.debug(f"Given command: python {' '.join(sys.argv)}")
