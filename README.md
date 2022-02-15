@@ -28,7 +28,7 @@ A simple downloader for kemono.party and coomer.party.
 --favorite-users-updated-within N_DAYS    Only download favorite users that have been updated within the last N days.
 --kemono-favorite-posts                   Adds all favorites posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-posts                   Adds all favorites posts from coomer.party. (Requires cookies while logged in)
--o, --output PATH                         Path to download location
+-o, --output TEMPLATE                     Output file path template. See "OUTPUT TEMPLATE" for details
 --restrict-names                          Restrict file names and folder names to only ASCII characters, and remove "&" and spaces
 --no-indexing                             Do not index file names. Might cause issues if attachments have duplicate names.
 -a, --archive FILE                        Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)
@@ -60,7 +60,7 @@ A simple downloader for kemono.party and coomer.party.
 -   Excepted link formats:
     -   `https://{site}.party/{service}/user/{user_id}`
     -   `https://{site}.party/{service}/user/{user_id}/post/{post_id}`
-    -   kemono.party Discord links are not supported 
+    -   kemono.party Discord links are not supported
 -   Gumroad posts are not compatible with any date options.
 -   You must get your cookie file while logged in to use:
     -   `--kemono-favorite-users`
@@ -87,38 +87,40 @@ python kemono-dl.py --cookies "kemono_cookies.txt" --date 20210101 --links "http
 python kemono-dl.py --cookies "kemono_cookies.txt,coomer_cookies.txt" --kemono-favorite-users --coomer-favorite-posts --max-filesize 100MB
 ```
 
-### Default File Output Format
+### Output Template
+The `-o`, `--output` option is used to assign the folder output template. You can use the output template to hardcode paths or to have a dynamic folder structure.
+
+Available template variables:
+- `title` Post title.
+- `added` Date the post was added to party site. (YYYYMMDD)
+- `edited` Date the post was last edited by the party site. (YYYYMMDD)
+- `published` Date the post was published on the service. (YYYYMMDD) (Some services don't have published dates and will show up as 00000000)
+- `id` Post id
+- `user_id` Post uploader id
+- `username` Post uploader username
+- `service` Post service type (ie patreon, fanbox, etc)
+- `user_updated` Date the posts uploader was last edited by the party site. (YYYYMMDD)
+- `site` The party site domain (kemono or coomer)
+
+#### Template Examples
+```python
+-o "C:/Users/user/Documents"
+# this is a hardcoded path to save all posts to documents
+
+-o "/Downloads/%(service)s/%(username)s [%(user_id)s]/[%(published)s] [%(id)s] %(title)s"
+# This is the default output template when no --output is passed
+# Download each post in a separate folder based on the post published date, post id, and post title.
+# All post folders are saved in a folder based on the uploader username and id.
+# All user folders are saved in a folder based on the service type of the user. (ie patreon, fanbox, pixiv)
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220214] [8453515] example post!
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220201] [4446536] FIRST POST!
+
+-o "/Downloads/%(username)s/%(title)s"
+# Download each post in a separate folder based on the post title.
+# All post folders are saved in a folder based on the uploader username.
+# ex: /Downloads/patreon/AlphaSlayer1964/example post!
+# ex: /Downloads/patreon/AlphaSlayer1964/FIRST POST!
 ```
-CWD
-├── kemono-dl.py
-└── Downloads
-    └── {service}
-        └── {username} [{user_id}]
-            ├── {username} [{user_id}] icon.ext
-            ├── {username} [{user_id}] banner.ext
-            └── [{date}] [{post_id}] {post_title}
-                ├── inline
-                │   └── image.ext
-                ├── embeds
-                │   └── video.ext
-                ├── content.html
-                ├── comments.html
-                ├── embeds.txt
-                ├── content_links.txt
-                ├── [{index}]_file.ext
-                └── {post_id}.json
-```
-If you wish to change the folder path for now you will need to edit these two functions in `main.py`
-
--   _set_current_user()
--   _set_current_post()
-
-For discord servers you need to edit these functions in `main.py`
--   _set_current_server()
--   _set_current_channel()
--   _set_current_message()
-
-If you edit these functions and the program doesn't work correctly you will have to figure out the problem yourself. Do not file an issue in this case.
 ### Deprecated Options
 ```
 -i, --ignore-errors
