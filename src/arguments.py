@@ -218,7 +218,7 @@ def get_args():
 
     # set default path
     if not args['output']:
-        args['output'] = os.path.join(os.getcwd(), 'Downloads')
+        args['output'] = os.path.join('/Downloads', '%(service)s/%(username)s [%(user_id)s]/[%(published)s] [%(id)s] %(title)s')
 
     if args['archive']:
         archive_path = os.path.dirname(os.path.abspath(args['archive']))
