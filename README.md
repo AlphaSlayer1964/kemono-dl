@@ -88,7 +88,7 @@ python kemono-dl.py --cookies "kemono_cookies.txt,coomer_cookies.txt" --kemono-f
 ```
 
 ### Output Template
-The `-o`, `--output` option is used to assign the folder output template. You can use the output template to hardcode paths or to have a dynamic folder structure.
+The `-o`, `--output` option is used to assign the folder output template. You can use the output template to hardcode paths or to have a dynamic folder structure. If you are using windows batch file to run the script you must do `%%` instead of `%`.
 
 Available template variables:
 - `title` Post title.
