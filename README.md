@@ -105,21 +105,25 @@ Available template variables:
 #### Template Examples
 ```python
 -o "C:/Users/user/Documents"
-# this is a hardcoded path to save all posts to documents
+# This is a hardcoded path to save all posts to documents
 
 -o "/Downloads/%(service)s/%(username)s [%(user_id)s]/[%(published)s] [%(id)s] %(title)s"
 # This is the default output template when no --output is passed
 # Download each post in a separate folder based on the post published date, post id, and post title.
 # All post folders are saved in a folder based on the uploader username and id.
 # All user folders are saved in a folder based on the service type of the user. (ie patreon, fanbox, pixiv)
-# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220214] [8453515] example post!
-# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220201] [4446536] FIRST POST!
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220214] [8453515] example post!/
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220201] [4446536] FIRST POST!/
 
 -o "/Downloads/%(username)s/%(title)s"
 # Download each post in a separate folder based on the post title.
 # All post folders are saved in a folder based on the uploader username.
-# ex: /Downloads/patreon/AlphaSlayer1964/example post!
-# ex: /Downloads/patreon/AlphaSlayer1964/FIRST POST!
+# ex: /Downloads/AlphaSlayer1964/example post!
+# ex: /Downloads/AlphaSlayer1964/FIRST POST!/
+
+-o "/Downloads/%(username)s"
+# All posts are saved in a folder based on the uploader username.
+# ex: /Downloads/AlphaSlayer1964/
 ```
 ### Deprecated Options
 ```
