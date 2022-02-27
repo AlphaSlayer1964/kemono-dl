@@ -21,17 +21,16 @@ A simple downloader for kemono.party and coomer.party.
 --verbose                                 Display extra debug information and create a debug.log
 --quiet                                   Suppress printing except for warnings, errors, and critical messages
 --cookies FILE                            Files to read cookies from, can take a comma separated list. (REQUIRED)
--l, --links LINKS                         URLs to be downloaded, can take a comma separated list.
--f, --from-file FILE                      File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Alias:--fromfile)
+--links LINKS                             URLs to be downloaded, can take a comma separated list.
+--from-file FILE                          File containing URLs to download, one URL per line. Lines starting with a "#" are counted as comments (Alias:--fromfile)
 --kemono-favorite-users                   Adds all favorite users posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-users                   Adds all favorite users posts from coomer.party. (Requires cookies while logged in)
---favorite-users-updated-within N_DAYS    Only download favorite users that have been updated within the last N days.
 --kemono-favorite-posts                   Adds all favorites posts from kemono.party. (Requires cookies while logged in)
 --coomer-favorite-posts                   Adds all favorites posts from coomer.party. (Requires cookies while logged in)
--o, --output TEMPLATE                     Output file path template. See "OUTPUT TEMPLATE" for details
+--output TEMPLATE                         Output file path template. See "OUTPUT TEMPLATE" for details
 --restrict-names                          Restrict file names and folder names to only ASCII characters, and remove "&" and spaces
 --no-indexing                             Do not index file names. Might cause issues if attachments have duplicate names.
--a, --archive FILE                        Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)
+--archive FILE                            Downloads only posts that are not in provided archive file. (Can not be used with --update-posts)
 --update-posts                            Updates already downloaded posts. Post must have json log file. (can not be used with --archive)
 --yt-dlp                                  Tries to download embed with yt-dlp. (experimental)
 --post-timeout SEC                        The amount of time in seconds to wait between downloading posts. (default: 0)
@@ -39,11 +38,13 @@ A simple downloader for kemono.party and coomer.party.
 --date YYYYMMDD                           Only download posts from this date.
 --datebefore YYYYMMDD                     Only download posts from this date and before.
 --dateafter YYYYMMDD                      Only download posts from this date and after.
+--user-updated-datebefore                 Only download posts from users who have been updated sense this date and before.
+--user-updated-dateafter                  Only download posts from users who have been updated sense this date and after.
 --min-filesize SIZE                       Do not download files smaller than SIZE. (ex. #GB | #MB | #KB | #B)
 --max-filesize SIZE                       Do not download files larger than SIZE. (ex. #GB | #MB | #KB | #B)
 --only-filetypes EXT                      Only downloads files with the given extension(s), can take a comma separated list. (ex. "JPG,mp4,mp3,png")
 --skip-filetypes EXT                      Skips files with the given extension(s), can take a comma separated list. (ex. "JPG,mp4,mp3,png")
---skip-content                            Skips saving post content to a file.
+--skip-content                            Skips saving post content to a file also applies --skip-comments.
 --skip-inline                             Skips saving post content inline images.
 --skip-comments                           Skips saving post comments to file.
 --skip-attachments                        Skips downloading ost attachments.
@@ -52,7 +53,7 @@ A simple downloader for kemono.party and coomer.party.
 --save-icon                               Downloads user icon (Alias: --save-pfp)
 --save-banner                             Downloads user banner
 --extract-links                           Save all content links to a file. (Alias: --force-external)
---simulate                                Simulate Downloads (Applies all --skip commands and ignores --save-icon, --save-banner, --extract-links, --yt-dlp) (If using --archive file will be read from but not written to)
+--simulate                                Simulate Downloads (Applies all --skip commands and ignores --save-icon, --save-banner, --extract-links, --yt-dlp)
 --user-agent UA                           Set a custom user agent
 ```
 ### Notes
@@ -70,7 +71,6 @@ A simple downloader for kemono.party and coomer.party.
 -   You may need to install `ffmpeg` for `--yt-dlp` to work.
 -   If you get an error with yt-dlp the post will still be archived when using `--archive`.
 -   If you get an error with yt-dlp please report it to their [github](https://github.com/yt-dlp/yt-dlp)
--   Kemono.party sometimes gives attachments filenames that are links (seems to only happen on patreon posts). This will remove the correct extension making it seem like an extensionless file. Hopefully they fix this or I will try to make a work around for it.
 
 ### 416 Warning
 If you get a 416 this should be fine, it should only happen if the file hash on the server is wrong. If this happens please check that the file downloaded correctly, if so report that the hash in the file name is incorrect to the appropriate sites message board.
@@ -88,45 +88,41 @@ python kemono-dl.py --cookies "kemono_cookies.txt,coomer_cookies.txt" --kemono-f
 ```
 
 ### Output Template
-The `-o`, `--output` option is used to assign the folder output template. You can use the output template to hardcode paths or to have a dynamic folder structure. If you are using windows batch file to run the script you must do `%%` instead of `%`.
+The `-o`, `--output` option is used to assign an output template. You can use the output template to hardcode paths or to have a dynamic folder structure. Having all post files be in the same folder without adding `{id}` to the file names will cause `content.html`, `links.txt`, `embed.tx` to be overwiten by the last download post!
 
 Available template variables:
-- `title` Post title.
-- `added` Date the post was added to party site. (YYYYMMDD)
-- `edited` Date the post was last edited by the party site. (YYYYMMDD)
-- `published` Date the post was published on the service. (YYYYMMDD) (Some services don't have published dates and will show up as 00000000)
-- `id` Post id
-- `user_id` Post uploader id
-- `username` Post uploader username
-- `service` Post service type (ie patreon, fanbox, etc)
-- `user_updated` Date the posts uploader was last edited by the party site. (YYYYMMDD)
-- `site` The party site domain (kemono or coomer)
+- `{ext}` The default file extention
+- `{name}` The default file name
+- `{index}` The attachment index, all other files will be 0
+- `{title}` Post title.
+- `{added}` Date the post was added to party site. (YYYYMMDD)
+- `{edited}` Date the post was last edited by the party site. (YYYYMMDD)
+- `{published}` Date the post was published on the service. (YYYYMMDD) (Some services don't have published dates and will show up as 00000000)
+- `{id}` Post id
+- `{user_id}` Post uploader id
+- `{username}` Post uploader username
+- `{service}` Post service type (ie patreon, fanbox, etc)
+- `{user_updated}` Date the posts uploader was last edited by the party site. (YYYYMMDD)
+- `{site}` The party site domain (kemono or coomer)
 
 #### Template Examples
 ```python
--o "C:/Users/user/Documents"
-# This is a hardcoded path to save all posts to documents
+-o "C:/Users/user/Documents/{name}.{ext}"
+# This is a hardcoded path to save all posts to documents and all files will have the orional file name
 
--o "/Downloads/%(service)s/%(username)s [%(user_id)s]/[%(published)s] [%(id)s] %(title)s"
+-o "/Downloads/{service}/{username} [{user_id}]/[{published}] [{id}] {title}/[{index}] {name}.{ext}"
 # This is the default output template when no --output is passed
-# Download each post in a separate folder based on the post published date, post id, and post title.
-# All post folders are saved in a folder based on the uploader username and id.
-# All user folders are saved in a folder based on the service type of the user. (ie patreon, fanbox, pixiv)
-# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220214] [8453515] example post!/
-# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220201] [4446536] FIRST POST!/
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220214] [8453515] example post!/[1] OrigonalFile.jpg
+# ex: /Downloads/patreon/AlphaSlayer1964 [641314654]/[20220201] [4446536] FIRST POST!/[1] OrigonalFile.png
 
--o "/Downloads/%(username)s/%(title)s"
-# Download each post in a separate folder based on the post title.
-# All post folders are saved in a folder based on the uploader username.
-# ex: /Downloads/AlphaSlayer1964/example post!
-# ex: /Downloads/AlphaSlayer1964/FIRST POST!/
-
--o "/Downloads/%(username)s"
-# All posts are saved in a folder based on the uploader username.
-# ex: /Downloads/AlphaSlayer1964/
+-o "/Downloads/{username}/[{id}] [{index}] {name}.{ext}"
+# If you don't include post identifiers in the file name template files will be overwiten!
+# In this case {id} is used as a post identifier.
+# ex: /Downloads/AlphaSlayer1964/[8453515] [3] MyFile.png
 ```
 ### Deprecated Options
 ```
+--favorite-users-updated-within
 -i, --ignore-errors
 --skip-postfile
 --force-indexing
@@ -136,10 +132,6 @@ Available template variables:
 --favorite-posts
 --skip-pfp-banner
 ```
-## To do
--  [ ]   Allow file naming structure to be changed in command line
--  [ ]   Allow file path structure to be changed in command line
--  [ ]   Add Discord service (in progress)
 
 ## Keep in mind
 -  Using this might get you IP banned from kemono.party or coomer.party.
