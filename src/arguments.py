@@ -42,10 +42,6 @@ def get_args():
                     action='store_true', default=False,
                     help="Adds all favorite users posts from coomer.party. (Requires cookies while logged in)")
 
-    ap.add_argument("--favorite-users-updated-within",
-                    metavar="N_DAYS", type=int, default=0,
-                    help="Only download favorite users that have been updated within the last N days.")
-
     ap.add_argument("--kemono-favorite-posts",
                     action='store_true', default=False,
                     help="Adds all favorites posts from kemono.party. (Requires cookies while logged in)")
@@ -97,6 +93,14 @@ def get_args():
     ap.add_argument("--dateafter",
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts from this date and after.")
+
+    ap.add_argument("--user-updated-datebefore",
+                    metavar="YYYYMMDD", type=str, default=None,
+                    help="Only download posts from users who have been updated sense this date and before.")
+
+    ap.add_argument("--user-updated-dateafter",
+                    metavar="YYYYMMDD", type=str, default=None,
+                    help="Only download posts from users who have been updated sense this date and after.")
 
     ap.add_argument("--min-filesize",
                     metavar="SIZE", type=str, default='0B',
@@ -169,6 +173,7 @@ def get_args():
 
     # deprecated
     deprecated_list = (
+        "--favorite-users-updated-within"
         "--ignore-errors",
         "--skip-postfile",
         "--force-indexing",
@@ -178,14 +183,8 @@ def get_args():
         "--favorite-posts",
         "--skip-pfp-banner"
     )
-    ap.add_argument("-i", "--ignore-errors",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--skip-postfile",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--force-indexing",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--force-inline",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--force-yt-dlp",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--favorite-users",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--favorite-posts",action='store_true',default=False,help="DEPROCATED")
-    ap.add_argument("--skip-pfp-banner",action='store_true',default=False,help="DEPROCATED")
+    for x in deprecated_list:
+        ap.add_argument(x ,action='store_true',default=False,help="DEPROCATED")
 
     args = vars(ap.parse_args())
 
@@ -218,7 +217,7 @@ def get_args():
 
     # set default path
     if not args['output']:
-        args['output'] = os.path.join('/Downloads', '%(service)s/%(username)s [%(user_id)s]/[%(published)s] [%(id)s] %(title)s')
+        args['output'] = os.path.join('/Downloads', '{service}/{username} [{user_id}]/[{published}] [{id}] {title}', '[{index}] {name}.{ext}')
 
     if args['archive']:
         archive_path = os.path.dirname(os.path.abspath(args['archive']))
@@ -252,6 +251,9 @@ def get_args():
     args['date'] = valid_date(args['date'], '--date') if args['date'] else datetime.datetime.min
     args['datebefore'] = valid_date(args['datebefore'], '--datebefore') if args['datebefore'] else datetime.datetime.min
     args['dateafter'] = valid_date(args['dateafter'], '--dateafter') if args['dateafter'] else datetime.datetime.max
+
+    args['user_updated_datebefore'] = valid_date(args['user_updated_datebefore'], '--user-updated-datebefore') if args['user_updated_datebefore'] else datetime.datetime.min
+    args['user_updated_dateafter'] = valid_date(args['user_updated_dateafter'], '--user-updated-dateafter') if args['user_updated_dateafter'] else datetime.datetime.max
 
     def valid_size(size, arg):
         if size in {'0', 'inf'}:
@@ -296,10 +298,10 @@ def get_args():
             if link[0] != '#':
                 args['from_file'].append(link.strip().lstrip().split('?')[0])
 
-    if args['favorite_users_updated_within']:
-        args['favorite_users_updated_within'] = (datetime.datetime.now() - datetime.timedelta(days=args['favorite_users_updated_within']))
-    else:
-        args['favorite_users_updated_within'] = datetime.datetime.min
+    # if args['favorite_users_updated_within']:
+    #     args['favorite_users_updated_within'] = (datetime.datetime.now() - datetime.timedelta(days=args['favorite_users_updated_within']))
+    # else:
+    #     args['favorite_users_updated_within'] = datetime.datetime.min
 
     # do not download anything
     if args['simulate']:
