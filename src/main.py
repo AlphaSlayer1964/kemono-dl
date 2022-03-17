@@ -276,7 +276,7 @@ class downloader:
         if os.path.exists(args['archive']):
             with open(args['archive'],'r') as f:
                 archived = f.read().splitlines()
-            if '/{service}/user/{user}/post/{id}'.format(**self.current_post) in archived:
+            if '/{service}/user/{user_id}/post/{id}'.format(**self.current_post) in archived:
                 logger.info("Skipping Post: Post Archived")
                 return False
         logger.debug("Archive file does not exist: File will be created when writing post data")
@@ -419,8 +419,8 @@ class downloader:
         if not self.current_post_errors:
             if args['archive'] and not args['simulate']:
                 with open(args['archive'],'a') as f:
-                    f.write('/{service}/user/{user}/post/{id}\n'.format(**self.current_post))
-                logger.debug('Post Archived: /{service}/user/{user}/post/{id}\n'.format(**self.current_post))
+                    f.write('/{service}/user/{user_id}/post/{id}\n'.format(**self.current_post))
+                logger.debug('Post Archived: /{service}/user/{user_id}/post/{id}\n'.format(**self.current_post))
 
 ######################### DISCORD STUFF #########################
 # TODO UPDATE
