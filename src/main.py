@@ -70,9 +70,10 @@ class downloader:
         self.user_up_dateafter = args['user_updated_dateafter']
 
         # other
-        self.retry = 3 # add argument
+        self.retry = args['retry']
         self.no_part = args['no_part_files']
-        self.ratelimit_sleep = 300 # add argument
+        self.ratelimit_sleep = args['ratelimit_sleep']
+        self.post_timeout = args['post_timeout']
 
         self.start_download()
 
@@ -158,6 +159,9 @@ class downloader:
                     continue
                 try:
                     self.download_post(post)
+                    if self.post_timeout:
+                        logger.info(f"Sleeping for {self.post_timeout} seconds.")
+                        time.sleep(self.post_timeout)
                 except:
                     logger.exception(f"Unable to download post | service:{post['service']} user_id:{post['user_id']} post_id:{post['id']}")
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post))
