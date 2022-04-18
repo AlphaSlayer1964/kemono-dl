@@ -200,6 +200,4 @@ The hash of the file.
 ```
 
 ## Examples
-```bash
-python kemono-dl.py --cookies "kemono.party_cookies.txt" --links "https://kemono.party/patreon/user/11111111"
-```
+TODO
