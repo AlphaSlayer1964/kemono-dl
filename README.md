@@ -91,7 +91,7 @@ Only download attachments or inline images with greater than this file size. (ex
 `--max-filesize SIZE`  
 Only download attachments or inline images with less than this file size. (ex #gb | #mb | #kb | #b)  
 `--only-filetypes EXT`  
-Only download attachments or inline images with the given file type(s). Takes a file extensions or list of file extensions separated by a comma. (ex mp4,jpg,gif,zip) 
+Only download attachments or inline images with the given file type(s). Takes a file extensions or list of file extensions separated by a comma. (ex mp4,jpg,gif,zip)  
 `--skip-filetypes EXT`  
 Only download attachments or inline images without the given file type(s). Takes a file extensions or list of file extensions separated by a comma. (ex mp4,jpg,gif,zip)  
 
