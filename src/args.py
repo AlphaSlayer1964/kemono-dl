@@ -185,7 +185,7 @@ def get_args():
                     help="The amount of times to retry / resume downloading a file. (default: 5)")
 
     ap.add_argument("--ratelimit-sleep",
-                    metavar="SEC", type=int, default=5,
+                    metavar="SEC", type=int, default=120,
                     help="The time in seconds to wait after being ratelimited (default: 120)")
 
     ap.add_argument("--user-agent",
