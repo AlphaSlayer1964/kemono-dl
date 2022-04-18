@@ -172,25 +172,10 @@ class downloader:
             return True
         return False
 
-<<<<<<< Updated upstream
-    def check_archived(self):
-        if os.path.exists(args['archive']):
-            with open(args['archive'],'r') as f:
-                archived = f.read().splitlines()
-            if '/{service}/user/{user_id}/post/{id}'.format(**self.current_post) in archived:
-                logger.info("Skipping Post: Post Archived")
-                return False
-        logger.debug("Archive file does not exist: File will be created when writing post data")
-        return True
-
-    def check_date_in_range(self):
-        if args['date'] == datetime.datetime.min and args['datebefore'] == datetime.datetime.min and args['dateafter'] == datetime.datetime.max:
-=======
     def skip_post(self, post:dict):
         # check if the post should be downloaded
         if self.check_archive(post):
             logger.info("Skipping post | post already archived")
->>>>>>> Stashed changes
             return True
 
         if check_date(datetime.datetime.strptime(post['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
@@ -231,184 +216,6 @@ class downloader:
         inline_images = content_soup.find_all("img", {"data-media-id": True})
         post['inline'] = []
         for index, inline_image in enumerate(inline_images):
-<<<<<<< Updated upstream
-            party_hosted = re.search('^/[^*]+', inline_image['src'])
-            if party_hosted:
-                if not os.path.exists(inline_folder):
-                    os.makedirs(inline_folder)
-                # indexing might be wonky if non party hosted images are in between party hosted images
-                # indexing always enabled to stop file name collitions
-                index_string = str(index).zfill(len(str(len(inline_images))))
-                file_name = f"{inline_image['src'].split('/')[-1]}"
-                file_name = self.set_file_name(file_name.rsplit('.', 1)[0], file_name.rsplit('.', 1)[-1], index_string)
-                file_url = f"https://{self.current_post['site']}.party/data{inline_image['src']}"
-                self.requests_download(file_url, inline_folder, file_name)
-                inline_image['src'] = os.path.join("inline", file_name)
-        return soup
-
-    def save_links(self, soup):
-        href_tags = soup.find_all(href=True)
-        if href_tags:
-            if not os.path.exists(self.current_post['path']):
-                os.makedirs(self.current_post['path'])
-            with open(os.path.join(self.current_post['path'], self.set_file_name('links','txt')),'w') as f:
-                for href_tag in href_tags:
-                    f.write(href_tag['href'] + '\n')
-
-    def get_comments(self):
-        try:
-            # no api method to get comments so using from html (not future proof)
-            post_url = "https://{site}.party/{service}/user/{user_id}/post/{id}".format(**self.current_post)
-            response = self.session.get(url=post_url, allow_redirects=True, cookies=args['cookies'], timeout=TIMEOUT)
-            page_soup = BeautifulSoup(response.text, 'html.parser')
-            comment_soup = page_soup.find("div", {"class": "post__comments"})
-            if comment_soup:
-                no_comments = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_soup.text)
-                if no_comments:
-                    logger.debug(no_comments.group(1).strip())
-                    return None
-                return comment_soup
-        except:
-            return None
-
-    def download_embeds(self):
-        if self.current_post['embed']:
-            if not args['skip_embed']:
-                if not os.path.exists(self.current_post['path']):
-                    os.makedirs(self.current_post['path'])
-                with open(os.path.join(self.current_post['path'], self.set_file_name('embed','txt')),'wb') as f:
-                    f.write("{subject}\n{url}\n{description}".format(**self.current_post['embed']).encode('utf-16'))
-            if args['yt_dlp']:
-                if not os.path.exists(self.current_post['path']):
-                    os.makedirs(self.current_post['path'])
-                self.download_yt_dlp(self.current_post['embed']['url'], os.path.join(self.current_post['path'], "embeds"))
-
-    def save_json(self):
-        if not args['skip_json']:
-            if not os.path.exists(self.current_post['path']):
-                os.makedirs(self.current_post['path'])
-            # remove datetime objects from json
-            del self.current_post['added_object']
-            del self.current_post['edited_object']
-            del self.current_post['published_object']
-            del self.current_post['user_updated_object']
-            with open(os.path.join(self.current_post['path'],self.set_file_name('post','json')),'w') as f:
-                json.dump(self.current_post, f, indent=4, sort_keys=True)
-
-    def write_archive(self):
-        if not self.current_post_errors:
-            if args['archive'] and not args['simulate']:
-                with open(args['archive'],'a') as f:
-                    f.write('/{service}/user/{user_id}/post/{id}\n'.format(**self.current_post))
-                logger.debug('Post Archived: /{service}/user/{user_id}/post/{id}\n'.format(**self.current_post))
-
-######################### DISCORD STUFF #########################
-# TODO UPDATE
-
-    # def _find_channels(self, site:str, service:str, server_id:str):
-    #     username = self._get_username(service, server_id)
-    #     if not username:
-    #         logger.critical(f'No servername found: server_id: {server_id} service: {service}')
-    #         return
-    #     server = {'site':site,'service':service,'server_id':server_id,'username':username}
-    #     self._set_current_server(server)
-    #     headers = {'accept': 'application/json'}
-    #     server_api_url = f"https://{site}.party/api/{service}/channels/lookup?q={server_id}"
-    #     sever_response = self.session.get(url=server_api_url, headers=headers, timeout=TIMEOUT).json()
-    #     if not sever_response:
-    #         logger.error(f"Server has no api information: URL {server_api_url}")
-    #         return
-    #     for channel in sever_response:
-    #         self._set_current_channel(channel)
-    #         skip = 0
-    #         while True:
-    #             channel_api_url = f"https://{site}.party/api/{service}/channel/{channel['id']}?skip={skip}"
-    #             channel_response = self.session.get(url=channel_api_url, headers=headers, timeout=TIMEOUT).json()
-    #             if not channel_response and skip == 0:
-    #                 logger.error(f"Channel has no api information: URL {channel_api_url}")
-    #                 return
-    #             if not channel_response:
-    #                 break
-    #             for message in channel_response:
-    #                 self._set_current_message(message)
-    #                 if self._should_download_message():
-    #                     self._download_message()
-    #                 self.downloaded_messages.append(message['id'])
-    #                 pass
-    #             if len(channel_response) < 10:
-    #                 break
-    #             skip += 10
-
-    # def _set_current_server(self, server:dict):
-    #     self.current_server = server
-    #     self.current_server_path = os.path.join(
-    #         args['output'],
-    #         server['service'],
-    #         clean_folder_name(f"{server['username']} [{server['server_id']}]")
-    #     )
-
-    # def _set_current_channel(self, channel:dict):
-    #     self.current_channel = channel
-    #     self.current_channel_path = os.path.join(
-    #         self.current_server_path,
-    #         clean_folder_name(f"{channel['name']} [{channel['id']}]")
-    #     )
-
-    # def _set_current_message(self, message:dict):
-    #     self.current_message = message
-    #     self.current_message_path = os.path.join(
-    #         self.current_channel_path,
-    #         clean_folder_name(f"{message['author']['username']} [{message['author']['id']}]")
-    #     )
-
-    # def _should_download_message(self):
-    #     if self._check_duplicate_message():
-    #         return True
-    #     return False
-
-    # def _check_duplicate_message(self):
-    #     if self.current_message['id'] in self.downloaded_messages:
-    #         logger.info("Skipping Message: Message was already downloaded this session")
-    #         return False
-    #     return True
-
-    # def _download_message(self):
-    #     # download message attachments to message folder
-    #     self._download_message_attachments()
-    #     # write data to html in channel folder in discord format
-    #     pass
-
-    # def _download_message_attachments(self):
-    #     if not args['skip_attachments']:
-    #         if self.current_message['attachments']:
-    #             if not os.path.exists(self.current_message_path):
-    #                 os.makedirs(self.current_message_path)
-    #         for index, attachment in enumerate(self.current_message['attachments']):
-    #             index_string = str(index+1).zfill(len(str(len(self.current_message['attachments']))))
-    #             file_name = os.path.join(self.current_message_path, clean_file_name(f"[{index_string}]_[{self.current_message['id']}]_{attachment['name']}"))
-    #             if args['no_indexing']:
-    #                 file_name = os.path.join(self.current_message_path, clean_file_name(f"[{self.current_message['id']}]_{attachment['name']}"))
-    #             file_url = f"https://{self.current_server['site']}.party/data{attachment['path']}?f={attachment['name']}"
-    #             file_hash = find_hash(attachment['path'])
-    #             self.requests_download(file_url, file_name, file_hash)
-
-######################### END OF DISCORD STUFF #########################
-
-    # TODO save file as .part until completed
-    def requests_download(self, url:str, file_path:str, file_name:str, file_hash:str = None, retry:int = args['retry_download']):
-        resume_size = 0
-        timeout = 30
-
-        file_name = clean_file_name(file_name)
-
-        logger.info(f"Downloading: {file_name}")
-        logger.debug(f"Download path: {file_path}")
-        logger.debug(f"Download url: {url}")
-
-        if check_file_extention(file_name):
-            logger.info(f"Skipping download because of file extention: {file_name.split('.')[-1]}")
-            return
-=======
             filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
             m = re.search(r'[a-zA-Z0-9]{64}', inline_image['src'])
             file_hash = m.group(0) if m else ''
@@ -617,7 +424,6 @@ class downloader:
                     logger.info(f"Skipping download | File size in bytes {file_size} was not <= {self.max_size}")
                     return True
         return False
->>>>>>> Stashed changes
 
     def download_file(self, file:dict, retry:int):
         # download a file
@@ -768,22 +574,4 @@ class downloader:
                 logger.exception(f"Unable to get posts for {url}")
 
 def main():
-<<<<<<< Updated upstream
-    logger.debug(f"Given command: python {' '.join(sys.argv)}")
-    try:
-        check_version()
-    except:
-        logger.error("Failed to check latest version of kemono-dl")
-    start_time = time.time()
-    urls = []
-    for link in args['links']:
-        urls.append(link)
-    for link in args['from_file']:
-        urls.append(link)
-    downloader(urls)
-    final_time = time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))
-    logger.debug(f"Completed in {final_time}")
-    logger.info("Completed")
-=======
     downloader(get_args())
->>>>>>> Stashed changes
