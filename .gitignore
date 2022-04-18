@@ -1,8 +1,7 @@
 venv/
 Downloads/
 yt_dlp_temp/
-kemono.party_cookies.txt
-coomer.party_cookies.txt
+*cookies.txt
 *.pyc
 *.log
 *.bat
