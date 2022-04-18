@@ -60,15 +60,15 @@ Overwrite any previously created files.
 ## Output
 
 `--dirname-pattern PATTERN`  
-Set the file path pattern for where files are downloaded. See Output Patterns for more detail.  
+Set the file path pattern for where files are downloaded. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--filename-pattern PATTERN`  
-Set the file name pattern for attachments. See Output Patterns for more detail.  
+Set the file name pattern for attachments. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--inline-filename-pattern PATTERN`  
-Set the file name pattern for inline images. See Output Patterns for more detail.  
+Set the file name pattern for inline images. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--content-filename-pattern PATTERN`  
-Set the file name pattern for content file. See Output Patterns for more detail.  
+Set the file name pattern for content file. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--date-strf-pattern PATTERN`  
-Set the date strf pattern variable. See Output Patterns for more detail.  
+Set the date strf pattern variable. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--restrict-names`  
 Set all file and folder names to be limited to only the ascii character set.  
 
