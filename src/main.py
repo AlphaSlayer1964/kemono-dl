@@ -272,6 +272,16 @@ class downloader:
             href_links = content_soup.find_all(href=True)
             clean_post['links'] = [href_link['href'] for href_link in href_links]
 
+    def get_dms(self, post:dict):
+        # no api method to get comments so using from html (not future proof)
+        post_url = "https://{site}/{service}/user/{user_id}/dms".format(**post)
+        response = requests.get(url=post_url, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
+        page_soup = BeautifulSoup(response.text, 'html.parser')
+        if page_soup.find("div", {"class": "no-results"}):
+            return ''
+        dms_soup = page_soup.find("div", {"class": "card-list__items"})
+        return dms_soup.prettify()
+
     def clean_post(self, post:dict, user:dict, site:str):
         '''
         CLEAN!
@@ -544,6 +554,14 @@ class downloader:
 
         self.parse_urls()
 
+        if self.k_fav_posts or self.k_fav_users:
+            if not 'kemono' in self.sites:
+                self.sites.append('kemono')
+
+        if self.c_fav_posts or self.c_fav_users:
+            if not 'coomer' in self.sites:
+                self.sites.append('coomer')
+
         for site in self.sites:
             try:
                 self.get_creators(site)
@@ -552,22 +570,22 @@ class downloader:
 
         if self.k_fav_posts:
             try:
-                self.get_favorites('kemono', 'posts')
+                self.get_favorites('kemono', 'post')
             except:
                 logger.exception("Unable to get favorite posts from kemono.party")
         if self.c_fav_posts:
             try:
-                self.get_favorites('coomer', 'posts')
+                self.get_favorites('coomer', 'post')
             except:
                 logger.exception("Unable to get favorite posts from coomer.party")
         if self.k_fav_users:
             try:
-                self.get_favorites('kemono', 'artists', self.k_fav_users)
+                self.get_favorites('kemono', 'artist', self.k_fav_users)
             except:
                 logger.exception("Unable to get favorite users from kemono.party")
         if self.c_fav_users:
             try:
-                self.get_favorites('coomer', 'artists', self.c_fav_users)
+                self.get_favorites('coomer', 'artist', self.c_fav_users)
             except:
                 logger.exception("Unable to get favorite users from coomer.party")
 
