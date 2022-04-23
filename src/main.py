@@ -189,6 +189,7 @@ class downloader:
 
     def set_post_path(self, post):
         drive, tail = os.path.splitdrive(self.download_path_template)
+        tail = tail[1:] if tail[0] in {'/','\\'} else tail
         tail_split = re.split(r'\\|/', tail)
         cleaned_path = drive + os.path.sep if drive else ''
         for folder in tail_split:
