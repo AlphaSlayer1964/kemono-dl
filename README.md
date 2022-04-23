@@ -180,23 +180,23 @@ The hash of the file.
 ## Default Patterns
 `--dirname-pattern`  
 ```python
-'Downloads\{service}\{username} [{user_id}]\[{published}] [{id}] {title}'  
+"Downloads\{service}\{username} [{user_id}]\[{published}] [{id}] {title}"  
 ```
 `--filename-pattern`  
 ```python
-'{index}_{filename}.{ext}'  
+"{index}_{filename}.{ext}"  
 ```
 `--inline-filename-pattern`  
 ```python
-'inline\{index}_{filename}.{ext}'  
+"inline\{index}_{filename}.{ext}"  
 ```
 `--content-filename-pattern`  
 ```python
-'[{id}]_{filename}.{ext}'  
+"[{id}]_{filename}.{ext}"  
 ```
 `--date-strf-pattern`  
 ```python
-'%Y%m%d'  
+"%Y%m%d"  
 ```
 
 ## Examples
