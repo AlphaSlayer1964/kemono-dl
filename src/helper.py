@@ -56,7 +56,7 @@ def clean_file_name(file_name:str):
         file_name = '_'
     file_name = re.sub(r'[\x00-\x1f\\/:\"*?<>\|]','_', file_name)
     file_name, file_extension = os.path.splitext(file_name)
-    return file_name[:255-len(file_extension)] + file_extension
+    return file_name[:255-len(file_extension)-5] + file_extension
 
 def restrict_ascii(string:str):
     return re.sub(r'[^\x21-\x7f]','_',string)
