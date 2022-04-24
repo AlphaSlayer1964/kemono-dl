@@ -46,11 +46,13 @@ Write the post comments to a html file.
 Write the post json to a file.  
 `--extract-links`  
 Write extracted links from post content to a text file.  
+`--dms`  
+Write user dms to a html file. Only works when a user url is passed.  
 `--icon`  
-Download the users profile icon.  
+Download the users profile icon. Only works when a user url is passed.  
 `--banner`  
-Download the users profile banner.  
-`--yt-dlp`  
+Download the users profile banner. Only works when a user url is passed.  
+`--yt-dlp` (UNDER CONSTRUCTION)  
 Try to download the post embed with yt-dlp.  
 `--skip-attachments`  
 Do not download post attachments.  
@@ -65,8 +67,10 @@ Set the file path pattern for where files are downloaded. See [Output Patterns](
 Set the file name pattern for attachments. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--inline-filename-pattern PATTERN`  
 Set the file name pattern for inline images. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
-`--content-filename-pattern PATTERN`  
-Set the file name pattern for content file. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
+`--other-filename-pattern PATTERN`  
+Set the file name pattern for post content, extracted links, and json. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
+`--user-filename-pattern PATTERN`  
+Set the file name pattern for icon, banner, and dms. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--date-strf-pattern PATTERN`  
 Set the date strf pattern variable. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
 `--restrict-names`  
@@ -109,7 +113,7 @@ Suppress printing except for warnings, errors, and exceptions.
 Simulate the given command and do not write to disk.  
 `--no-part-files`  
 Do not save attachments or inline images as .part files while downloading. Files partially downloaded will not be resumed if program stops.  
-`--yt-dlp-args ARGS`  
+`--yt-dlp-args ARGS` (UNDER CONSTRUCTION)  
 The args yt-dlp will use to download with. Formatted as a python dictionary object.  
 `--post-timeout SEC`  
 The time in seconds to wait between downloading posts. (default: 0)  
@@ -129,9 +133,9 @@ The time in seconds to wait after being ratelimited (default: 120)
         -   If it is correct but the downloader said the hash was wrong please report it in the [pinned issue]() so I can report it to the .party site.
 -   Some files do not have the file size in the response header and will not be downloaded when using `--min-filesize` or `--max-filesize`.
     -   `.pdf` is a known file type that will never return file size from response headers.
--   Gumroad posts published date is set to 0001-01-01 since that information is not provided.
-    - Because of this `--date`, `--datebefore`, and `--dateafter` will not work as intended on Gumroad posts.  
+-   Gumroad posts published date is not provided so `--date`, `--datebefore`, and `--dateafter` will always skip Gumroad posts.  
 -   Files will not be overwritten by default.
+-   Inline images default names are the file hash.
 -   For getting `--yt-dlp` to work please follow its instillation [guide](https://github.com/yt-dlp/yt-dlp#installation=).
 -   For `--yt-dlp-args ARGS` refer to this for available [options](https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/YoutubeDL.py#L181). 
 
@@ -180,19 +184,23 @@ The hash of the file.
 ## Default Patterns
 `--dirname-pattern`  
 ```python
-"Downloads\{service}\{username} [{user_id}]\[{published}] [{id}] {title}"  
+"Downloads\{service}\{username} [{user_id}]"  
 ```
 `--filename-pattern`  
 ```python
-"{index}_{filename}.{ext}"  
+"[{published}] [{id}] {title}\{index}_{filename}.{ext}"  
 ```
 `--inline-filename-pattern`  
 ```python
-"inline\{index}_{filename}.{ext}"  
+"[{published}] [{id}] {title}\inline\{index}_{filename}.{ext}"  
 ```
-`--content-filename-pattern`  
+`--other-filename-pattern`  
 ```python
-"[{id}]_{filename}.{ext}"  
+"[{published}] [{id}] {title}\[{id}]_{filename}.{ext}"  
+```
+`--user-filename-pattern`  
+```python
+"[{user_id}]_{filename}.{ext}"  
 ```
 `--date-strf-pattern`  
 ```python
