@@ -62,13 +62,17 @@ def get_args():
                     action='store_true', default=False,
                     help="Write extracted links from post content to a text file.")
 
+    ap.add_argument("--dms",
+                    action='store_true', default=False,
+                    help="Write user dms to a html file. Only works when a user url is passed.")
+
     ap.add_argument("--icon",
                     action='store_true', default=False,
-                    help="Download the users profile icon.")
+                    help="Download the users profile icon. Only works when a user url is passed.")
 
     ap.add_argument("--banner",
                     action='store_true', default=False,
-                    help="Download the users profile banner.")
+                    help="Download the users profile banner. Only works when a user url is passed.")
 
     ap.add_argument("--yt-dlp",
                     action='store_true', default=False,
@@ -85,20 +89,24 @@ def get_args():
 
 
     ap.add_argument("--dirname-pattern",
-                    metavar="DIRNAME_PATTERN", type=str, default='Downloads\{service}\{username} [{user_id}]\[{published}] [{id}] {title}',
+                    metavar="DIRNAME_PATTERN", type=str, default='Downloads\{service}\{username} [{user_id}]',
                     help="Set the file path pattern for where files are downloaded. See Output Patterns for more detail.")
 
     ap.add_argument("--filename-pattern",
-                    metavar="FILENAME_PATTERN", type=str, default='{index}_{filename}.{ext}',
+                    metavar="FILENAME_PATTERN", type=str, default='[{published}] [{id}] {title}\{index}_{filename}.{ext}',
                     help="Set the file name pattern for attachments. See Output Patterns for more detail.")
 
     ap.add_argument("--inline-filename-pattern",
-                    metavar="INLINE_FILENAME_PATTERN", type=str, default='inline\{index}_{filename}.{ext}',
+                    metavar="INLINE_FILENAME_PATTERN", type=str, default='[{published}] [{id}] {title}\inline\{index}_{filename}.{ext}',
                     help="Set the file name pattern for inline images. See Output Patterns for more detail.")
 
-    ap.add_argument("--content-filename-pattern",
-                    metavar="CONTENT_FILENAME_PATTERN", type=str, default='[{id}]_{filename}.{ext}',
-                    help="Set the file name pattern for content file. See Output Patterns for more detail.")
+    ap.add_argument("--other-filename-pattern",
+                    metavar="OTHER_FILENAME_PATTERN", type=str, default='[{published}] [{id}] {title}\[{id}]_{filename}.{ext}',
+                    help="Set the file name pattern for post content, extracted links, json. See Output Patterns for more detail.")
+
+    ap.add_argument("--user-filename-pattern",
+                    metavar="USER_FILENAME_PATTERN", type=str, default='[{user_id}]_{filename}.{ext}',
+                    help="Set the file name pattern for icon, banner and dms. See Output Patterns for more detail.")
 
     ap.add_argument("--date-strf-pattern",
                     metavar="DATE_STRF_PATTERN", type=str, default='%Y%m%d',
