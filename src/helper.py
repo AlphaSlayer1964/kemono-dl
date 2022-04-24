@@ -3,6 +3,39 @@ import hashlib
 import os
 import time
 
+def parse_url(url):
+    # parse urls
+    downloadable = re.search(r'^https://(kemono\.party|coomer\.party)/([^/]+)/user/([^/]+)($|/post/([^/]+)$)',url)
+    if not downloadable:
+        return None
+    return downloadable.group(1)
+
+def compile_post_path(post_variables, template, ascii):
+    drive, tail = os.path.splitdrive(template)
+    tail = tail[1:] if tail[0] in {'/','\\'} else tail
+    tail_split = re.split(r'\\|/', tail)
+    cleaned_path = drive + os.path.sep if drive else ''
+    for folder in tail_split:
+        if ascii:
+            cleaned_path = os.path.join(cleaned_path, restrict_ascii(clean_folder_name(folder.format(**post_variables))))
+        else:
+            cleaned_path = os.path.join(cleaned_path, clean_folder_name(folder.format(**post_variables)))
+    return cleaned_path
+
+def compile_file_path(post_path, post_variables, file_variables, template, ascii):
+    file_split = re.split(r'\\|/', template)
+    if len(file_split) > 1:
+        for folder in file_split[:-1]:
+            if ascii:
+                post_path = os.path.join(post_path, restrict_ascii(clean_folder_name(folder.format(**file_variables, **post_variables))))
+            else:
+                post_path = os.path.join(post_path, clean_folder_name(folder.format(**file_variables, **post_variables)))
+    if ascii:
+        cleaned_file = restrict_ascii(clean_file_name(file_split[-1].format(**file_variables, **post_variables)))
+    else:
+        cleaned_file = clean_file_name(file_split[-1].format(**file_variables, **post_variables))
+    return os.path.join(post_path, cleaned_file)
+
 # get file hash
 def get_file_hash(file:str):
     sha256_hash = hashlib.sha256()
@@ -31,6 +64,8 @@ def restrict_ascii(string:str):
 def check_date(post_date, date, datebefore, dateafter):
     if not date and not datebefore and not dateafter:
         return False
+    if not post_date:
+        return True
     if date:
         if date == post_date:
             return False
