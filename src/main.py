@@ -614,22 +614,22 @@ class downloader:
 
         if self.k_fav_posts:
             try:
-                self.get_favorites('kemono', 'post', retry=self.retry)
+                self.get_favorites('kemono.party', 'post', retry=self.retry)
             except:
                 logger.exception("Unable to get favorite posts from kemono.party")
         if self.c_fav_posts:
             try:
-                self.get_favorites('coomer', 'post')
+                self.get_favorites('coomer.party', 'post')
             except:
                 logger.exception("Unable to get favorite posts from coomer.party")
         if self.k_fav_users:
             try:
-                self.get_favorites('kemono', 'artist', self.k_fav_users)
+                self.get_favorites('kemono.party', 'artist', self.k_fav_users)
             except:
                 logger.exception("Unable to get favorite users from kemono.party")
         if self.c_fav_users:
             try:
-                self.get_favorites('coomer', 'artist', self.c_fav_users)
+                self.get_favorites('coomer.party', 'artist', self.c_fav_users)
             except:
                 logger.exception("Unable to get favorite users from coomer.party")
 
