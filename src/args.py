@@ -102,7 +102,7 @@ def get_args():
 
     ap.add_argument("--other-filename-pattern",
                     metavar="OTHER_FILENAME_PATTERN", type=str, default='[{published}] [{id}] {title}\[{id}]_{filename}.{ext}',
-                    help="Set the file name pattern for post content, extracted links, json. See Output Patterns for more detail.")
+                    help="Set the file name pattern for post content, extracted links, and json. See Output Patterns for more detail.")
 
     ap.add_argument("--user-filename-pattern",
                     metavar="USER_FILENAME_PATTERN", type=str, default='[{user_id}]_{filename}.{ext}',
