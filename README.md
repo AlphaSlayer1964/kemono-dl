@@ -176,9 +176,9 @@ The file extension.
 -   `{filename}`  
 The original file name.  
 -   `{index}`  
-The files index order. (zfilled)  
+The files index order. Only `--filename-pattern` and `--inline-filename-pattern`  
 -   `{hash}`  
-The hash of the file.  
+The hash of the file. Only `--filename-pattern` and `--inline-filename-pattern`    
 
 
 ## Default Patterns
