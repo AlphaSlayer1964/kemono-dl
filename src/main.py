@@ -250,7 +250,8 @@ class downloader:
     def get_inline_images(self, new_post, content_html):
         content_soup = BeautifulSoup(content_html, 'html.parser')
         if self.inline:
-            inline_images = content_soup.find_all("img", {"data-media-id": True})
+            # only get images that are hosted by the .party site
+            inline_images = [inline_image for inline_image in content_soup.find_all("img") if inline_image['src'][0] == '/']
             for index, inline_image in enumerate(inline_images):
                 file = {}
                 filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
