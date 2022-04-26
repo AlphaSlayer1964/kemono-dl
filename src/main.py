@@ -219,10 +219,11 @@ class downloader:
                     'ext':image.format.lower()
                 }
                 file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.user_filename_template, self.restrict_ascii)
-                logger.info(f"Downloading {img_type}: {file_path}")
                 if os.path.exists(file_path):
-                    logger.info("Skipping download | File already exists")
+                    logger.info(f"Skipping: {os.path.split(file_path)[1]} | File already exists")
                     return
+                logger.info(f"Downloading: {os.path.split(file_path)[1]}")
+                logger.debug(f"Downloading to: {file_path}")
                 if not self.simulate:
                     if not os.path.exists(os.path.split(file_path)[0]):
                         os.makedirs(os.path.split(file_path)[0])
@@ -245,7 +246,7 @@ class downloader:
                 'ext':'html'
             }
             file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.user_filename_template, self.restrict_ascii)
-            self.write_to_file(file_path, dms_soup.prettify(), 'direct messages')
+            self.write_to_file(file_path, dms_soup.prettify())
 
     def get_inline_images(self, new_post, content_html):
         content_soup = BeautifulSoup(content_html, 'html.parser')
@@ -395,7 +396,7 @@ class downloader:
         # write post content
         if post['content']['text']:
             try:
-                self.write_to_file(post['content']['file_path'], post['content']['text'], 'content')
+                self.write_to_file(post['content']['file_path'], post['content']['text'])
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to save content")
@@ -404,7 +405,7 @@ class downloader:
         # Write post content links
         if post['links']['text']:
             try:
-                self.write_to_file(post['links']['file_path'], post['links']['text'], 'content links')
+                self.write_to_file(post['links']['file_path'], post['links']['text'])
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to save content links")
@@ -417,24 +418,24 @@ class downloader:
                     'ext':'json'
                 }
                 file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.other_filename_template, self.restrict_ascii)
-                self.write_to_file(file_path, post, 'json')
+                self.write_to_file(file_path, post)
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to save json")
 
-    def write_to_file(self, file_path, file_content, file_type):
+    def write_to_file(self, file_path, file_content):
             # check if file exists and if should overwrite
             if os.path.exists(file_path) and not self.overwrite:
-                logger.info(f"Skipping writing {file_type} | File already exists")
+                logger.info(f"Skipping: {os.path.split(file_path)[1]} | File already exists")
                 return
-            logger.info(f"Writing {file_type} to file")
-            logger.debug(f"Writing {file_type} to: {file_path}")
+            logger.info(f"Writing: {os.path.split(file_path)[1]}")
+            logger.debug(f"Writing to: {file_path}")
             if not self.simulate:
                 # create folder path if it doesn't exist
                 if not os.path.exists(os.path.split(file_path)[0]):
                     os.makedirs(os.path.split(file_path)[0])
                 # write to file
-                if file_type == 'json':
+                if isinstance(file_content, dict):
                     with open(file_path,'w') as f:
                         json.dump(file_content, f, indent=4, sort_keys=True)
                 else:
@@ -445,36 +446,36 @@ class downloader:
         # check if file exists
         if not self.overwrite:
             if os.path.exists(file['file_path']):
-                logger.info(f"Skipping download | File already exists")
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists")
                 return True
 
         # check file name extention
         if self.only_ext:
             if not file['file_variables']['ext'].lower() in self.only_ext:
-                logger.info(f"Skipping download | File extention {file['file_variables']['ext']} not found in include list {self.only_ext}")
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} not found in include list {self.only_ext}")
                 return True
         if self.not_ext:
             if file['file_variables']['ext'].lower() in self.not_ext:
-                logger.info(f"Skipping download | File extention {file['file_variables']['ext']} found in exclude list {self.not_ext}")
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} found in exclude list {self.not_ext}")
                 return True
 
         # check file size
         if self.min_size or self.max_size:
             file_size = requests.get(file['file_variables']['url'], cookies=self.cookies, stream=True).headers.get('content-length', 0)
             if int(file_size) == 0:
-                    logger.info(f"Skipping download | File size not included in file header")
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size not included in file header")
                     return True
             if self.min_size and self.max_size:
                 if not (self.min_size <= int(file_size) <= self.max_size):
-                    logger.info(f"Skipping download | File size in bytes {file_size} was not between {self.min_size} and {self.max_size}")
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not between {self.min_size} and {self.max_size}")
                     return True
             elif self.min_size:
                 if not (self.min_size <= int(file_size)):
-                    logger.info(f"Skipping download | File size in bytes {file_size} was not >= {self.min_size}")
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not >= {self.min_size}")
                     return True
             elif self.max_size:
                 if not (int(file_size) <= self.max_size):
-                    logger.info(f"Skipping download | File size in bytes {file_size} was not <= {self.max_size}")
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not <= {self.max_size}")
                     return True
         return False
 
