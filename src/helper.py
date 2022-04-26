@@ -10,6 +10,7 @@ def parse_url(url):
         return None
     return downloadable.group(1)
 
+# create path from template pattern
 def compile_post_path(post_variables, template, ascii):
     drive, tail = os.path.splitdrive(template)
     tail = tail[1:] if tail[0] in {'/','\\'} else tail
@@ -22,6 +23,7 @@ def compile_post_path(post_variables, template, ascii):
             cleaned_path = os.path.join(cleaned_path, clean_folder_name(folder.format(**post_variables)))
     return cleaned_path
 
+# create file path from template pattern
 def compile_file_path(post_path, post_variables, file_variables, template, ascii):
     file_split = re.split(r'\\|/', template)
     if len(file_split) > 1:
