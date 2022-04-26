@@ -291,6 +291,8 @@ def get_args():
                 temp.append(s.strip().lower())
             else:
                 print(f"--kemono-fav-users {s.strip()} is not a valid option")
+        if len(temp) == 0:
+            print(f"--kemono-fav-users no valid options were passed")
         args['kemono_fav_users'] = temp
 
     if args['coomer_fav_users']:
@@ -300,6 +302,8 @@ def get_args():
                 temp.append(s.strip().lower())
             else:
                 print(f"--coomer-fav-users {s.strip()} is not a valid option")
+        if len(temp) == 0:
+            print(f"--coomer-fav-users no valid options were passed")
         args['coomer_fav_users'] = temp
 
     return args
