@@ -51,7 +51,6 @@ class downloader:
         self.comments = args['comments']
         self.json = args['json']
         self.yt_dlp = args['yt_dlp']
-        self.files = (not args['skip_attachments']) or args['inline']
         self.k_fav_posts = args['kemono_fav_posts']
         self.c_fav_posts = args['coomer_fav_posts']
         self.k_fav_users = args['kemono_fav_users']
@@ -181,9 +180,10 @@ class downloader:
 
     def skip_user(self, user:dict):
         # check last update date
-        if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
-            logger.info("Skipping user | user updated date not in range")
-            return True
+        if self.user_up_datebefore or self.user_up_dateafter:
+            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
+                logger.info("Skipping user | user updated date not in range")
+                return True
         return False
 
     def skip_post(self, post:dict):
@@ -192,9 +192,13 @@ class downloader:
             logger.info("Skipping post | post already archived")
             return True
 
-        if check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
-            logger.info("Skipping post | post published date not in range")
-            return True
+        if self.date or self.datebefore or self.dateafter:
+            if not post['post_variables']['published']:
+                logger.info("Skipping post | post published date not in range")
+                return True
+            elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
+                logger.info("Skipping post | post published date not in range")
+                return True
 
         if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.comp_posts:
             logger.info("Skipping post | post was already downloaded this session")
@@ -481,83 +485,80 @@ class downloader:
 
     def download_file(self, file:dict, retry:int):
         # download a file
-        if self.files:
-            if self.skip_file(file):
+        if self.skip_file(file):
+            return
+        logger.info(f"Downloading: {os.path.split(file['file_path'])[1]}")
+        logger.debug(f"Downloading from: {file['file_variables']['url']}")
+        part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
+        logger.debug(f"Downloading to: {part_file}")
+
+        # try to resume part files
+        resume_size = 0
+        if os.path.exists(part_file) and not self.overwrite:
+            resume_size = os.path.getsize(part_file)
+            logger.info(f"Trying to resuming partial download | Resume size: {resume_size} bytes")
+
+        try:
+            response = self.session.get(url=file['file_variables']['url'], stream=True, headers={**self.headers,'Range':f"bytes={resume_size}-"}, cookies=self.cookies, timeout=self.timeout)
+        except:
+            logger.exception(f"Failed to download {os.path.split(file['file_path'])[1]} | Retrying download")
+            if retry > 0:
+                self.download_file(file, retry=retry-1)
                 return
-            logger.info(f"Downloading: {os.path.split(file['file_path'])[1]}")
-            logger.debug(f"Downloading from: {file['file_variables']['url']}")
-            part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
-            logger.debug(f"Downloading to: {part_file}")
+            raise Exception(f"All retries failed!")
 
-            # try to resume part files
-            resume_size = 0
-            if os.path.exists(part_file) and not self.overwrite:
-                resume_size = os.path.getsize(part_file)
-                logger.info("Trying to resuming partial download | Resume size: {resume_size} bytes")
+        if response.status_code == 404:
+            # doesn't exist
+            raise Exception(f"{response.status_code} {response.reason}")
+        if response.status_code == 403:
+            # ddos guard
+            raise Exception(f"{response.status_code} {response.reason} | Bad cookies")
+        if response.status_code == 416:
+            # bad request range
+            raise Exception(f"{response.status_code} {response.reason} | Bad server file hash!")
+        if response.status_code == 429:
+            # ratelimit
+            logger.warning(f"{response.status_code} {response.reason} | Retrying download in {self.ratelimit_sleep} seconds")
+            time.sleep(self.ratelimit_sleep)
+            if retry > 0:
+                self.download_file(file, retry=retry-1)
+                return
+            raise Exception(f"All retries failed!")
+        if not response.ok:
+            # other
+            raise Exception(f"{response.status_code} {response.reason}")
 
-            self.headers['Range'] = f"bytes={resume_size}-"
+        total = int(response.headers.get('content-length', 0))
+        if total:
+            total += resume_size
 
-            try:
-                response = self.session.get(url=file['file_variables']['url'], stream=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
-            except:
-                logger.exception(f"Failed to download {os.path.split(file['file_path'])[1]} | Retrying download")
+        if not self.simulate:
+            if not os.path.exists(os.path.split(file['file_path'])[0]):
+                os.makedirs(os.path.split(file['file_path'])[0])
+            with open(part_file, 'ab') as f:
+                start = time.time()
+                downloaded = resume_size
+                for chunk in response.iter_content(chunk_size=1024*1024):
+                    downloaded += len(chunk)
+                    f.write(chunk)
+                    print_download_bar(total, downloaded, resume_size, start)
+            print()
+
+            # verify download
+            local_hash = get_file_hash(part_file)
+            logger.debug(f"Local File hash: {local_hash}")
+            logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
+            if not local_hash == file['file_variables']['hash']:
+                logger.warning(f"File hash did not match server! | Retrying download")
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
                 raise Exception(f"All retries failed!")
 
-            if response.status_code == 404:
-                # doesn't exist
-                raise Exception(f"{response.status_code} {response.reason}")
-            if response.status_code == 403:
-                # ddos guard
-                raise Exception(f"{response.status_code} {response.reason} | Bad cookies")
-            if response.status_code == 416:
-                # bad request range
-                raise Exception(f"{response.status_code} {response.reason} | Bad server file hash!")
-            if response.status_code == 429:
-                # ratelimit
-                logger.warning(f"{response.status_code} {response.reason} | Retrying download in {self.ratelimit_sleep} seconds")
-                time.sleep(self.ratelimit_sleep)
-                if retry > 0:
-                    self.download_file(file, retry=retry-1)
-                    return
-                raise Exception(f"All retries failed!")
-            if not response.ok:
-                # other
-                raise Exception(f"{response.status_code} {response.reason}")
-
-            total = int(response.headers.get('content-length', 0))
-            if total:
-                total += resume_size
-
-            if not self.simulate:
-                if not os.path.exists(os.path.split(file['file_path'])[0]):
-                    os.makedirs(os.path.split(file['file_path'])[0])
-                with open(part_file, 'ab') as f:
-                    start = time.time()
-                    downloaded = resume_size
-                    for chunk in response.iter_content(chunk_size=1024*1024):
-                        downloaded += len(chunk)
-                        f.write(chunk)
-                        print_download_bar(total, downloaded, resume_size, start)
-                print()
-
-                # verify download
-                local_hash = get_file_hash(part_file)
-                logger.debug(f"Local File hash: {local_hash}")
-                logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
-                if not local_hash == file['file_variables']['hash']:
-                    logger.warning(f"File hash did not match server! | Retrying download")
-                    if retry > 0:
-                        self.download_file(file, retry=retry-1)
-                        return
-                    raise Exception(f"All retries failed!")
-
-                if self.overwrite:
-                    os.replace(part_file, file['file_path'])
-                else:
-                    os.rename(part_file, file['file_path'])
+            if self.overwrite:
+                os.replace(part_file, file['file_path'])
+            else:
+                os.rename(part_file, file['file_path'])
 
     def download_yt_dlp(self, post:dict):
         # download from video streaming site
