@@ -64,10 +64,6 @@ def restrict_ascii(string:str):
     return re.sub(r'[^\x21-\x7f]','_',string)
 
 def check_date(post_date, date, datebefore, dateafter):
-    if not date and not datebefore and not dateafter:
-        return False
-    if not post_date:
-        return True
     if date:
         if date == post_date:
             return False
