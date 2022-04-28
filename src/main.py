@@ -385,7 +385,7 @@ class downloader:
                 self.download_file(file, retry=self.retry)
             except:
                 self.post_errors += 1
-                logger.exception(f"Failed to download {file['file_path']}")
+                logger.exception(f"Failed to download: {file['file_path']}")
 
     def download_inline(self, post:dict):
         # download the post inline files
@@ -394,7 +394,7 @@ class downloader:
                 self.download_file(file, retry=self.retry)
             except:
                 self.post_errors += 1
-                logger.exception(f"Failed to download {file['file_path']}")
+                logger.exception(f"Failed to download: {file['file_path']}")
 
     def write_content(self, post:dict):
         # write post content
@@ -487,12 +487,14 @@ class downloader:
         # download a file
         if self.skip_file(file):
             return
+
+        part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
+
         logger.info(f"Downloading: {os.path.split(file['file_path'])[1]}")
         logger.debug(f"Downloading from: {file['file_variables']['url']}")
-        part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
         logger.debug(f"Downloading to: {part_file}")
 
-        # try to resume part files
+        # try to resume part file
         resume_size = 0
         if os.path.exists(part_file) and not self.overwrite:
             resume_size = os.path.getsize(part_file)
@@ -501,32 +503,52 @@ class downloader:
         try:
             response = self.session.get(url=file['file_variables']['url'], stream=True, headers={**self.headers,'Range':f"bytes={resume_size}-"}, cookies=self.cookies, timeout=self.timeout)
         except:
-            logger.exception(f"Failed to download {os.path.split(file['file_path'])[1]} | Retrying download")
+            logger.exception(f"Failed to get responce: {file['file_variables']['url']} | Retrying")
             if retry > 0:
                 self.download_file(file, retry=retry-1)
                 return
-            raise Exception(f"All retries failed!")
+            logger.error(f"Failed to get responce: {file['file_variables']['url']} | All retries failed")
+            self.post_errors += 1
+            return
 
+        # responce status code checking
         if response.status_code == 404:
-            # doesn't exist
-            raise Exception(f"{response.status_code} {response.reason}")
+            logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 404 Not Found")
+            self.post_errors += 1
+            return
+
         if response.status_code == 403:
-            # ddos guard
-            raise Exception(f"{response.status_code} {response.reason} | Bad cookies")
+            logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 403 Forbidden")
+            self.post_errors += 1
+            return
+
         if response.status_code == 416:
-            # bad request range
-            raise Exception(f"{response.status_code} {response.reason} | Bad server file hash!")
+            logger.warning(f"Failed to download: {os.path.split(file['file_path'])[1]} | 416 Range Not Satisfiable | Assuming broken server hash value")
+            content_length = self.session.get(url=file['file_variables']['url'], stream=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout).headers.get('content-length', '')
+            if content_length == resume_size:
+                logger.debug("Correct amount of bytes downloaded | Assuming download completed successfully")
+                if self.overwrite:
+                    os.replace(part_file, file['file_path'])
+                else:
+                    os.rename(part_file, file['file_path'])
+                return
+            logger.error("Incorrect amount of bytes downloaded | Something went so wrong I have no idea what happened")
+            self.post_errors += 1
+            return
+
         if response.status_code == 429:
-            # ratelimit
-            logger.warning(f"{response.status_code} {response.reason} | Retrying download in {self.ratelimit_sleep} seconds")
+            logger.warning(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | Sleeping for {self.ratelimit_sleep} seconds")
             time.sleep(self.ratelimit_sleep)
             if retry > 0:
                 self.download_file(file, retry=retry-1)
                 return
-            raise Exception(f"All retries failed!")
+            logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | All retries failed")
+            self.post_errors += 1
+            return
         if not response.ok:
-            # other
-            raise Exception(f"{response.status_code} {response.reason}")
+            logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | {response.status_code} {response.reason}")
+            self.post_errors += 1
+            return
 
         total = int(response.headers.get('content-length', 0))
         if total:
@@ -548,13 +570,14 @@ class downloader:
             local_hash = get_file_hash(part_file)
             logger.debug(f"Local File hash: {local_hash}")
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
-            if not local_hash == file['file_variables']['hash']:
-                logger.warning(f"File hash did not match server! | Retrying download")
+            if local_hash != file['file_variables']['hash']:
+                logger.warning(f"File hash did not match server! | Retrying")
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
-                raise Exception(f"All retries failed!")
-
+                logger.error(f"File hash did not match server! | All retries failed")
+                return
+            # remove .part from file name
             if self.overwrite:
                 os.replace(part_file, file['file_path'])
             else:
