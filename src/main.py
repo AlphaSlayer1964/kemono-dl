@@ -532,7 +532,8 @@ class downloader:
                 else:
                     os.rename(part_file, file['file_path'])
                 return
-            logger.error("Incorrect amount of bytes downloaded | Something went so wrong I have no idea what happened")
+            logger.error("Incorrect amount of bytes downloaded | Something went so wrong I have no idea what happened | Removing file")
+            os.remove(part_file)
             self.post_errors += 1
             return
 
@@ -575,7 +576,9 @@ class downloader:
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
-                logger.error(f"File hash did not match server! | All retries failed")
+                logger.error(f"File hash did not match server! | All retries failed | Removing file")
+                os.remove(part_file)
+                self.post_errors += 1
                 return
             # remove .part from file name
             if self.overwrite:
