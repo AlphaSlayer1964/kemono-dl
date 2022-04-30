@@ -578,8 +578,7 @@ class downloader:
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
-                logger.error(f"File hash did not match server! | All retries failed | Removing file")
-                os.remove(part_file)
+                logger.error(f"File hash did not match server! | All retries failed")
                 self.post_errors += 1
                 return
             # remove .part from file name
