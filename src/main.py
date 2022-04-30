@@ -123,6 +123,7 @@ class downloader:
                 if not (favorite['service'] in services or 'all' in services):
                     logger.info(f"Skipping user {favorite['name']} | Service {favorite['service']} was not requested")
                     continue
+                logger.info(f"\nDownloading user {favorite['name']} | Service {favorite['service']}")
                 self.get_post(f"https://{domain}/{favorite['service']}/user/{favorite['id']}")
 
     def get_post(self, url:str):
