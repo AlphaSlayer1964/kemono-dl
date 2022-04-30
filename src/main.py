@@ -418,7 +418,7 @@ class downloader:
         if self.json:
             try:
                 file_variables = {
-                    'filename':'json',
+                    'filename':'post',
                     'ext':'json'
                 }
                 file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.other_filename_template, self.restrict_ascii)
