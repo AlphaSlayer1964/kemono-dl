@@ -576,6 +576,9 @@ class downloader:
             if local_hash != file['file_variables']['hash']:
                 logger.warning(f"File hash did not match server! | Retrying")
                 if retry > 0:
+                    #add delay to prevent failed retry attempt
+                    logger.info(f"Sleep 10 secs")
+                    time.sleep(10)
                     self.download_file(file, retry=retry-1)
                     return
                 logger.error(f"File hash did not match server! | All retries failed")
