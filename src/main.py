@@ -142,6 +142,7 @@ class downloader:
         if not is_post:
             if self.skip_user(user):
                 return
+        logger.info(f"Downloading posts from {site}.party | service:{service} | user:{user['name']}")
         chunk = 0
         first = True
         while True:
@@ -367,7 +368,8 @@ class downloader:
         return new_post
 
     def download_post(self, post:dict):
-        logger.info("Starting Post | {title}".format(**post['post_variables']))
+        # might look buggy if title has new lines in it
+        logger.info("Downloading Post | {title}".format(**post['post_variables']))
         logger.debug("Post URL: https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
         self.download_attachments(post)
         self.download_inline(post)
