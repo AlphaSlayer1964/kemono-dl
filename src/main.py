@@ -142,7 +142,7 @@ class downloader:
         if not is_post:
             if self.skip_user(user):
                 return
-        logger.info(f"Downloading posts from {site}.party | service:{service} | user:{user['name']}")
+        logger.info(f"Downloading user {user['name']} [{user['id']}] | {service}")
         chunk = 0
         first = True
         while True:
