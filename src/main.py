@@ -87,7 +87,7 @@ class downloader:
         retries = Retry(
             total=self.retry,
             backoff_factor=0.1,
-            status_forcelist=[ 429, 500, 502, 503, 504 ]
+            status_forcelist=[ 500, 502, 503, 504 ]
         )
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
@@ -106,7 +106,7 @@ class downloader:
                 return creator
         return None
 
-    def get_favorites(self, domain:str, fav_type:str, services:list = None, retry:int = 3):
+    def get_favorites(self, domain:str, fav_type:str, services:list = None):
         fav_api = f'https://{domain}/api/favorites?type={fav_type}'
         logger.debug(f"Getting favorite json from {fav_api}")
         response = self.session.get(url=fav_api, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
@@ -137,12 +137,12 @@ class downloader:
         is_post = found.group(6)
         user = self.get_user(user_id, service)
         if not user:
-            logger.error(f"Unable to find user info in creators list | service:{service} user_id:{user_id}")
+            logger.error(f"Unable to find user info in creators list | {service} | {user_id}")
             return
         if not is_post:
             if self.skip_user(user):
                 return
-        logger.info(f"Downloading posts from {site}.party | service:{service} | user:{user['name']}")
+        logger.info(f"Downloading posts from {site}.party | {service} | {user['name']} | {user['id']}")
         chunk = 0
         first = True
         while True:
@@ -163,7 +163,8 @@ class downloader:
                 # only download once
                 if not is_post and first:
                     self.download_icon_banner(post, self.icon_banner)
-                    self.write_dms(post)
+                    if self.dms:
+                        self.write_dms(post)
                     first = False
                 if self.skip_post(post):
                     continue
@@ -179,33 +180,6 @@ class downloader:
                 return # completed
             chunk += 25
 
-    def skip_user(self, user:dict):
-        # check last update date
-        if self.user_up_datebefore or self.user_up_dateafter:
-            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
-                logger.info("Skipping user | user updated date not in range")
-                return True
-        return False
-
-    def skip_post(self, post:dict):
-        # check if the post should be downloaded
-        if self.check_archive(post):
-            logger.info("Skipping post | post already archived")
-            return True
-
-        if self.date or self.datebefore or self.dateafter:
-            if not post['post_variables']['published']:
-                logger.info("Skipping post | post published date not in range")
-                return True
-            elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
-                logger.info("Skipping post | post published date not in range")
-                return True
-
-        if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.comp_posts:
-            logger.info("Skipping post | post was already downloaded this session")
-            return True
-
-        return False
 
     def download_icon_banner(self, post:dict, img_types:list):
         for img_type in img_types:
@@ -237,83 +211,76 @@ class downloader:
                 logger.error(f"Unable to download profile {img_type} for {post['post_variables']['username']}")
 
     def write_dms(self, post:dict):
-        if self.dms:
-            # no api method to get comments so using from html (not future proof)
-            post_url = "https://{site}/{service}/user/{user_id}/dms".format(**post['post_variables'])
-            response = self.session.get(url=post_url, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
-            page_soup = BeautifulSoup(response.text, 'html.parser')
-            if page_soup.find("div", {"class": "no-results"}):
-                logger.info("No DMs found for https://{site}/{service}/user/{user_id}".format(**post['post_variables']))
-                return
-            dms_soup = page_soup.find("div", {"class": "card-list__items"})
-            file_variables = {
-                'filename':'direct messages',
-                'ext':'html'
-            }
-            file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.user_filename_template, self.restrict_ascii)
-            self.write_to_file(file_path, dms_soup.prettify())
+        # no api method to get comments so using from html (not future proof)
+        post_url = "https://{site}/{service}/user/{user_id}/dms".format(**post['post_variables'])
+        response = self.session.get(url=post_url, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
+        page_soup = BeautifulSoup(response.text, 'html.parser')
+        if page_soup.find("div", {"class": "no-results"}):
+            logger.info("No DMs found for https://{site}/{service}/user/{user_id}".format(**post['post_variables']))
+            return
+        dms_soup = page_soup.find("div", {"class": "card-list__items"})
+        file_variables = {
+            'filename':'direct messages',
+            'ext':'html'
+        }
+        file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.user_filename_template, self.restrict_ascii)
+        self.write_to_file(file_path, dms_soup.prettify())
 
-    def get_inline_images(self, new_post, content_html):
-        content_soup = BeautifulSoup(content_html, 'html.parser')
-        if self.inline:
-            # only get images that are hosted by the .party site
-            inline_images = [inline_image for inline_image in content_soup.find_all("img") if inline_image['src'][0] == '/']
-            for index, inline_image in enumerate(inline_images):
-                file = {}
-                filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
-                m = re.search(r'[a-zA-Z0-9]{64}', inline_image['src'])
-                file_hash = m.group(0) if m else None
-                file['file_variables'] = {
-                    'filename': filename,
-                    'ext': file_extension[1:],
-                    'url': f"https://{new_post['post_variables']['site']}/data{inline_image['src']}",
-                    'hash': file_hash,
-                    'index': f"{index + 1}".zfill(len(str(len(inline_images))))
-                }
-                file['file_path'] = compile_file_path(new_post['post_path'], new_post['post_variables'], file['file_variables'], self.inline_filename_template, self.restrict_ascii)
-                # set local image location in html
-                inline_image['src'] = file['file_path']
-                new_post['inline_images'].append(file)
+    def get_inline_images(self, post, content_soup):
+        # only get images that are hosted by the .party site
+        inline_images = [inline_image for inline_image in content_soup.find_all("img") if inline_image['src'][0] == '/']
+        for index, inline_image in enumerate(inline_images):
+            file = {}
+            filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
+            m = re.search(r'[a-zA-Z0-9]{64}', inline_image['src'])
+            file_hash = m.group(0) if m else None
+            file['file_variables'] = {
+                'filename': filename,
+                'ext': file_extension[1:],
+                'url': f"https://{post['post_variables']['site']}/data{inline_image['src']}",
+                'hash': file_hash,
+                'index': f"{index + 1}".zfill(len(str(len(inline_images))))
+            }
+            file['file_path'] = compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.inline_filename_template, self.restrict_ascii)
+            # set local image location in html
+            inline_image['src'] = file['file_path']
+            post['inline_images'].append(file)
         return content_soup
 
-    def compile_content_links(self, new_post, content_soup):
-        if self.extract_links:
-            href_links = content_soup.find_all(href=True)
-            new_post['links']['text'] = ''
-            for href_link in href_links:
-                new_post['links']['text'] += f"{href_link['href']}\n"
-            new_post['links']['file_variables'] = {
-                'filename':'links',
-                'ext':'txt'
-            }
-            new_post['links']['file_path'] = compile_file_path(new_post['post_path'], new_post['post_variables'], new_post['links']['file_variables'], self.other_filename_template, self.restrict_ascii)
+    def compile_content_links(self, post, content_soup, embed_links):
+        href_links = content_soup.find_all(href=True)
+        post['links']['text'] = embed_links
+        for href_link in href_links:
+            post['links']['text'] += f"{href_link['href']}\n"
+        post['links']['file_variables'] = {
+            'filename':'links',
+            'ext':'txt'
+        }
+        post['links']['file_path'] = compile_file_path(post['post_path'], post['post_variables'], post['links']['file_variables'], self.other_filename_template, self.restrict_ascii)
 
     def get_comments(self, post_variables:dict):
-        if self.comments:
-            try:
-                # no api method to get comments so using from html (not future proof)
-                post_url = "https://{site}/{service}/user/{user_id}/post/{id}".format(**post_variables)
-                response = self.session.get(url=post_url, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
-                page_soup = BeautifulSoup(response.text, 'html.parser')
-                comment_soup = page_soup.find("div", {"class": "post__comments"})
-                no_comments = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_soup.text)
-                if no_comments:
-                    logger.debug(no_comments.group(1).strip())
-                    return ''
-                return comment_soup.prettify()
-            except:
-                self.post_errors += 1
-                logger.exception("Failed to get post comments")
-        return ''
+        try:
+            # no api method to get comments so using from html (not future proof)
+            post_url = "https://{site}/{service}/user/{user_id}/post/{id}".format(**post_variables)
+            response = self.session.get(url=post_url, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
+            page_soup = BeautifulSoup(response.text, 'html.parser')
+            comment_soup = page_soup.find("div", {"class": "post__comments"})
+            no_comments = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_soup.text)
+            if no_comments:
+                logger.debug(no_comments.group(1).strip())
+                return ''
+            return comment_soup.prettify()
+        except:
+            self.post_errors += 1
+            logger.exception("Failed to get post comments")
 
-    def compile_post_content(self, new_post, content_soup, comment_soup, embed):
-        if (self.content or self.comments) and (content_soup or comment_soup or embed):
-            new_post['content']['text'] = f"{content_soup}\n{embed}\n{comment_soup}"
-            new_post['content']['file_variables'] = {
-                'filename':'content',
-                'ext':'html'
-            }
-            new_post['content']['file_path'] = compile_file_path(new_post['post_path'], new_post['post_variables'], new_post['content']['file_variables'], self.other_filename_template, self.restrict_ascii)
+    def compile_post_content(self, post, content_soup, comment_soup, embed):
+        post['content']['text'] = f"{content_soup}\n{embed}\n{comment_soup}"
+        post['content']['file_variables'] = {
+            'filename':'content',
+            'ext':'html'
+        }
+        post['content']['file_path'] = compile_file_path(post['post_path'], post['post_variables'], post['content']['file_variables'], self.other_filename_template, self.restrict_ascii)
 
     def clean_post(self, post:dict, user:dict, domain:str):
         new_post = {}
@@ -354,16 +321,21 @@ class downloader:
                 new_post['attachments'].append(file)
 
         new_post['inline_images'] = []
-        content_soup = self.get_inline_images(new_post, post['content'])
+        content_soup = BeautifulSoup(post['content'], 'html.parser')
+        if self.inline:
+            content_soup = self.get_inline_images(new_post, content_soup)
 
-        new_post['links'] = {'text':None,'file_variables':None, 'file_path':None}
-        self.compile_content_links(new_post, content_soup)
-
-        comment_soup = self.get_comments(new_post['post_variables'])
+        comment_soup = self.get_comments(new_post['post_variables']) if self.comments else ''
 
         new_post['content'] = {'text':None,'file_variables':None, 'file_path':None}
         embed = "{subject}\n{url}\n{description}".format(**post['embed']) if post['embed'] else ''
-        self.compile_post_content(new_post, content_soup.prettify(), comment_soup, embed)
+        if (self.content or self.comments) and (content_soup or comment_soup or embed):
+            self.compile_post_content(new_post, content_soup.prettify(), comment_soup, embed)
+
+        new_post['links'] = {'text':None,'file_variables':None, 'file_path':None}
+        embed_url = "{url}\n".format(**post['embed']) if post['embed'] else ''
+        if self.extract_links:
+            self.compile_content_links(new_post, content_soup, embed_url)
 
         return new_post
 
@@ -375,7 +347,8 @@ class downloader:
         self.download_inline(post)
         self.write_content(post)
         self.write_links(post)
-        self.write_json(post)
+        if self.json:
+            self.write_json(post)
         self.download_yt_dlp(post)
         self.write_archive(post)
         self.post_errors = 0
@@ -417,73 +390,36 @@ class downloader:
                 logger.exception(f"Failed to save content links")
 
     def write_json(self, post:dict):
-        if self.json:
-            try:
-                file_variables = {
-                    'filename':'json',
-                    'ext':'json'
-                }
-                file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.other_filename_template, self.restrict_ascii)
-                self.write_to_file(file_path, post)
-            except:
-                self.post_errors += 1
-                logger.exception(f"Failed to save json")
+        try:
+            # add this to clean post function
+            file_variables = {
+                'filename':'json',
+                'ext':'json'
+            }
+            file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.other_filename_template, self.restrict_ascii)
+            self.write_to_file(file_path, post)
+        except:
+            self.post_errors += 1
+            logger.exception(f"Failed to save json")
 
     def write_to_file(self, file_path, file_content):
-            # check if file exists and if should overwrite
-            if os.path.exists(file_path) and not self.overwrite:
-                logger.info(f"Skipping: {os.path.split(file_path)[1]} | File already exists")
-                return
-            logger.info(f"Writing: {os.path.split(file_path)[1]}")
-            logger.debug(f"Writing to: {file_path}")
-            if not self.simulate:
-                # create folder path if it doesn't exist
-                if not os.path.exists(os.path.split(file_path)[0]):
-                    os.makedirs(os.path.split(file_path)[0])
-                # write to file
-                if isinstance(file_content, dict):
-                    with open(file_path,'w') as f:
-                        json.dump(file_content, f, indent=4, sort_keys=True)
-                else:
-                    with open(file_path,'wb') as f:
-                        f.write(file_content.encode("utf-16"))
-
-    def skip_file(self, file:dict):
-        # check if file exists
-        if not self.overwrite:
-            if os.path.exists(file['file_path']):
-                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists")
-                return True
-
-        # check file name extention
-        if self.only_ext:
-            if not file['file_variables']['ext'].lower() in self.only_ext:
-                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} not found in include list {self.only_ext}")
-                return True
-        if self.not_ext:
-            if file['file_variables']['ext'].lower() in self.not_ext:
-                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} found in exclude list {self.not_ext}")
-                return True
-
-        # check file size
-        if self.min_size or self.max_size:
-            file_size = requests.get(file['file_variables']['url'], cookies=self.cookies, stream=True).headers.get('content-length', 0)
-            if int(file_size) == 0:
-                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size not included in file header")
-                    return True
-            if self.min_size and self.max_size:
-                if not (self.min_size <= int(file_size) <= self.max_size):
-                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not between {self.min_size} and {self.max_size}")
-                    return True
-            elif self.min_size:
-                if not (self.min_size <= int(file_size)):
-                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not >= {self.min_size}")
-                    return True
-            elif self.max_size:
-                if not (int(file_size) <= self.max_size):
-                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not <= {self.max_size}")
-                    return True
-        return False
+        # check if file exists and if should overwrite
+        if os.path.exists(file_path) and not self.overwrite:
+            logger.info(f"Skipping: {os.path.split(file_path)[1]} | File already exists")
+            return
+        logger.info(f"Writing: {os.path.split(file_path)[1]}")
+        logger.debug(f"Writing to: {file_path}")
+        if not self.simulate:
+            # create folder path if it doesn't exist
+            if not os.path.exists(os.path.split(file_path)[0]):
+                os.makedirs(os.path.split(file_path)[0])
+            # write to file
+            if isinstance(file_content, dict):
+                with open(file_path,'w') as f:
+                    json.dump(file_content, f, indent=4, sort_keys=True)
+            else:
+                with open(file_path,'wb') as f:
+                    f.write(file_content.encode("utf-16"))
 
     def download_file(self, file:dict, retry:int):
         # download a file
@@ -594,22 +530,83 @@ class downloader:
             # my_yt_dlp(post['embed']['url'], post['post_path'], self.yt_dlp_args)
 
     def load_archive(self):
-        # load archived post
+        # load archived posts
         if self.archive_file and os.path.exists(self.archive_file):
             with open(self.archive_file,'r') as f:
                 self.archive_list = f.read().splitlines()
-
-    def check_archive(self, post:dict):
-        if self.archive_file:
-            if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.archive_list:
-                return True
-            return False
-        return False
 
     def write_archive(self, post:dict):
         if self.archive_file and self.post_errors == 0 and not self.simulate:
             with open(self.archive_file,'a') as f:
                 f.write("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) + '\n')
+
+    def skip_user(self, user:dict):
+        # check last update date
+        if self.user_up_datebefore or self.user_up_dateafter:
+            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
+                logger.info("Skipping user | user updated date not in range")
+                return True
+        return False
+
+    def skip_post(self, post:dict):
+        # check if the post should be downloaded
+        if self.archive_file:
+            if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.archive_list:
+                logger.info("Skipping post | post already archived")
+                return True
+
+        if self.date or self.datebefore or self.dateafter:
+            if not post['post_variables']['published']:
+                logger.info("Skipping post | post published date not in range")
+                return True
+            elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
+                logger.info("Skipping post | post published date not in range")
+                return True
+
+        if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.comp_posts:
+            logger.info("Skipping post | post was already downloaded this session")
+            return True
+
+        return False
+
+    def skip_file(self, file:dict):
+        # check if file exists
+        if not self.overwrite:
+            if os.path.exists(file['file_path']):
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists")
+                return True
+
+        # check file name extention
+        if self.only_ext:
+            if not file['file_variables']['ext'].lower() in self.only_ext:
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} not found in include list {self.only_ext}")
+                return True
+        if self.not_ext:
+            if file['file_variables']['ext'].lower() in self.not_ext:
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File extention {file['file_variables']['ext']} found in exclude list {self.not_ext}")
+                return True
+
+        # check file size
+        if self.min_size or self.max_size:
+            file_size = requests.get(file['file_variables']['url'], cookies=self.cookies, stream=True).headers.get('content-length', 0)
+            if int(file_size) == 0:
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size not included in file header")
+                    return True
+            if self.min_size and self.max_size:
+                if not (self.min_size <= int(file_size) <= self.max_size):
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not between {self.min_size} and {self.max_size}")
+                    return True
+            elif self.min_size:
+                if not (self.min_size <= int(file_size)):
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not >= {self.min_size}")
+                    return True
+            elif self.max_size:
+                if not (int(file_size) <= self.max_size):
+                    logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File size in bytes {file_size} was not <= {self.max_size}")
+                    return True
+        return False
+
+
 
     def start_download(self):
         # start the download process
