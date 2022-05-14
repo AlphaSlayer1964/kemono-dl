@@ -173,6 +173,8 @@ class downloader:
                     if self.post_timeout:
                         logger.info(f"Sleeping for {self.post_timeout} seconds.")
                         time.sleep(self.post_timeout)
+                except KeyboardInterrupt
+                    raise
                 except:
                     logger.exception("Unable to download post | service:{service} user_id:{user_id} post_id:{id}".format(**post['post_variables']))
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
@@ -207,6 +209,8 @@ class downloader:
                     if not os.path.exists(os.path.split(file_path)[0]):
                         os.makedirs(os.path.split(file_path)[0])
                     image.save(file_path, format=image.format)
+            except KeyboardInterrupt
+                raise
             except:
                 logger.error(f"Unable to download profile {img_type} for {post['post_variables']['username']}")
 
@@ -270,6 +274,8 @@ class downloader:
                 logger.debug(no_comments.group(1).strip())
                 return ''
             return comment_soup.prettify()
+        except KeyboardInterrupt
+            raise
         except:
             self.post_errors += 1
             logger.exception("Failed to get post comments")
@@ -358,6 +364,8 @@ class downloader:
         for file in post['attachments']:
             try:
                 self.download_file(file, retry=self.retry)
+            except KeyboardInterrupt
+                raise
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to download: {file['file_path']}")
@@ -367,6 +375,8 @@ class downloader:
         for file in post['inline_images']:
             try:
                 self.download_file(file, retry=self.retry)
+            except KeyboardInterrupt
+                raise
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to download: {file['file_path']}")
@@ -376,6 +386,8 @@ class downloader:
         if post['content']['text']:
             try:
                 self.write_to_file(post['content']['file_path'], post['content']['text'])
+            except KeyboardInterrupt
+                raise
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to save content")
@@ -385,6 +397,8 @@ class downloader:
         if post['links']['text']:
             try:
                 self.write_to_file(post['links']['file_path'], post['links']['text'])
+            except KeyboardInterrupt
+                raise
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to save content links")
@@ -398,6 +412,8 @@ class downloader:
             }
             file_path = compile_file_path(post['post_path'], post['post_variables'], file_variables, self.other_filename_template, self.restrict_ascii)
             self.write_to_file(file_path, post)
+        except KeyboardInterrupt
+            raise
         except:
             self.post_errors += 1
             logger.exception(f"Failed to save json")
@@ -440,6 +456,8 @@ class downloader:
 
         try:
             response = self.session.get(url=file['file_variables']['url'], stream=True, headers={**self.headers,'Range':f"bytes={resume_size}-"}, cookies=self.cookies, timeout=self.timeout)
+        except KeyboardInterrupt
+            raise
         except:
             logger.exception(f"Failed to get responce: {file['file_variables']['url']} | Retrying")
             if retry > 0:
@@ -663,6 +681,8 @@ class downloader:
         for url in urls:
             try:
                 self.get_post(url)
+            except KeyboardInterrupt
+                raise
             except:
                 logger.exception(f"Unable to get posts for {url}")
 
