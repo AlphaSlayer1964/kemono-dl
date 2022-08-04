@@ -641,7 +641,7 @@ class downloader:
 
         if self.k_fav_posts:
             try:
-                self.get_favorites('kemono.party', 'post', retry=self.retry)
+                self.get_favorites('kemono.party', 'post')
             except:
                 logger.exception("Unable to get favorite posts from kemono.party")
         if self.c_fav_posts:
