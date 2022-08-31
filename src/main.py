@@ -511,6 +511,7 @@ class downloader:
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
             if local_hash != file['file_variables']['hash']:
                 logger.warning(f"File hash did not match server! | Retrying")
+                os.remove(part_file)
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
