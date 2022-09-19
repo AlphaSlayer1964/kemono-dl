@@ -292,10 +292,11 @@ class downloader:
         new_post['post_variables']['username'] = user['name']
         new_post['post_variables']['site'] = domain
         new_post['post_variables']['service'] = post['service']
-        new_post['post_variables']['added'] = datetime.datetime.strptime(post['added'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['added'] else None
-        new_post['post_variables']['updated'] = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['edited'] else None
-        new_post['post_variables']['user_updated'] = datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if user['updated'] else None
-        new_post['post_variables']['published'] = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['published'] else None
+        fmtTimeByType = lambda x : datetime.datetime.fromtimestamp(x).strftime(self.date_strf_pattern) if type(x) is float else datetime.datetime.strptime(x, r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if type(x) is str else None
+        new_post['post_variables']['added'] = fmtTimeByType(post['added'])
+        new_post['post_variables']['updated'] = fmtTimeByType(post['edited'])
+        new_post['post_variables']['user_updated'] = fmtTimeByType(user['updated'])
+        new_post['post_variables']['published'] = fmtTimeByType(post['published'])
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -496,7 +497,7 @@ class downloader:
         if not self.simulate:
             if not os.path.exists(os.path.split(file['file_path'])[0]):
                 os.makedirs(os.path.split(file['file_path'])[0])
-            with open(part_file, 'ab') as f:
+            with open(part_file, 'wb' if resume_size == 0 else 'ab') as f:
                 start = time.time()
                 downloaded = resume_size
                 for chunk in response.iter_content(chunk_size=1024*1024):
@@ -511,6 +512,7 @@ class downloader:
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
             if local_hash != file['file_variables']['hash']:
                 logger.warning(f"File hash did not match server! | Retrying")
+                os.remove(part_file)
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
