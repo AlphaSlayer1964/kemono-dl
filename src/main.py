@@ -497,7 +497,7 @@ class downloader:
         if not self.simulate:
             if not os.path.exists(os.path.split(file['file_path'])[0]):
                 os.makedirs(os.path.split(file['file_path'])[0])
-            with open(part_file, 'ab') as f:
+            with open(part_file, 'wb' if resume_size == 0 else 'ab') as f:
                 start = time.time()
                 downloaded = resume_size
                 for chunk in response.iter_content(chunk_size=1024*1024):
@@ -512,6 +512,7 @@ class downloader:
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
             if local_hash != file['file_variables']['hash']:
                 logger.warning(f"File hash did not match server! | Retrying")
+                os.remove(part_file)
                 if retry > 0:
                     self.download_file(file, retry=retry-1)
                     return
