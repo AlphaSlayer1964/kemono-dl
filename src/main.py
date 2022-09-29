@@ -575,7 +575,16 @@ class downloader:
         # check if file exists
         if not self.overwrite:
             if os.path.exists(file['file_path']):
-                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists")
+                confirm_msg = ''
+                if 'hash' in file['file_variables'] and file['file_variables']['hash'] != '':
+                    local_hash = get_file_hash(file['file_path'])
+                    if local_hash != file['file_variables']['hash']:
+                        logger.warning(f"Corrupted file detected, remove this file and try to redownload | path: {file['file_path']} " + 
+                                        f"local hash: {local_hash} server hash: {file['file_variables']['hash']}")
+                        os.remove(file['file_path'])
+                        return False
+                    confirm_msg = ' hash confirmed'
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists{confirm_msg}")
                 return True
 
         # check file name extention
