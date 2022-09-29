@@ -420,7 +420,7 @@ class downloader:
                     json.dump(file_content, f, indent=4, sort_keys=True)
             else:
                 with open(file_path,'wb') as f:
-                    f.write(file_content.encode("utf-16"))
+                    f.write(file_content.encode("utf-8"))
 
     def download_file(self, file:dict, retry:int):
         # download a file
