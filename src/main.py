@@ -8,6 +8,7 @@ import datetime
 from PIL import Image
 from io import BytesIO
 import json
+from numbers import Number
 
 from .args import get_args
 from .logger import logger
@@ -292,10 +293,10 @@ class downloader:
         new_post['post_variables']['username'] = user['name']
         new_post['post_variables']['site'] = domain
         new_post['post_variables']['service'] = post['service']
-        new_post['post_variables']['added'] = datetime.datetime.strptime(post['added'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['added'] else None
-        new_post['post_variables']['updated'] = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['edited'] else None
-        new_post['post_variables']['user_updated'] = datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if user['updated'] else None
-        new_post['post_variables']['published'] = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['published'] else None
+        new_post['post_variables']['added'] = self.format_time_by_type(post['added']) if post['added'] else None
+        new_post['post_variables']['updated'] = self.format_time_by_type(post['edited']) if post['edited'] else None
+        new_post['post_variables']['user_updated'] = self.format_time_by_type(user['updated']) if user['updated'] else None
+        new_post['post_variables']['published'] = self.format_time_by_type(post['published']) if post['published'] else None
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -544,7 +545,7 @@ class downloader:
     def skip_user(self, user:dict):
         # check last update date
         if self.user_up_datebefore or self.user_up_dateafter:
-            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
+            if check_date(self.get_date_by_type(user['updated']), None, self.user_up_datebefore, self.user_up_dateafter):
                 logger.info("Skipping user | user updated date not in range")
                 return True
         return False
@@ -560,7 +561,7 @@ class downloader:
             if not post['post_variables']['published']:
                 logger.info("Skipping post | post published date not in range")
                 return True
-            elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
+            elif check_date(self.get_date_by_type(post['post_variables']['published']), self.date, self.datebefore, self.dateafter):
                 logger.info("Skipping post | post published date not in range")
                 return True
 
@@ -666,6 +667,21 @@ class downloader:
                 self.get_post(url)
             except:
                 logger.exception(f"Unable to get posts for {url}")
+
+    def get_date_by_type(self, time):
+        if isinstance(time, Number):
+            t = datetime.datetime.fromtimestamp(time)
+        elif isinstance(time, str):
+            t = datetime.datetime.strptime(time, r'%a, %d %b %Y %H:%M:%S %Z')
+        elif time == None:
+            return None
+        else:
+            raise Exception(f'Can not format time {time}')
+        return t
+                
+    def format_time_by_type(self, time):
+        t = self.get_date_by_type(time)
+        return t.strftime(self.date_strf_pattern) if t != None else t
 
 def main():
     downloader(get_args())
