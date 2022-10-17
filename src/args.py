@@ -82,6 +82,10 @@ def get_args():
                     action='store_true', default=False,
                     help="Do not download post attachments.")
 
+    ap.add_argument("--skip-local-hash",
+                    action='store_true', default=False,
+                    help="Do not check hash for downloaded local files.")
+
     ap.add_argument("--overwrite",
                     action='store_true', default=False,
                     help="Overwrite any previously created files.")

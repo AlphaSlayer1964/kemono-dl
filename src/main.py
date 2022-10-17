@@ -45,6 +45,7 @@ class downloader:
         self.post_errors = 0
 
         # controls what to download/save
+        self.local_hash = not args['skip_local_hash']
         self.attachments = not args['skip_attachments']
         self.inline = args['inline']
         self.content = args['content']
@@ -589,7 +590,7 @@ class downloader:
         if not self.overwrite:
             if os.path.exists(file['file_path']):
                 confirm_msg = ''
-                if 'hash' in file['file_variables'] and file['file_variables']['hash'] != '':
+                if self.local_hash and 'hash' in file['file_variables'] and file['file_variables']['hash'] != None:
                     local_hash = get_file_hash(file['file_path'])
                     if local_hash != file['file_variables']['hash']:
                         logger.warning(f"Corrupted file detected, remove this file and try to redownload | path: {file['file_path']} " + 

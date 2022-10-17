@@ -56,6 +56,8 @@ Download the users profile banner. Only works when a user url is passed.
 Try to download the post embed with yt-dlp.  
 `--skip-attachments`  
 Do not download post attachments.  
+`--skip-local-hash`  
+Do not check hash for downloaded local files. 
 `--overwrite`  
 Overwrite any previously created files.  
 
