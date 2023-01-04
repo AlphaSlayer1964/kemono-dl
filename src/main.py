@@ -244,8 +244,10 @@ class downloader:
                 'index': f"{index + 1}".zfill(len(str(len(inline_images))))
             }
             file['file_path'] = compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.inline_filename_template, self.restrict_ascii)
+            # get dir which stores html to calculate relative path
+            html_dir = os.path.split(compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.other_filename_template, self.restrict_ascii))[0]
             # set local image location in html
-            inline_image['src'] = file['file_path']
+            inline_image['src'] = os.path.relpath(file['file_path'], html_dir)
             post['inline_images'].append(file)
         return content_soup
 
