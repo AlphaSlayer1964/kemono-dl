@@ -82,6 +82,8 @@ class downloader:
         self.ratelimit_sleep = args['ratelimit_sleep']
         self.post_timeout = args['post_timeout']
         self.simulate = args['simulate']
+        self.download_timeout = args['download_timeout']
+        self.stop_on_failure = args['stop_on_failure']
 
         self.session = requests.Session()
         retries = Retry(
@@ -169,17 +171,18 @@ class downloader:
                 if self.skip_post(post):
                     continue
                 try:
-                    self.download_post(post)
-                    if self.post_timeout:
-                        logger.info(f"Sleeping for {self.post_timeout} seconds.")
+                    all_files_skipped = self.download_post(post)
+                    if self.post_timeout and not all_files_skipped:
+                        logger.info(f"Sleeping for {self.post_timeout} seconds after post download.")
                         time.sleep(self.post_timeout)
                 except:
                     logger.exception("Unable to download post | service:{service} user_id:{user_id} post_id:{id}".format(**post['post_variables']))
+                    if self.stop_on_failure:
+                        raise Exception("Download failed, stopping download of posts on failure.")
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
             if len(json) < 25:
                 return # completed
             chunk += 25
-
 
     def download_icon_banner(self, post:dict, img_types:list):
         for img_type in img_types:
@@ -292,10 +295,11 @@ class downloader:
         new_post['post_variables']['username'] = user['name']
         new_post['post_variables']['site'] = domain
         new_post['post_variables']['service'] = post['service']
-        new_post['post_variables']['added'] = datetime.datetime.strptime(post['added'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['added'] else None
-        new_post['post_variables']['updated'] = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['edited'] else None
-        new_post['post_variables']['user_updated'] = datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if user['updated'] else None
-        new_post['post_variables']['published'] = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['published'] else None
+        fmtTimeByType = lambda x : datetime.datetime.fromtimestamp(x).strftime(self.date_strf_pattern) if type(x) is float else datetime.datetime.strptime(x, r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if type(x) is str else None
+        new_post['post_variables']['added'] = fmtTimeByType(post['added'])
+        new_post['post_variables']['updated'] = fmtTimeByType(post['edited'])
+        new_post['post_variables']['user_updated'] = fmtTimeByType(user['updated'])
+        new_post['post_variables']['published'] = fmtTimeByType(post['published'])
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -343,8 +347,14 @@ class downloader:
         # might look buggy if title has new lines in it
         logger.info("Downloading Post | {title}".format(**post['post_variables']))
         logger.debug("Post URL: https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
-        self.download_attachments(post)
-        self.download_inline(post)
+        all_attachments_skipped = True
+        all_inline_skipped = True
+        try:
+            all_attachments_skipped= self.download_file(post, 'attachments')
+            all_inline_skipped = self.download_file(post, 'inline_images')
+        except:
+            if self.stop_on_failure:
+                raise Exception("Download failed, stopping attachment and inline downloads on failure.")
         self.write_content(post)
         self.write_links(post)
         if self.json:
@@ -352,24 +362,26 @@ class downloader:
         self.download_yt_dlp(post)
         self.write_archive(post)
         self.post_errors = 0
+        return not all_attachments_skipped and not all_inline_skipped
 
-    def download_attachments(self, post:dict):
+    def download_file(self, post:dict, type):
         # download the post attachments
-        for file in post['attachments']:
+        all_files_skipped = True
+        for file in post[type]:
             try:
-                self.download_file(file, retry=self.retry)
+                response = self.download_file_helper(file, retry=self.retry)
             except:
                 self.post_errors += 1
                 logger.exception(f"Failed to download: {file['file_path']}")
-
-    def download_inline(self, post:dict):
-        # download the post inline files
-        for file in post['inline_images']:
-            try:
-                self.download_file(file, retry=self.retry)
-            except:
-                self.post_errors += 1
-                logger.exception(f"Failed to download: {file['file_path']}")
+            if response: # Files are skipped when None is the response.
+                all_files_skipped = False
+            if self.stop_on_failure:
+                if response and not response.ok: # Response is None if download was skipped.
+                    raise Exception("Attachment download failed, stopping on failure.")
+            if self.download_timeout and response: # Timeout only when download wasn't skipped.
+                logger.info(f"Sleeping for {self.download_timeout} seconds after {type} download.")
+                time.sleep(self.download_timeout)
+        return all_files_skipped
 
     def write_content(self, post:dict):
         # write post content
@@ -421,7 +433,7 @@ class downloader:
                 with open(file_path,'wb') as f:
                     f.write(file_content.encode("utf-16"))
 
-    def download_file(self, file:dict, retry:int):
+    def download_file_helper(self, file:dict, retry:int):
         # download a file
         if self.skip_file(file):
             return
@@ -438,27 +450,27 @@ class downloader:
             resume_size = os.path.getsize(part_file)
             logger.info(f"Trying to resuming partial download | Resume size: {resume_size} bytes")
 
+        response = None
         try:
             response = self.session.get(url=file['file_variables']['url'], stream=True, headers={**self.headers,'Range':f"bytes={resume_size}-"}, cookies=self.cookies, timeout=self.timeout)
         except:
-            logger.exception(f"Failed to get responce: {file['file_variables']['url']} | Retrying")
+            logger.exception(f"Failed to get response: {file['file_variables']['url']} | Retrying")
             if retry > 0:
-                self.download_file(file, retry=retry-1)
-                return
-            logger.error(f"Failed to get responce: {file['file_variables']['url']} | All retries failed")
+                return self.download_file_helper(file, retry=retry-1)
+            logger.error(f"Failed to get response: {file['file_variables']['url']} | All retries failed")
             self.post_errors += 1
-            return
+            return response
 
-        # responce status code checking
+        # response status code checking
         if response.status_code == 404:
             logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 404 Not Found")
             self.post_errors += 1
-            return
+            return response
 
         if response.status_code == 403:
             logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 403 Forbidden")
             self.post_errors += 1
-            return
+            return response
 
         if response.status_code == 416:
             logger.warning(f"Failed to download: {os.path.split(file['file_path'])[1]} | 416 Range Not Satisfiable | Assuming broken server hash value")
@@ -469,25 +481,24 @@ class downloader:
                     os.replace(part_file, file['file_path'])
                 else:
                     os.rename(part_file, file['file_path'])
-                return
+                return response
             logger.error("Incorrect amount of bytes downloaded | Something went so wrong I have no idea what happened | Removing file")
             os.remove(part_file)
             self.post_errors += 1
-            return
+            return response
 
         if response.status_code == 429:
             logger.warning(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | Sleeping for {self.ratelimit_sleep} seconds")
             time.sleep(self.ratelimit_sleep)
             if retry > 0:
-                self.download_file(file, retry=retry-1)
-                return
+                return self.download_file_helper(file, retry=retry-1)
             logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | All retries failed")
             self.post_errors += 1
-            return
+            return response
         if not response.ok:
             logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | {response.status_code} {response.reason}")
             self.post_errors += 1
-            return
+            return response
 
         total = int(response.headers.get('content-length', 0))
         if total:
@@ -496,7 +507,7 @@ class downloader:
         if not self.simulate:
             if not os.path.exists(os.path.split(file['file_path'])[0]):
                 os.makedirs(os.path.split(file['file_path'])[0])
-            with open(part_file, 'ab') as f:
+            with open(part_file, 'wb' if resume_size == 0 else 'ab') as f:
                 start = time.time()
                 downloaded = resume_size
                 for chunk in response.iter_content(chunk_size=1024*1024):
@@ -511,17 +522,18 @@ class downloader:
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
             if local_hash != file['file_variables']['hash']:
                 logger.warning(f"File hash did not match server! | Retrying")
+                os.remove(part_file)
                 if retry > 0:
-                    self.download_file(file, retry=retry-1)
-                    return
+                    return self.download_file_helper(file, retry=retry-1)
                 logger.error(f"File hash did not match server! | All retries failed")
                 self.post_errors += 1
-                return
+                return response
             # remove .part from file name
             if self.overwrite:
                 os.replace(part_file, file['file_path'])
             else:
                 os.rename(part_file, file['file_path'])
+        return response
 
     def download_yt_dlp(self, post:dict):
         # download from video streaming site
@@ -557,10 +569,10 @@ class downloader:
 
         if self.date or self.datebefore or self.dateafter:
             if not post['post_variables']['published']:
-                logger.info("Skipping post | post published date not in range")
+                logger.debug("Skipping post | post published date not in range")
                 return True
             elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
-                logger.info("Skipping post | post published date not in range")
+                logger.debug("Skipping post | post published date not in range")
                 return True
 
         if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.comp_posts:
@@ -665,6 +677,8 @@ class downloader:
                 self.get_post(url)
             except:
                 logger.exception(f"Unable to get posts for {url}")
+                if self.stop_on_failure:
+                    return
 
 def main():
     downloader(get_args())
