@@ -7,7 +7,7 @@ A downloader tool for kemono.party and coomer.party.
 3.  Then install requirements with  `pip install -r requirements.txt`
     - If the command doesn't run try adding `python -m`, `python3 -m`, or `py -m` to the front
 4.  Get a cookie.txt file from kemono.party/coomer.party
-    - You can get a cookie text file on [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) with this extension.
+    - You can get a cookie text file on [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) or [Firefox](https://addons.mozilla.org/firefox/addon/cookies-txt/) with this extension.
     - A cookie.txt file is required to use downloader!
 5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
     - If the script doesn't run try replacing `python` with `python3` or `py`
