@@ -26,13 +26,13 @@ Takes in a url or list of urls separated by a comma.
 `--from-file FILE`  
 Reads in a file with urls separated by new lines. Lines starting with # will not be read in.  
 `--kemono-fav-users SERVICE`  
-Downloads favorite users from kemono.party of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from kemono.party/su of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-users SERVICE`  
-Downloads favorite users from coomer.party of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from coomer.party/su of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
 `--kemono-fav-posts`  
-Downloads favorite posts from kemono.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from kemono.party/su. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-posts`  
-Downloads favorite posts from coomer.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from coomer.party/su. Your cookie file must have been gotten while logged in to work.  
 
 ## What files to download
 
