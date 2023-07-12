@@ -7,7 +7,7 @@ A downloader tool for kemono.party and coomer.party.
 3.  Then install requirements with  `pip install -r requirements.txt`
     - If the command doesn't run try adding `python -m`, `python3 -m`, or `py -m` to the front
 4.  Get a cookie.txt file from kemono.party/coomer.party
-    - You can get a cookie text file on [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) with this extension.
+    - You can get a cookie text file on [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) or [Firefox](https://addons.mozilla.org/firefox/addon/cookies-txt/) with this extension.
     - A cookie.txt file is required to use downloader!
 5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
     - If the script doesn't run try replacing `python` with `python3` or `py`
@@ -26,13 +26,13 @@ Takes in a url or list of urls separated by a comma.
 `--from-file FILE`  
 Reads in a file with urls separated by new lines. Lines starting with # will not be read in.  
 `--kemono-fav-users SERVICE`  
-Downloads favorite users from kemono.party of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from kemono.party/su of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-users SERVICE`  
-Downloads favorite users from coomer.party of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from coomer.party/su of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
 `--kemono-fav-posts`  
-Downloads favorite posts from kemono.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from kemono.party/su. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-posts`  
-Downloads favorite posts from coomer.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from coomer.party/su. Your cookie file must have been gotten while logged in to work.  
 
 ## What files to download
 
@@ -56,6 +56,8 @@ Download the users profile banner. Only works when a user url is passed.
 Try to download the post embed with yt-dlp.  
 `--skip-attachments`  
 Do not download post attachments.  
+`--skip-local-hash`  
+Do not check hash for downloaded local files.  
 `--overwrite`  
 Overwrite any previously created files.  
 

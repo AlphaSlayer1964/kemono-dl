@@ -2,17 +2,19 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import re
 import os
+import math
 from bs4 import BeautifulSoup
 import time
 import datetime
 from PIL import Image
 from io import BytesIO
 import json
+from numbers import Number
 
 from .args import get_args
 from .logger import logger
 from .version import __version__
-from .helper import get_file_hash, print_download_bar, check_date, parse_url, compile_post_path, compile_file_path
+from .helper import get_file_hash, print_download_bar, check_date, parse_url, compile_post_path, compile_file_path, RefererSession
 from .my_yt_dlp import my_yt_dlp
 
 class downloader:
@@ -44,6 +46,7 @@ class downloader:
         self.post_errors = 0
 
         # controls what to download/save
+        self.local_hash = not args['skip_local_hash']
         self.attachments = not args['skip_attachments']
         self.inline = args['inline']
         self.content = args['content']
@@ -82,8 +85,9 @@ class downloader:
         self.ratelimit_sleep = args['ratelimit_sleep']
         self.post_timeout = args['post_timeout']
         self.simulate = args['simulate']
+        self.cookie_domains = args['cookie_domains']
 
-        self.session = requests.Session()
+        self.session = RefererSession()
         retries = Retry(
             total=self.retry,
             backoff_factor=0.1,
@@ -126,7 +130,7 @@ class downloader:
                 self.get_post(f"https://{domain}/{favorite['service']}/user/{favorite['id']}")
 
     def get_post(self, url:str):
-        found = re.search(r'(https://(kemono\.party|coomer\.party)/)(([^/]+)/user/([^/]+)($|/post/[^/]+))', url)
+        found = re.search(r'(https://((?:kemono|coomer)\.(?:party|su))/)(([^/]+)/user/([^/]+)($|/post/[^/]+))', url)
         if not found:
             logger.error(f"Unable to find url parameters for {url}")
             return
@@ -142,7 +146,7 @@ class downloader:
         if not is_post:
             if self.skip_user(user):
                 return
-        logger.info(f"Downloading posts from {site}.party | {service} | {user['name']} | {user['id']}")
+        logger.info(f"Downloading posts from {site} | {service} | {user['name']} | {user['id']}")
         chunk = 0
         first = True
         while True:
@@ -176,9 +180,15 @@ class downloader:
                 except:
                     logger.exception("Unable to download post | service:{service} user_id:{user_id} post_id:{id}".format(**post['post_variables']))
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
-            if len(json) < 25:
+            min_chunk_size = 25
+            # adapt chunk_size. I assume min chunck size is 25, and it should be a multiple of 25
+            # for now kemono.party chunk size is 50
+            # however coomer.party chunk size is 25
+            chunk_size = math.ceil((len(json) / min_chunk_size)) * min_chunk_size
+            logger.debug(f"Adaptive chunk_size set to {chunk_size}")
+            if len(json) < chunk_size:
                 return # completed
-            chunk += 25
+            chunk += chunk_size
 
 
     def download_icon_banner(self, post:dict, img_types:list):
@@ -228,7 +238,8 @@ class downloader:
 
     def get_inline_images(self, post, content_soup):
         # only get images that are hosted by the .party site
-        inline_images = [inline_image for inline_image in content_soup.find_all("img") if inline_image['src'][0] == '/']
+        inline_images = [inline_image for inline_image in content_soup.find_all("img") 
+                            if inline_image.get('src') and inline_image.get('src')[0] == '/']
         for index, inline_image in enumerate(inline_images):
             file = {}
             filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
@@ -242,8 +253,10 @@ class downloader:
                 'index': f"{index + 1}".zfill(len(str(len(inline_images))))
             }
             file['file_path'] = compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.inline_filename_template, self.restrict_ascii)
+            # get dir which stores html to calculate relative path
+            html_dir = os.path.split(compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.other_filename_template, self.restrict_ascii))[0]
             # set local image location in html
-            inline_image['src'] = file['file_path']
+            inline_image['src'] = os.path.relpath(file['file_path'], html_dir)
             post['inline_images'].append(file)
         return content_soup
 
@@ -292,10 +305,10 @@ class downloader:
         new_post['post_variables']['username'] = user['name']
         new_post['post_variables']['site'] = domain
         new_post['post_variables']['service'] = post['service']
-        new_post['post_variables']['added'] = datetime.datetime.strptime(post['added'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['added'] else None
-        new_post['post_variables']['updated'] = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['edited'] else None
-        new_post['post_variables']['user_updated'] = datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if user['updated'] else None
-        new_post['post_variables']['published'] = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['published'] else None
+        new_post['post_variables']['added'] = self.format_time_by_type(post['added']) if post['added'] else None
+        new_post['post_variables']['updated'] = self.format_time_by_type(post['edited']) if post['edited'] else None
+        new_post['post_variables']['user_updated'] = self.format_time_by_type(user['updated']) if user['updated'] else None
+        new_post['post_variables']['published'] = self.format_time_by_type(post['published']) if post['published'] else None
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -419,7 +432,7 @@ class downloader:
                     json.dump(file_content, f, indent=4, sort_keys=True)
             else:
                 with open(file_path,'wb') as f:
-                    f.write(file_content.encode("utf-16"))
+                    f.write(file_content.encode("utf-8"))
 
     def download_file(self, file:dict, retry:int):
         # download a file
@@ -471,7 +484,11 @@ class downloader:
                     os.rename(part_file, file['file_path'])
                 return
             logger.error("Incorrect amount of bytes downloaded | Something went so wrong I have no idea what happened | Removing file")
-            os.remove(part_file)
+            # attempt to keep this file
+            filepath = os.path.splitext(file['file_path'])
+            filepath = filepath[0] + '_statuscode416' + filepath[1]
+            # assume broken file, replace directly
+            os.replace(part_file, filepath)
             self.post_errors += 1
             return
 
@@ -496,7 +513,7 @@ class downloader:
         if not self.simulate:
             if not os.path.exists(os.path.split(file['file_path'])[0]):
                 os.makedirs(os.path.split(file['file_path'])[0])
-            with open(part_file, 'ab') as f:
+            with open(part_file, 'wb' if resume_size == 0 else 'ab') as f:
                 start = time.time()
                 downloaded = resume_size
                 for chunk in response.iter_content(chunk_size=1024*1024):
@@ -510,13 +527,23 @@ class downloader:
             logger.debug(f"Local File hash: {local_hash}")
             logger.debug(f"Sever File hash: {file['file_variables']['hash']}")
             if local_hash != file['file_variables']['hash']:
-                logger.warning(f"File hash did not match server! | Retrying")
-                if retry > 0:
-                    self.download_file(file, retry=retry-1)
+                if file['file_variables']['hash'] != None:
+                    # we have hash
+                    logger.warning(f"File hash did not match server! | Retrying")
+                    os.remove(part_file)
+                    if retry > 0:
+                        self.download_file(file, retry=retry-1)
+                        return
+                    logger.error(f"File hash did not match server! | All retries failed")
+                    self.post_errors += 1
+                else:
+                    # no hash provided
+                    logger.warning(f"No file hash from server! | Save file with suffix in name")
+                    filepath = os.path.splitext(file['file_path'])
+                    filepath = filepath[0] + '_noserverhash' + filepath[1]
+                    # assume broken file, replace directly
+                    os.replace(part_file, filepath)
                     return
-                logger.error(f"File hash did not match server! | All retries failed")
-                self.post_errors += 1
-                return
             # remove .part from file name
             if self.overwrite:
                 os.replace(part_file, file['file_path'])
@@ -543,7 +570,7 @@ class downloader:
     def skip_user(self, user:dict):
         # check last update date
         if self.user_up_datebefore or self.user_up_dateafter:
-            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
+            if check_date(self.get_date_by_type(user['updated']), None, self.user_up_datebefore, self.user_up_dateafter):
                 logger.info("Skipping user | user updated date not in range")
                 return True
         return False
@@ -559,7 +586,7 @@ class downloader:
             if not post['post_variables']['published']:
                 logger.info("Skipping post | post published date not in range")
                 return True
-            elif check_date(datetime.datetime.strptime(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
+            elif check_date(self.get_date_by_type(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
                 logger.info("Skipping post | post published date not in range")
                 return True
 
@@ -573,7 +600,16 @@ class downloader:
         # check if file exists
         if not self.overwrite:
             if os.path.exists(file['file_path']):
-                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists")
+                confirm_msg = ''
+                if self.local_hash and 'hash' in file['file_variables'] and file['file_variables']['hash'] != None:
+                    local_hash = get_file_hash(file['file_path'])
+                    if local_hash != file['file_variables']['hash']:
+                        logger.warning(f"Corrupted file detected, remove this file and try to redownload | path: {file['file_path']} " + 
+                                        f"local hash: {local_hash} server hash: {file['file_variables']['hash']}")
+                        os.remove(file['file_path'])
+                        return False
+                    confirm_msg = ' hash confirmed'
+                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists{confirm_msg}")
                 return True
 
         # check file name extention
@@ -620,15 +656,17 @@ class downloader:
             if not domain:
                 logger.warning(f"URL is not downloadable | {url}")
                 continue
+            if domain not in self.cookie_domains.values():
+                logger.warning(f"Domain not in cookie files, cookie won't work properly | {url}")
             urls.append(url)
             if not domain in domains: domains.append(domain)
 
         if self.k_fav_posts or self.k_fav_users:
-            if not 'kemono.party' in domains:
-                domains.append('kemono.party')
+            if self.cookie_domains['kemono'] not in domains:
+                domains.append(self.cookie_domains['kemono'])
         if self.c_fav_posts or self.c_fav_users:
-            if not 'coomer.party' in domains:
-                domains.append('coomer.party')
+            if self.cookie_domains['coomer'] not in domains:
+                domains.append(self.cookie_domains['coomer'])
 
         for domain in domains:
             try:
@@ -639,32 +677,48 @@ class downloader:
             logger.error("No creator information was retrieved. | exiting")
             exit()
 
+        # TODO retry not implemented
         if self.k_fav_posts:
             try:
-                self.get_favorites('kemono.party', 'post', retry=self.retry)
+                self.get_favorites(self.cookie_domains['kemono'], 'post', retry=self.retry)
             except:
-                logger.exception("Unable to get favorite posts from kemono.party")
+                logger.exception(f"Unable to get favorite posts from {self.cookie_domains['kemono']}")
         if self.c_fav_posts:
             try:
-                self.get_favorites('coomer.party', 'post')
+                self.get_favorites(self.cookie_domains['coomer'], 'post', retry=self.retry)
             except:
-                logger.exception("Unable to get favorite posts from coomer.party")
+                logger.exception(f"Unable to get favorite posts from {self.cookie_domains['coomer']}")
         if self.k_fav_users:
             try:
-                self.get_favorites('kemono.party', 'artist', self.k_fav_users)
+                self.get_favorites(self.cookie_domains['kemono'], 'artist', self.k_fav_users)
             except:
-                logger.exception("Unable to get favorite users from kemono.party")
+                logger.exception(f"Unable to get favorite users from {self.cookie_domains['kemono']}")
         if self.c_fav_users:
             try:
-                self.get_favorites('coomer.party', 'artist', self.c_fav_users)
+                self.get_favorites(self.cookie_domains['coomer'], 'artist', self.c_fav_users)
             except:
-                logger.exception("Unable to get favorite users from coomer.party")
+                logger.exception(f"Unable to get favorite users from {self.cookie_domains['coomer']}")
 
         for url in urls:
             try:
                 self.get_post(url)
             except:
                 logger.exception(f"Unable to get posts for {url}")
+
+    def get_date_by_type(self, time, date_format =  r'%a, %d %b %Y %H:%M:%S %Z'):
+        if isinstance(time, Number):
+            t = datetime.datetime.fromtimestamp(time)
+        elif isinstance(time, str):
+            t = datetime.datetime.strptime(time, date_format)
+        elif time == None:
+            return None
+        else:
+            raise Exception(f'Can not format time {time}')
+        return t
+                
+    def format_time_by_type(self, time):
+        t = self.get_date_by_type(time)
+        return t.strftime(self.date_strf_pattern) if t != None else t
 
 def main():
     downloader(get_args())

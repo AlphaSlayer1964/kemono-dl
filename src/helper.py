@@ -2,10 +2,12 @@ import re
 import hashlib
 import os
 import time
+import requests
+from urllib.parse import urlparse
 
 def parse_url(url):
     # parse urls
-    downloadable = re.search(r'^https://(kemono\.party|coomer\.party)/([^/]+)/user/([^/]+)($|/post/([^/]+)$)',url)
+    downloadable = re.search(r'^https://((?:kemono|coomer)\.(?:party|su))/([^/]+)/user/([^/]+)($|/post/([^/]+)$)',url)
     if not downloadable:
         return None
     return downloadable.group(1)
@@ -142,3 +144,9 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
 #     if current_version < latest_version:
 #         logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
 #         logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
+
+class RefererSession(requests.Session):
+    def rebuild_auth(self, prepared_request, response):
+        super().rebuild_auth(prepared_request, response)
+        u = urlparse(response.url)
+        prepared_request.headers["Referer"] = f'{u.scheme}://{u.netloc}/'
