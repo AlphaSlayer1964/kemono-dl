@@ -121,6 +121,10 @@ The time in seconds to wait between downloading posts. (default: 0)
 The amount of times to retry / resume downloading a file. (default: 5)  
 `--ratelimit-sleep SEC`  
 The time in seconds to wait after being ratelimited (default: 120)    
+`--download-timeout`  
+The time in seconds to wait between downloading attachments or inline items. (default: 0)  
+`--stop-on-failure`  
+Stop on first request failure.
 
 # Notes
 -   Excepted link formats:

@@ -200,6 +200,14 @@ def get_args():
                     metavar="UA", type=str, default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
                     help="Set a custom user agent")
 
+    ap.add_argument("--download-timeout",
+                    metavar="SEC", type=int, default=0,
+                    help="The time in seconds to wait between downloading attachments or inline items. (default: 0)")
+
+    ap.add_argument("--stop-on-failure",
+                    action='store_true', default=False,
+                    help="Stop on first request failure.")
+
     args = vars(ap.parse_args())
 
     # takes a comma seperated lost of cookie files and loads them into a cookie jar
