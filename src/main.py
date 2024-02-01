@@ -96,7 +96,7 @@ class downloader:
 
     def get_creators(self, domain:str):
         # get site creators
-        creators_api = f"https://{domain}/api/creators/"
+        creators_api = f"https://{domain}/api/v1/creators/"
         logger.debug(f"Getting creator json from {creators_api}")
         return self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).json()
 
@@ -107,7 +107,7 @@ class downloader:
         return None
 
     def get_favorites(self, domain:str, fav_type:str, services:list = None):
-        fav_api = f'https://{domain}/api/favorites?type={fav_type}'
+        fav_api = f'https://{domain}/api/v1/favorites?type={fav_type}'
         logger.debug(f"Getting favorite json from {fav_api}")
         response = self.session.get(url=fav_api, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
         if response.status_code == 401:
@@ -126,11 +126,11 @@ class downloader:
                 self.get_post(f"https://{domain}/{favorite['service']}/user/{favorite['id']}")
 
     def get_post(self, url:str):
-        found = re.search(r'(https://(kemono\.party|coomer\.party)/)(([^/]+)/user/([^/]+)($|/post/[^/]+))', url)
+        found = re.search(r'(https://(kemono\.su|coomer\.su)/)(([^/]+)/user/([^/]+)($|/post/[^/]+))', url)
         if not found:
             logger.error(f"Unable to find url parameters for {url}")
             return
-        api = f"{found.group(1)}api/{found.group(3)}"
+        api = f"{found.group(1)}api/v1/{found.group(3)}"
         site = found.group(2)
         service = found.group(4)
         user_id = found.group(5)
@@ -142,7 +142,7 @@ class downloader:
         if not is_post:
             if self.skip_user(user):
                 return
-        logger.info(f"Downloading posts from {site}.party | {service} | {user['name']} | {user['id']}")
+        logger.info(f"Downloading posts from {site}.su | {service} | {user['name']} | {user['id']}")
         chunk = 0
         first = True
         while True:
@@ -227,7 +227,7 @@ class downloader:
         self.write_to_file(file_path, dms_soup.prettify())
 
     def get_inline_images(self, post, content_soup):
-        # only get images that are hosted by the .party site
+        # only get images that are hosted by the .su site
         inline_images = [inline_image for inline_image in content_soup.find_all("img") if inline_image['src'][0] == '/']
         for index, inline_image in enumerate(inline_images):
             file = {}
@@ -292,10 +292,10 @@ class downloader:
         new_post['post_variables']['username'] = user['name']
         new_post['post_variables']['site'] = domain
         new_post['post_variables']['service'] = post['service']
-        new_post['post_variables']['added'] = datetime.datetime.strptime(post['added'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['added'] else None
-        new_post['post_variables']['updated'] = datetime.datetime.strptime(post['edited'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['edited'] else None
-        new_post['post_variables']['user_updated'] = datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if user['updated'] else None
-        new_post['post_variables']['published'] = datetime.datetime.strptime(post['published'], r'%a, %d %b %Y %H:%M:%S %Z').strftime(self.date_strf_pattern) if post['published'] else None
+        new_post['post_variables']['added'] = self.parse_date_string(post['added'], self.date_strf_pattern)
+        new_post['post_variables']['updated'] = self.parse_date_string(post['edited'], self.date_strf_pattern)
+        new_post['post_variables']['user_updated'] = self.parse_date_string(user['updated'], self.date_strf_pattern)
+        new_post['post_variables']['published'] = self.parse_date_string(post['published'], self.date_strf_pattern)
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -624,11 +624,11 @@ class downloader:
             if not domain in domains: domains.append(domain)
 
         if self.k_fav_posts or self.k_fav_users:
-            if not 'kemono.party' in domains:
-                domains.append('kemono.party')
+            if not 'kemono.su' in domains:
+                domains.append('kemono.su')
         if self.c_fav_posts or self.c_fav_users:
-            if not 'coomer.party' in domains:
-                domains.append('coomer.party')
+            if not 'coomer.su' in domains:
+                domains.append('coomer.su')
 
         for domain in domains:
             try:
@@ -641,30 +641,54 @@ class downloader:
 
         if self.k_fav_posts:
             try:
-                self.get_favorites('kemono.party', 'post', retry=self.retry)
+                self.get_favorites('kemono.su', 'post', retry=self.retry)
             except:
-                logger.exception("Unable to get favorite posts from kemono.party")
+                logger.exception("Unable to get favorite posts from kemono.su")
         if self.c_fav_posts:
             try:
-                self.get_favorites('coomer.party', 'post')
+                self.get_favorites('coomer.su', 'post')
             except:
-                logger.exception("Unable to get favorite posts from coomer.party")
+                logger.exception("Unable to get favorite posts from coomer.su")
         if self.k_fav_users:
             try:
-                self.get_favorites('kemono.party', 'artist', self.k_fav_users)
+                self.get_favorites('kemono.su', 'artist', self.k_fav_users)
             except:
-                logger.exception("Unable to get favorite users from kemono.party")
+                logger.exception("Unable to get favorite users from kemono.su")
         if self.c_fav_users:
             try:
-                self.get_favorites('coomer.party', 'artist', self.c_fav_users)
+                self.get_favorites('coomer.su', 'artist', self.c_fav_users)
             except:
-                logger.exception("Unable to get favorite users from coomer.party")
+                logger.exception("Unable to get favorite users from coomer.su")
 
         for url in urls:
             try:
                 self.get_post(url)
             except:
                 logger.exception(f"Unable to get posts for {url}")
+                
+    def parse_date_string(self, date_str, target_format="%Y-%m-%d %H:%M:%S"):
+        if date_str is None:
+            return None
+
+        if isinstance(date_str, int):
+            date_str = datetime.datetime.fromtimestamp(date_str).isoformat()
+
+        # Define a list of date formats to try parsing with, including ISO 8601
+        date_formats = [
+            "%Y-%m-%dT%H:%M:%S.%f",  # ISO 8601 with microseconds
+            "%Y-%m-%dT%H:%M:%S",     # ISO 8601 without microseconds
+            r"%a, %d %b %Y %H:%M:%S %Z",
+        ]
+        
+        for format in date_formats:
+            try:
+                parsed_date = datetime.datetime.strptime(date_str, format)
+                return parsed_date.strftime(target_format)
+            except ValueError:
+                continue
+        
+        return None
+
 
 def main():
     downloader(get_args())
