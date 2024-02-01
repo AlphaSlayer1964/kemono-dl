@@ -1,6 +1,0 @@
-:Usage Template
-python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID
-
-:Examples
-python kemono-dl.py --cookies "cookie.txt" --links https://kemono.su/patreon/user/10278069
-python kemono-dl.py --cookies "cookie.txt" --links https://coomer.su/fansly/user/441682032431476736
