@@ -1,15 +1,15 @@
 # kemono-dl
-A downloader tool for kemono.party and coomer.party.
+A downloader tool for kemono.su and coomer.su.
 
 ## How to use
 1.  Install python 3. (Disable path length limit during install)
 2.  Download source code for the [latest release](https://github.com/AplhaSlayer1964/kemono-dl/releases/latest) and extract it
 3.  Then install requirements with  `pip install -r requirements.txt`
     - If the command doesn't run try adding `python -m`, `python3 -m`, or `py -m` to the front
-4.  Get a cookie.txt file from kemono.party/coomer.party
+4.  Get a cookie.txt file from kemono.su/coomer.su
     - You can get a cookie text file on [Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid?hl=en) with this extension.
     - A cookie.txt file is required to use downloader!
-5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.party/SERVICE/user/USERID`
+5.  Run `python kemono-dl.py --cookies "cookie.txt" --links https://kemono.su/SERVICE/user/USERID`
     - If the script doesn't run try replacing `python` with `python3` or `py`
 
 # Command Line Options
@@ -26,13 +26,13 @@ Takes in a url or list of urls separated by a comma.
 `--from-file FILE`  
 Reads in a file with urls separated by new lines. Lines starting with # will not be read in.  
 `--kemono-fav-users SERVICE`  
-Downloads favorite users from kemono.party of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from kemono.su of specified type or types separated by a comma. Types include: all, patreon, fanbox, gumroad, subscribestar, dlsite, fantia. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-users SERVICE`  
-Downloads favorite users from coomer.party of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite users from coomer.su of specified type or types separated by a comma. Types include: all, onlyfans. Your cookie file must have been gotten while logged in to work.  
 `--kemono-fav-posts`  
-Downloads favorite posts from kemono.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from kemono.su. Your cookie file must have been gotten while logged in to work.  
 `--coomer-fav-posts`  
-Downloads favorite posts from coomer.party. Your cookie file must have been gotten while logged in to work.  
+Downloads favorite posts from coomer.su. Your cookie file must have been gotten while logged in to work.  
 
 ## What files to download
 
@@ -124,13 +124,13 @@ The time in seconds to wait after being ratelimited (default: 120)
 
 # Notes
 -   Excepted link formats:
-    -   `https://{site}.party/{service}/user/{user_id}`
-    -   `https://{site}.party/{service}/user/{user_id}/post/{post_id}`
+    -   `https://{site}.su/{service}/user/{user_id}`
+    -   `https://{site}.su/{service}/user/{user_id}/post/{post_id}`
 -   By default files are saved as .part files until completed.
--   I assume the .party site has the correct hash for attachments. This may not be the case in rare cases.
+-   I assume the .su site has the correct hash for attachments. This may not be the case in rare cases.
     -   If the server is incorrect the file will remain a .part file. 
     -   You can remove the .part from the file name and see if it downloaded correctly.
-        -   If it is correct but the downloader said the hash was wrong please report it in the [pinned issue]() so I can report it to the .party site.
+        -   If it is correct but the downloader said the hash was wrong please report it in the [pinned issue]() so I can report it to the .su site.
 -   Some files do not have the file size in the response header and will not be downloaded when using `--min-filesize` or `--max-filesize`.
     -   `.pdf` is a known file type that will never return file size from response headers.
 -   Gumroad posts published date is not provided so `--date`, `--datebefore`, and `--dateafter` will always skip Gumroad posts.  
@@ -150,7 +150,7 @@ All variables referring to dates are controlled by `--date-strf-pattern`. Standa
 
 ### All Options
 -   `{site}`  
-The .party site the post is hosted on.  (ie. kemono.party or coomer.party)
+The .su site the post is hosted on.  (ie. kemono.su or coomer.su)
 -   `{service}`  
 The service of the post.  
 -   `{user_id}`  
@@ -164,11 +164,11 @@ The post title.
 -   `{published}`  
 The published date of the post.  
 -   `{added}`  
-The date the post was added to the .party site.  
+The date the post was added to the .su site.  
 -   `{updated}`  
-The date the post was last updated on the .party site.  
+The date the post was last updated on the .su site.  
 -   `{user_updated}`  
-The date the user was last updated on the .party site.  
+The date the user was last updated on the .su site.  
 
 ### Only file names
 -   `{ext}`  
