@@ -176,9 +176,9 @@ class downloader:
                 except:
                     logger.exception("Unable to download post | service:{service} user_id:{user_id} post_id:{id}".format(**post['post_variables']))
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
-            if len(json) < 25:
+            if len(json) < 50:
                 return # completed
-            chunk += 25
+            chunk += 50
 
 
     def download_icon_banner(self, post:dict, img_types:list):
