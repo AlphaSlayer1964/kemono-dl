@@ -107,7 +107,7 @@ class downloader:
         return None
 
     def get_favorites(self, domain:str, fav_type:str, services:list = None):
-        fav_api = f'https://{domain}/api/v1/favorites?type={fav_type}'
+        fav_api = f'https://{domain}/api/v1/account/favorites?type={fav_type}'
         logger.debug(f"Getting favorite json from {fav_api}")
         response = self.session.get(url=fav_api, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
         if response.status_code == 401:
@@ -543,7 +543,7 @@ class downloader:
     def skip_user(self, user:dict):
         # check last update date
         if self.user_up_datebefore or self.user_up_dateafter:
-            if check_date(datetime.datetime.strptime(user['updated'], r'%a, %d %b %Y %H:%M:%S %Z'), None, self.user_up_datebefore, self.user_up_dateafter):
+            if check_date(datetime.datetime.fromtimestamp(user['updated']), None, self.user_up_datebefore, self.user_up_dateafter):
                 logger.info("Skipping user | user updated date not in range")
                 return True
         return False
