@@ -100,7 +100,7 @@ class downloader:
 
     def get_creators(self, domain:str):
         # get site creators
-        creators_api = f"https://{domain}/api/creators/"
+        creators_api = f"https://{domain}/api/v1/creators.txt"
         logger.debug(f"Getting creator json from {creators_api}")
         return self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).json()
 
@@ -111,7 +111,7 @@ class downloader:
         return None
 
     def get_favorites(self, domain:str, fav_type:str, services:list = None):
-        fav_api = f'https://{domain}/api/favorites?type={fav_type}'
+        fav_api = f'https://{domain}/api/v1/account/favorites?type={fav_type}'
         logger.debug(f"Getting favorite json from {fav_api}")
         response = self.session.get(url=fav_api, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
         if response.status_code == 401:
@@ -134,7 +134,7 @@ class downloader:
         if not found:
             logger.error(f"Unable to find url parameters for {url}")
             return
-        api = f"{found.group(1)}api/{found.group(3)}"
+        api = f"{found.group(1)}api/v1/{found.group(3)}"
         site = found.group(2)
         service = found.group(4)
         user_id = found.group(5)
@@ -705,12 +705,12 @@ class downloader:
             except:
                 logger.exception(f"Unable to get posts for {url}")
 
-    def get_date_by_type(self, time, date_format =  r'%a, %d %b %Y %H:%M:%S %Z'):
+    def get_date_by_type(self, time, date_format =  None):
         if isinstance(time, Number):
             t = datetime.datetime.fromtimestamp(time)
         elif isinstance(time, str):
-            t = datetime.datetime.strptime(time, date_format)
-        elif time == None:
+            t = datetime.datetime.fromisoformat(time) if date_format is None else datetime.datetime.strptime(time, date_format)
+        elif time is None:
             return None
         else:
             raise Exception(f'Can not format time {time}')
