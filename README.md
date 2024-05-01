@@ -123,6 +123,8 @@ The time in seconds to wait between downloading posts. (default: 0)
 The amount of times to retry / resume downloading a file. (default: 5)  
 `--ratelimit-sleep SEC`  
 The time in seconds to wait after being ratelimited (default: 120)    
+`--proxy-agent https://agent/proxy`
+Proxy agent url. This is NOT http/s proxy, it required agent takes u parameter to proxy url. Not enabled by default. Enable this you can not download kemono and commer at once
 
 # Notes
 -   Excepted link formats:

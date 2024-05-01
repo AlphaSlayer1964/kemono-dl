@@ -3,7 +3,7 @@ import hashlib
 import os
 import time
 import requests
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
 def parse_url(url):
     # parse urls
@@ -146,7 +146,22 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
 #         logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
 
 class RefererSession(requests.Session):
+    def __init__(self, *args, **kwargs):
+        self.proxy_agent = kwargs['proxy_agent'] if 'proxy_agent' in kwargs else None
+        del kwargs['proxy_agent']
+        super().__init__(*args, **kwargs)
+
     def rebuild_auth(self, prepared_request, response):
         super().rebuild_auth(prepared_request, response)
         u = urlparse(response.url)
         prepared_request.headers["Referer"] = f'{u.scheme}://{u.netloc}/'
+
+    def get(self, url, **kwargs):
+        if self.proxy_agent:
+            u = urlparse(self.proxy_agent)
+            q_params = parse_qs(u.query)
+            q_params['u'] = url
+            u = u._replace(query=urlencode(q_params))
+            url = urlunparse(u)
+
+        return super().get(url, **kwargs)
