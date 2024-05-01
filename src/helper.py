@@ -5,7 +5,10 @@ import time
 import requests
 from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
+from .args import get_args
 from .logger import logger
+
+running_args = get_args()
 
 def parse_url(url):
     # parse urls
@@ -149,6 +152,23 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
 #         logger.debug(f"Using kemono-dl {__version__} while latest release is kemono-dl {latest_tag}")
 #         logger.warning(f"A newer version of kemono-dl is available. Please update to the latest release at https://github.com/AplhaSlayer1964/kemono-dl/releases/latest")
 
+
+# doesn't support multithreading
+def function_rate_limit(func):
+    last_call_times = {}
+
+    def wrapper(*args, **kwargs):
+        nonlocal last_call_times
+        func_name = func.__name__
+        t = time.time()
+        last_call_time = last_call_times.get(func_name, 0)
+        if (t - last_call_time) * 1000 < running_args['ratelimit_ms']:
+            time.sleep(running_args['ratelimit_ms'] / 1000 - (t - last_call_time))
+        last_call_times[func_name] = time.time()
+        return func(*args, **kwargs)
+
+    return wrapper
+
 class RefererSession(requests.Session):
     def __init__(self, *args, **kwargs):
         self.proxy_agent = kwargs.pop('proxy_agent', None)
@@ -162,6 +182,7 @@ class RefererSession(requests.Session):
         u = urlparse(response.url)
         prepared_request.headers["Referer"] = f'{u.scheme}://{u.netloc}/'
 
+    @function_rate_limit
     def get(self, url, **kwargs):
         old_url = url
         retry_429 = kwargs.pop('retry_429', True)

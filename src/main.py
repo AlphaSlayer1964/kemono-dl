@@ -83,6 +83,7 @@ class downloader:
         self.retry = args['retry']
         self.no_part = args['no_part_files']
         self.ratelimit_sleep = args['ratelimit_sleep']
+        self.ratelimit_ms = args['ratelimit_ms']
         self.post_timeout = args['post_timeout']
         self.simulate = args['simulate']
         self.cookie_domains = args['cookie_domains']

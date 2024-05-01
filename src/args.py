@@ -201,6 +201,10 @@ def get_args():
                     metavar="SEC", type=int, default=120,
                     help="The time in seconds to wait after being ratelimited (default: 120)")
 
+    ap.add_argument("--ratelimit-ms",
+                    metavar="MS", type=int, default=300,
+                    help="The time in millisecond to limit before next request (default: 300)")
+
     ap.add_argument("--user-agent",
                     metavar="UA", type=str, default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
                     help="Set a custom user agent")
