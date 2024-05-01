@@ -195,10 +195,10 @@ class downloader:
         for img_type in img_types:
             if post['post_variables']['service'] in {'dlsite'}:
                 logger.warning(f"Profile {img_type}s are not supported for {post['post_variables']['service']} users")
-                return
+                continue
             if post['post_variables']['service'] in {'gumroad'} and img_type == 'banner':
                 logger.warning(f"Profile {img_type}s are not supported for {post['post_variables']['service']} users")
-                return
+                continue
             image_url = "https://{site}/{img_type}s/{service}/{user_id}".format(img_type=img_type, **post['post_variables'])
             response = self.session.get(url=image_url,headers=self.headers, cookies=self.cookies, timeout=self.timeout)
             try:
