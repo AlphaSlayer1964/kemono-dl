@@ -15,9 +15,11 @@ def parse_url(url):
 # create path from template pattern
 def compile_post_path(post_variables, template, ascii):
     drive, tail = os.path.splitdrive(template)
-    tail = tail[1:] if tail[0] in {'/','\\'} else tail
+    tail_trimmed = tail[0] in {'/','\\'}
+    tail = tail[1:] if tail_trimmed else tail
     tail_split = re.split(r'\\|/', tail)
-    cleaned_path = drive + os.path.sep if drive else ''
+    cleaned_path = (drive + os.path.sep if drive else 
+                    (os.path.sep if tail_trimmed else ''))
     for folder in tail_split:
         if ascii:
             cleaned_path = os.path.join(cleaned_path, restrict_ascii(clean_folder_name(folder.format(**post_variables))))
