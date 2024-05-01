@@ -152,7 +152,7 @@ class downloader:
         while True:
             if is_post:
                 logger.debug(f"Requesting post json from: {api}")
-                json = self.session.get(url=api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).json()
+                json = [self.session.get(url=api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).json()]
             else:
                 logger.debug(f"Requesting user json from: {api}?o={chunk}")
                 json = self.session.get(url=f"{api}?o={chunk}", cookies=self.cookies, headers=self.headers, timeout=self.timeout).json()
