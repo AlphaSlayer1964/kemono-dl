@@ -88,7 +88,11 @@ class downloader:
         self.cookie_domains = args['cookie_domains']
         self.proxy_agent = args['proxy_agent']
 
-        self.session = RefererSession(proxy_agent = self.proxy_agent)
+        self.session = RefererSession(
+            proxy_agent = self.proxy_agent,
+            max_retries_429 = self.retry,
+            sleep_429 = self.ratelimit_sleep
+        )
         retries = Retry(
             total=self.retry,
             backoff_factor=0.1,
@@ -494,11 +498,7 @@ class downloader:
             return
 
         if response.status_code == 429:
-            logger.warning(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | Sleeping for {self.ratelimit_sleep} seconds")
-            time.sleep(self.ratelimit_sleep)
-            if retry > 0:
-                self.download_file(file, retry=retry-1)
-                return
+            # already retried for 429
             logger.error(f"Failed to download: {os.path.split(file['file_path'])[1]} | 429 Too Many Requests | All retries failed")
             self.post_errors += 1
             return

@@ -5,6 +5,8 @@ import time
 import requests
 from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
 
+from .logger import logger
+
 def parse_url(url):
     # parse urls
     downloadable = re.search(r'^https://((?:kemono|coomer)\.(?:party|su))/([^/]+)/user/([^/]+)($|/post/([^/]+)$)',url)
@@ -149,8 +151,10 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
 
 class RefererSession(requests.Session):
     def __init__(self, *args, **kwargs):
-        self.proxy_agent = kwargs['proxy_agent'] if 'proxy_agent' in kwargs else None
-        del kwargs['proxy_agent']
+        self.proxy_agent = kwargs.pop('proxy_agent', None)
+        self.max_retries_429 = kwargs.pop('max_retries_429', 3)
+        self.sleep_429 = kwargs.pop('sleep_429', 120)
+
         super().__init__(*args, **kwargs)
 
     def rebuild_auth(self, prepared_request, response):
@@ -159,6 +163,10 @@ class RefererSession(requests.Session):
         prepared_request.headers["Referer"] = f'{u.scheme}://{u.netloc}/'
 
     def get(self, url, **kwargs):
+        old_url = url
+        retry_429 = kwargs.pop('retry_429', True)
+        max_retries_429 = kwargs.pop('max_retries_429', self.max_retries_429)
+        
         if self.proxy_agent:
             u = urlparse(self.proxy_agent)
             q_params = parse_qs(u.query)
@@ -166,4 +174,12 @@ class RefererSession(requests.Session):
             u = u._replace(query=urlencode(q_params))
             url = urlunparse(u)
 
-        return super().get(url, **kwargs)
+        resp = super().get(url, **kwargs)
+        max_retries_429 -= 1
+        if resp.status_code != 429 or not retry_429 or max_retries_429 < 1:
+            return resp
+
+        # need retry
+        logger.warning(f"Failed to access: {url if self.proxy_agent else old_url} | {resp.status_code} Too Many Requests | Sleeping for {self.sleep_429} seconds")
+        time.sleep(self.sleep_429)
+        return self.get(old_url, retry_429=retry_429, max_retries_429=max_retries_429, **kwargs)
