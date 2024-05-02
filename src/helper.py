@@ -96,7 +96,7 @@ def print_download_bar(total:int, downloaded:int, resumed:int, start):
 
     rate = (downloaded-resumed)/time_diff
 
-    eta = time.strftime("%H:%M:%S", time.gmtime((total-downloaded) / rate))
+    eta = time.strftime("%H:%M:%S", time.gmtime((total-downloaded) / rate)) if rate else '99:99:99'
 
     if rate/2**10 < 100:
         rate = (round(rate/2**10, 1), 'KB')

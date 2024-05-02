@@ -518,6 +518,7 @@ class downloader:
             with open(part_file, 'wb' if resume_size == 0 else 'ab') as f:
                 start = time.time()
                 downloaded = resume_size
+                print_download_bar(total, downloaded, resume_size, start)
                 for chunk in response.iter_content(chunk_size=1024*1024):
                     downloaded += len(chunk)
                     f.write(chunk)
