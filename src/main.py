@@ -186,12 +186,12 @@ class downloader:
                 except:
                     logger.exception("Unable to download post | service:{service} user_id:{user_id} post_id:{id}".format(**post['post_variables']))
                 self.comp_posts.append("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']))
-            min_chunk_size = 25
-            # adapt chunk_size. I assume min chunck size is 25, and it should be a multiple of 25
-            # for now kemono.party chunk size is 50
-            # however coomer.party chunk size is 25
-            chunk_size = math.ceil((len(json) / min_chunk_size)) * min_chunk_size
-            logger.debug(f"Adaptive chunk_size set to {chunk_size}")
+            # kemono and coomer shares same offset now which is 50
+            # according to its api document "stepping of 50 is enforced"
+            # nekohouse also set to 50 now(but its api seems not work currently)
+            # however it still support 25 just like kemono before. 
+            # So it would be fine we fixed in 50
+            chunk_size = 50
             if len(json) < chunk_size:
                 return # completed
             chunk += chunk_size
