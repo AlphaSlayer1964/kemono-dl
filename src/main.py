@@ -286,12 +286,12 @@ class downloader:
             comment_soup = page_soup.find("div", {"class": "post__comments"})
             no_comments = re.search('([^ ]+ does not support comment scraping yet\.|No comments found for this post\.)',comment_soup.text)
             if no_comments:
-                logger.debug(no_comments.group(1).strip())
+                logger.debug(f"{no_comments.group(1).strip()} from {post_url}")
                 return ''
             return comment_soup.prettify()
         except:
             self.post_errors += 1
-            logger.exception("Failed to get post comments")
+            logger.exception(f"Failed to get post comments for {post_url}")
 
     def compile_post_content(self, post, content_soup, comment_soup, embed):
         post['content']['text'] = f"{content_soup}\n{embed}\n{comment_soup}"
@@ -321,7 +321,8 @@ class downloader:
         new_post['attachments'] = []
         if self.attachments:
             # add post file to front of attachments list if it doesn't already exist
-            if post['file'] and not post['file'] in post['attachments']:
+            # sometimes post['file'] is an empty structure
+            if post['file'] and not post['file'] in post['attachments'] and post['file'].get('name'):
                 post['attachments'].insert(0, post['file'])
             # loop over attachments and set file variables
             for index, attachment in enumerate(post['attachments']):
@@ -397,7 +398,7 @@ class downloader:
                 self.write_to_file(post['content']['file_path'], post['content']['text'])
             except:
                 self.post_errors += 1
-                logger.exception(f"Failed to save content")
+                logger.exception(f"Failed to save content to {post['content']['file_path']}")
 
     def write_links(self, post:dict):
         # Write post content links
@@ -406,7 +407,7 @@ class downloader:
                 self.write_to_file(post['links']['file_path'], post['links']['text'])
             except:
                 self.post_errors += 1
-                logger.exception(f"Failed to save content links")
+                logger.exception(f"Failed to save content links to {post['links']['file_path']}")
 
     def write_json(self, post:dict):
         try:
@@ -419,7 +420,7 @@ class downloader:
             self.write_to_file(file_path, post)
         except:
             self.post_errors += 1
-            logger.exception(f"Failed to save json")
+            logger.exception(f"Failed to save json to {file_path}")
 
     def write_to_file(self, file_path, file_content):
         # check if file exists and if should overwrite
@@ -574,27 +575,28 @@ class downloader:
         # check last update date
         if self.user_up_datebefore or self.user_up_dateafter:
             if check_date(self.get_date_by_type(user['updated']), None, self.user_up_datebefore, self.user_up_dateafter):
-                logger.info("Skipping user | user updated date not in range")
+                logger.info(f"Skipping user {user['name']} | user updated date not in range")
                 return True
         return False
 
     def skip_post(self, post:dict):
+        post_title = post['post_variables']['title']
         # check if the post should be downloaded
         if self.archive_file:
             if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.archive_list:
-                logger.info("Skipping post | post already archived")
+                logger.info(f"Skipping post {post_title} | post already archived")
                 return True
 
         if self.date or self.datebefore or self.dateafter:
             if not post['post_variables']['published']:
-                logger.info("Skipping post | post published date not in range")
+                logger.info(f"Skipping post {post_title} | post published date not in range")
                 return True
             elif check_date(self.get_date_by_type(post['post_variables']['published'], self.date_strf_pattern), self.date, self.datebefore, self.dateafter):
-                logger.info("Skipping post | post published date not in range")
+                logger.info(f"Skipping post {post_title} | post published date not in range")
                 return True
 
         if "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) in self.comp_posts:
-            logger.info("Skipping post | post was already downloaded this session")
+            logger.info(f"Skipping post {post_title} | post was already downloaded this session")
             return True
 
         return False
