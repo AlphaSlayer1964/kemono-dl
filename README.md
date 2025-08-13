@@ -13,16 +13,22 @@ A downloader tool for kemono and coomer websties.
 
 `--path PATH`  
 Set the base path for downloads.
+
 `--output OUTPUT_TEMPLATE`  
 Set the file name pattern for attachments. See [Output Patterns](https://github.com/AplhaSlayer1964/kemono-dl#output-patterns=) for more detail.  
-`--batch-file FILE`  
+
+`--batch-file FILE`
 A file with one url per line.
+
 `--coomer-cookies FILE`  
 A cookies file for the coomer site. Required for `--favorite-creators-coomer`
+
 `--kemono-cookies FILE`  
 A cookies file for the kemono site. Required for `--favorite-creators-kemono`
+
 `--favorite-creators-coomer`  
 Downloads all favorite creators from coomer site
+
 `--favorite-creators-kemono`  
 Downloads all favorite creators from kemono site
 
