@@ -15,7 +15,7 @@ A downloader tool for kemono and coomer websties.
 Set the base path for downloads.
 
 `--output OUTPUT_TEMPLATE`  
-Set the file name pattern for attachments. Default "{service}/{creator_id}/{server_filename}"   
+Set the file name pattern for attachments. Default `"{service}/{creator_id}/{server_filename}"`   
 
 `--batch-file FILE`
 A file with one url per line.
