@@ -8,3 +8,8 @@ yt_dlp_temp/
 links.txt
 test.py
 archive.txt
+.env/
+.vscode/
+*/__pycache__/
+__pycache__/
+.pytest_cache

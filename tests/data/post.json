@@ -1,0 +1,274 @@
+{
+    "post": {
+        "id": "1234",
+        "user": "USER_123",
+        "service": "SERVICE_123",
+        "title": "SOME TITLE",
+        "content": "SOME CONTENT",
+        "embed": {},
+        "shared_file": false,
+        "added": "2024-10-24T05:52:59.498767",
+        "published": "2024-06-04T23:53:36",
+        "edited": null,
+        "file": {
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        "attachments": [
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            },
+            {
+                "name": "SOME_FILENAME.png",
+                "path": "/XX/XX/SOME_FILE_HASHpng"
+            }
+        ],
+        "poll": null,
+        "captions": null,
+        "tags": null,
+        "next": "1235",
+        "prev": null
+    },
+    "attachments": [
+        {
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "extension": ".mp4",
+            "name_extension": ".mp4",
+            "stem": "cd229bcb22a356d9c112b21fc763e86b9209d4995d4ad8ff06a906bddfa09c82",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        }
+    ],
+    "previews": [
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n2.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n2.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n1.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n2.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n3.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n2.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n2.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n1.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        },
+        {
+            "type": "thumbnail",
+            "server": "https://n1.example.com",
+            "name": "SOME_FILENAME.png",
+            "path": "/XX/XX/SOME_FILE_HASHpng"
+        }
+    ],
+    "videos": [
+        {
+            "index": 0,
+            "path": "/XX/XX/SOME_FILE_HASHpng",
+            "name": "SOME_FILENAME.png",
+            "extension": ".mp4",
+            "name_extension": ".mp4",
+            "server": "https://n3.example.com"
+        }
+    ],
+    "props": {
+        "flagged": "reason-other",
+        "revisions": [
+            [
+                0,
+                {
+                    "id": "1234",
+                    "user": "USER_123",
+                    "service": "SERVICE_123",
+                    "title": "SOME TITLE",
+                    "content": "SOME CONTENT",
+                    "embed": {},
+                    "shared_file": false,
+                    "added": "2024-10-24T05:52:59.498767",
+                    "published": "2024-06-04T23:53:36",
+                    "edited": null,
+                    "file": {
+                        "name": "SOME_FILENAME.png",
+                        "path": "/XX/XX/SOME_FILE_HASHpng"
+                    },
+                    "attachments": [
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        },
+                        {
+                            "name": "SOME_FILENAME.png",
+                            "path": "/XX/XX/SOME_FILE_HASHpng"
+                        }
+                    ],
+                    "poll": null,
+                    "captions": null,
+                    "tags": null,
+                    "next": "1235",
+                    "prev": null
+                }
+            ]
+        ]
+    }
+}
