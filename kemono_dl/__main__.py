@@ -32,16 +32,12 @@ def parse_args():
 def main() -> None:
     args = parse_args()
 
-    kemono_dl = KemonoDL(
-        path=args.path,
-        output_template=args.output_template,
-        output_template_special=args.output_template_special,
-    )
+    kemono_dl = KemonoDL(path=args.path, output_template=args.output)
 
-    if args.favorite_posts_coomer or args.favorite_creators_coomer:
+    if args.favorite_creators_coomer:
         kemono_dl.load_cookies(args.coomer_cookies)
 
-    if args.favorite_posts_kemono or args.favorite_creators_kemono:
+    if args.favorite_creators_kemono:
         kemono_dl.load_cookies(args.kemono_cookies)
 
     if args.favorite_creators_coomer:
@@ -49,12 +45,6 @@ def main() -> None:
 
     if args.favorite_creators_kemono:
         kemono_dl.download_favorite_creators(KemonoDL.KEMONO_DOMAIN)
-
-    # if args.favorite_posts_coomer:
-    #     kemono_dl.download_favorite_posts(KemonoDL.COOMER_DOMAIN)
-
-    # if args.favorite_posts_kemono:
-    #     kemono_dl.download_favorite_posts(KemonoDL.KEMONO_DOMAIN)
 
     if args.urls:
         for url in args.urls:
