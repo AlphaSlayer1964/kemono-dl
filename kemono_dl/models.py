@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, fields
+from datetime import datetime
 from os.path import splitext
 from typing import List
 
@@ -22,6 +23,10 @@ class Creator:
     updated: int
     public_id: str
     relation_id: str | None
+    post_count: int | None
+    dm_count: int | None
+    share_count: int | None
+    chat_count: int | None
     has_chats: bool | None = None
 
 
@@ -62,9 +67,9 @@ class Post:
     title: str
     content: str
     shared_file: bool
-    added: str
-    published: str
-    edited: str
+    added: datetime
+    published: datetime
+    edited: datetime
     poll: bool | None  # no idea what type this is
 
     embed: dict
@@ -83,9 +88,25 @@ class Post:
         self.title = post.get("title", "")
         self.content = post.get("content", "")
         self.shared_file = post.get("shared_file", False)
-        self.added = post.get("added", "")
-        self.published = post.get("published", "")
-        self.edited = post.get("edited", "")
+
+        try:
+            self.added = datetime.fromisoformat(post.get("added", ""))
+        except Exception:
+            print(f"[Warning] Invalid isoformat string for `added`: '{post.get('added', '')}' ")
+            self.added = datetime.min
+
+        try:
+            self.published = datetime.fromisoformat(post.get("published", ""))
+        except Exception:
+            print(f"[Warning] Invalid isoformat string for `published`: '{post.get('published', '')}' ")
+            self.published = datetime.min
+
+        try:
+            self.edited = datetime.fromisoformat(post.get("edited", ""))
+        except Exception:
+            print(f"[Warning] Invalid isoformat string for `edited`: '{post.get('edited', '')}' ")
+            self.edited = datetime.min
+
         self.poll = post.get("poll", None)
         self.embed = post.get("embed", {})
 
@@ -138,6 +159,7 @@ def findSeverFromPath(attachments, previews, path):
 class TemplateVaribale:
     service: str
     creator_id: str
+    creator_name: str
     post_id: str
     post_title: str
     server_filename: str
@@ -147,10 +169,14 @@ class TemplateVaribale:
     file_name: str
     file_ext: str
     sha256: str
+    added: datetime
+    published: datetime
+    edited: datetime
 
     def __init__(self, creator: Creator, post: Post, attachment: Attachment) -> None:
         self.service = creator.service
         self.creator_id = creator.id
+        self.creator_name = creator.name
         self.post_id = post.id
         self.post_title = post.title
 
@@ -161,8 +187,14 @@ class TemplateVaribale:
         self.filename = attachment.name
         self.file_name, self.file_ext = splitext(self.filename)
 
+        self.added = post.added
+        self.published = post.published
+        self.edited = post.edited
+
     def __post_init__(self) -> None:
         for f in fields(self):
+            if f.type is datetime:
+                continue
             val = getattr(self, f.name)
             setattr(self, f.name, make_path_safe(val))
 
