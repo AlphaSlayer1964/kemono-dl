@@ -30,7 +30,6 @@ A downloader tool for kemono and coomer websties.
 | `--favorite-creators-coomer` | Download all favorite creators from Coomer.                                                                                                                                            |
 | `--favorite-creators-kemono` | Download all favorite creators from Kemono.                                                                                                                                            |
 
-
 ## Output Template Variables
 
 The output template is simply a [Python formatted string](https://docs.python.org/3/library/string.html#formatstrings).  
