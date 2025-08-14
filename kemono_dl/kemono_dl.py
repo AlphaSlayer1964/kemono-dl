@@ -135,7 +135,7 @@ class KemonoDL:
         return creator
 
     def get_creator_post_ids(self, domain: str, service: str, creator_id: str, offset: int = 0) -> list[str]:
-        response = self.session.get(f"{domain}/api/v1/{service}/user/{creator_id}", params={"o": offset})
+        response = self.session.get(f"{domain}/api/v1/{service}/user/{creator_id}/posts", params={"o": offset})
         posts = response.json()
         return [post.get("id") for post in posts]
 
