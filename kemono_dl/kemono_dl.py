@@ -129,13 +129,20 @@ class KemonoDL:
     def get_creator(self, domain: str, service: str, creator_id: str) -> Creator:
         creator = self.creators_cache.get((service, creator_id), None)
         if not creator:
-            response = self.session.get(f"{domain}/api/v1/{service}/user/{creator_id}/profile")
+            response = self.session.get(
+                f"{domain}/api/v1/{service}/user/{creator_id}/profile",
+                headers={"accept": "text/css"},
+            )
             creator = Creator(**response.json())
             self.creators_cache[(service, creator_id)] = creator
         return creator
 
     def get_creator_post_ids(self, domain: str, service: str, creator_id: str, offset: int = 0) -> list[str]:
-        response = self.session.get(f"{domain}/api/v1/{service}/user/{creator_id}/posts", params={"o": offset})
+        response = self.session.get(
+            f"{domain}/api/v1/{service}/user/{creator_id}/posts",
+            params={"o": offset},
+            headers={"accept": "text/css"},
+        )
         posts = response.json()
         return [post.get("id") for post in posts]
 
@@ -154,7 +161,10 @@ class KemonoDL:
 
     def get_post(self, domain: str, service: str, creator_id: str, post_id: str) -> Post | None:
         try:
-            response = self.session.get(f"{domain}/api/v1/{service}/user/{creator_id}/post/{post_id}")
+            response = self.session.get(
+                f"{domain}/api/v1/{service}/user/{creator_id}/post/{post_id}",
+                headers={"accept": "text/css"},
+            )
             post_api = response.json()
             return Post(post_api)
         except Exception as e:
@@ -165,13 +175,21 @@ class KemonoDL:
     def get_favorit_creators(self, domain: str) -> List[FavoriteCreator] | None:
         if not self.isLoggedin(domain):
             return None
-        response = self.session.get(f"{domain}/api/v1/account/favorites", params={"type": "artist"})
+        response = self.session.get(
+            f"{domain}/api/v1/account/favorites",
+            params={"type": "artist"},
+            headers={"accept": "text/css"},
+        )
         return [FavoriteCreator(**creator) for creator in response.json()]
 
     def get_favorit_post_ids(self, domain: str) -> List[str] | None:
         if not self.isLoggedin(domain):
             return None
-        response = self.session.get(f"{domain}/api/v1/account/favorites", params={"type": "post"})
+        response = self.session.get(
+            f"{domain}/api/v1/account/favorites",
+            params={"type": "post"},
+            headers={"accept": "text/css"},
+        )
         return [post.get("id") for post in response.json()]
 
     def download_creator_banner(self, domain: str, service: str, creator_id: str) -> None:
