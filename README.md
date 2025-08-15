@@ -20,15 +20,16 @@ A downloader tool for kemono and coomer websties.
 
 # Command Line Options
 
-| Option                       | Description                                                                                                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--path PATH`                | Set the base path for downloads.                                                                                                                                                       |
-| `--output OUTPUT_TEMPLATE`   | Set the file name pattern for attachments. See [Output Template Variables](https://github.com/AlphaSlayer1964/kemono-dl?tab=readme-ov-file#output-template-variables) for more detail. |
-| `--batch-file FILE`          | Loads urls from file. One url per line.                                                                                                                                                |
-| `--coomer-cookies FILE`      | Provide a cookies file for Coomer. Required for `--favorite-creators-coomer`.                                                                                                          |
-| `--kemono-cookies FILE`      | Provide a cookies file for Kemono. Required for `--favorite-creators-kemono`.                                                                                                          |
-| `--favorite-creators-coomer` | Download all favorite creators from Coomer.                                                                                                                                            |
-| `--favorite-creators-kemono` | Download all favorite creators from Kemono.                                                                                                                                            |
+| Option                             | Description                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--path PATH`                      | Set the base path for downloads.                                                                                                                                                       |
+| `--output OUTPUT_TEMPLATE`         | Set the file name pattern for attachments. See [Output Template Variables](https://github.com/AlphaSlayer1964/kemono-dl?tab=readme-ov-file#output-template-variables) for more detail. |
+| `--batch-file FILE`                | Loads urls from file. One url per line.                                                                                                                                                |
+| `--cookies FILEs`                  | Provide a cookies file(s) for Kemono/Coomer. Required for `--favorite-creators-coomer` and `--favorite-creators-kemono`.                                                               |
+| `--favorite-creators-coomer`       | Download all favorite creators from Coomer.                                                                                                                                            |
+| `--favorite-creators-kemono`       | Download all favorite creators from Kemono.                                                                                                                                            |
+| `--coomer-login USERNAME PASSWORD` | Username and password for Coomer.                                                                                                                                                      |
+| `--kemono-login USERNAME PASSWORD` | Username and password for Kemono.                                                                                                                                                      |
 
 ## Output Template Variables
 
