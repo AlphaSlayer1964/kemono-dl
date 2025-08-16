@@ -56,7 +56,9 @@ class AttachmentPreviews:
 class Attachment:
     name: str
     path: str
+    index: int
     server: str | None
+    count: int = 1
 
 
 @dataclass
@@ -110,37 +112,48 @@ class Post:
         self.poll = post.get("poll", None)
         self.embed = post.get("embed", {})
 
-        attachment = None
-        field_names = {f.name for f in fields(Attachment)}
-        file = post.get("file")
-        if file and isinstance(file, dict):
-            filtered_data = {k: v for k, v in file.items() if k in field_names}
+        self.attachments = []
 
-            attachment = Attachment(
-                **filtered_data,
-                server=findSeverFromPath(
-                    attachments,
-                    previews,
-                    file.get("path", ""),
-                ),
+        file = post.get("file")
+        if file and file.get("name", False) and file.get("path", False):
+            self.attachments.append(
+                Attachment(
+                    name=file.get("name"),
+                    path=file.get("path"),
+                    index=len(self.attachments),
+                    server=findSeverFromPath(
+                        attachments,
+                        previews,
+                        file.get("path"),
+                    ),
+                )
             )
 
-        self.attachments = []
         for a in post.get("attachments", []):
-            if a and isinstance(a, dict):
-                filtered_data = {k: v for k, v in a.items() if k in field_names}
+            if a and a.get("name", False) and a.get("path", False):
                 self.attachments.append(
                     Attachment(
-                        **filtered_data,
+                        name=a.get("name"),
+                        path=a.get("path"),
+                        index=len(self.attachments),
                         server=findSeverFromPath(
                             attachments,
                             previews,
-                            a.get("path", ""),
+                            a.get("path"),
                         ),
                     )
                 )
-        if attachment and attachment not in self.attachments:
-            self.attachments.append(attachment)
+
+        seen_pairs = set()
+        name_counts = {}
+
+        for attachment in self.attachments:
+            key = (attachment.name, attachment.path)
+            if key not in seen_pairs:
+                seen_pairs.add(key)
+                name_counts[attachment.name] = name_counts.get(attachment.name, 0) + 1
+            attachment.count = name_counts[attachment.name]
+
         self.captions = post.get("captions", None)
         self.tags = post.get("tags", None)
 
@@ -169,6 +182,8 @@ class TemplateVaribale:
     file_name: str
     file_ext: str
     sha256: str
+    index: int
+    count: int
     added: datetime
     published: datetime
     edited: datetime
@@ -179,7 +194,8 @@ class TemplateVaribale:
         self.creator_name = creator.name
         self.post_id = post.id
         self.post_title = post.title
-
+        self.index = attachment.index
+        self.count = attachment.count
         self.server_filename = attachment.path.split("/")[-1]
         self.server_file_name, self.server_file_ext = splitext(self.server_filename)
         self.sha256 = self.server_file_name
@@ -191,9 +207,8 @@ class TemplateVaribale:
         self.published = post.published
         self.edited = post.edited
 
-    def __post_init__(self) -> None:
         for f in fields(self):
-            if f.type is datetime:
+            if f.type is not str:
                 continue
             val = getattr(self, f.name)
             setattr(self, f.name, make_path_safe(val))
