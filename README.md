@@ -56,6 +56,7 @@ These placeholders can be used in the `--output` pattern:
 | `{added}`            | DateTime the post was added to kemono/coomer. Use `{added:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)**   |
 | `{published}`        | DateTime the post was published to service. Use `{published:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)** |
 | `{edited}`           | DateTime the post was edited by kemono/coomer. Use `{edited:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)** |
+| `{index}`            | The index order of the Posts `File` and `Attachments`. (Starts at 0) **(\*6)**                                                                                                                                   |
 
 > **\*1** If there is an error parsinf `{added}`, `{published}`, or `{edited}` it will default to `January 1, 0001`. This includes if any of those values are `Null` for the post.  
 
@@ -66,6 +67,8 @@ These placeholders can be used in the `--output` pattern:
 > **\*4** In Windows batch files, you must escape `%` with `%%`.  
 
 > **\*5** Be mindful that `{filename}` is not guaranteed to be unique. It is recomended to use `{server_filename}` or `{sha256}` to guaranteed uniqueness.  
+
+> **\*6** If a Post has a Post `File` it will be index 0 followed by the other `Attachments`.
 
 ### Output Template Examples
 ```bash
