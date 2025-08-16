@@ -100,13 +100,15 @@ def test_get_creator(mock_get, kemono_dl: KemonoDL) -> None:
     mock_get.assert_called_once_with(KemonoDL.COOMER_DOMAIN + "/api/v1/SERVICE_123/user/USER_123/profile", headers={"accept": "text/css"})
 
 
-def test_parse_url_match(kemono_dl: KemonoDL):
-    expected = ParsedUrl(
-        site="coomer",
-        service="SERVICE_123",
-        creator_id="USER_123",
-    )
+def test_parse_url_match_creator(kemono_dl: KemonoDL):
+    expected = {"site": "coomer", "service": "SERVICE_123", "creator_id": "USER_123", "post_id": None}
     result = kemono_dl.parse_url("https://coomer.st/SERVICE_123/user/USER_123")
+    assert result == expected
+
+
+def test_parse_url_match_post(kemono_dl: KemonoDL):
+    expected = {"site": "coomer", "service": "SERVICE_123", "creator_id": "USER_123", "post_id": "POST_123"}
+    result = kemono_dl.parse_url("https://coomer.st/SERVICE_123/user/USER_123/post/POST_123")
     assert result == expected
 
 
