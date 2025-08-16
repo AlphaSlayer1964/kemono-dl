@@ -45,7 +45,7 @@ def main() -> None:
 
     custom_template_variables = {}
     if args.custom_template_variables:
-        with open(args.custom_template_variables, "r") as f:
+        with open(args.custom_template_variables, "r", encoding="utf-8") as f:
             custom_template_variables = json.load(f)
 
     kemono_dl = KemonoDL(
