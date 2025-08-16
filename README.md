@@ -1,6 +1,8 @@
 # kemono-dl
 A downloader tool for kemono and coomer websties.
-
+> ⚠️ Version `2025.08.13` onward is not fully backwards compatible with the older versions of kemonod-dl.
+> If you want the old versions default download template use `--output "{service}/{creator_name} [{creator_id}]/[{published:%Y%m%d}] [{post_id}] {post_title}/{index}_{filename}"` though it is not exactly the same as the older version did some logic to clip the file path/name if it was longer than 255 characters. That being said it should work in most cases.
+ 
 ## How to use
 1. **Install Python 3**  
 
