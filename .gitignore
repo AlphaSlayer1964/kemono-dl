@@ -209,3 +209,4 @@ config.json
 test.txt
 .coverage
 customVars.json
+archive.txt
