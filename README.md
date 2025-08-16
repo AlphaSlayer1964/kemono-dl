@@ -1,6 +1,6 @@
 # kemono-dl
 A downloader tool for kemono and coomer websties.
-> ⚠️ Starting from version 2025.08.13, kemonod-dl is no longer fully backward compatible with earlier releases. If you prefer the default download template used in older versions, you can manually specify it using:
+> ⚠️ Starting from version `2025.08.13`, kemonod-dl is no longer fully backward compatible with earlier releases. If you prefer the default download template used in older versions, you can manually specify it using:
 > ```bash
 > --output "{service}/{creator_name} [{creator_id}]/[{published:%Y%m%d}] [{post_id}] {post_title}/{index}_{filename}"
 > ```
