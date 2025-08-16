@@ -30,6 +30,7 @@ class KemonoDL:
         output_template: str = "{service}/{creator_id}/{server_filename}",
         output_template_special: str = "{service}/{creator_id}/{type}_{sha256}.{file_ext}",
         restrict_names: bool = False,
+        custom_template_variables: dict = {},
         force_overwrite: OverwriteMode = "soft",
         max_retries: int = 3,
     ) -> None:
@@ -40,6 +41,7 @@ class KemonoDL:
         self.output_template = output_template
         self.output_template_special = output_template_special
         self.restrict_names = restrict_names
+        self.custom_template_variables = custom_template_variables
         self.force_overwrite = force_overwrite
         self.max_retries = max_retries
 
@@ -243,10 +245,18 @@ class KemonoDL:
 
         for attachment in post.attachments:
             template_variables = TemplateVaribale(creator, post, attachment)
+
+            template_variables_dict = template_variables.toDict()
+            for key, value in self.custom_template_variables.items():
+                if key in template_variables_dict:
+                    print(f"[Warning] Custom variable key {key!r} conflicts with default variable keys. Skipping.")
+                    continue
+                template_variables_dict[key] = eval(value.format(**template_variables_dict))
+
             file_path = generate_file_path(
                 self.path,
                 self.output_template,
-                template_variables.toDict(),
+                template_variables_dict,
                 self.restrict_names,
             )
             expected_sha256 = template_variables.sha256
