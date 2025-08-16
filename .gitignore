@@ -207,3 +207,5 @@ test.py
 run.bat
 config.json
 test.txt
+text.txt
+.coverage
