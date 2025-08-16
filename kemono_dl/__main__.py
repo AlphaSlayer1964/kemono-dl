@@ -30,6 +30,7 @@ def parse_args():
     parser.add_argument("--coomer-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Coomer")
     parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
     parser.add_argument("--custom-template-variables", type=str, help="Path to a json file with your custom template variables")
+    parser.add_argument("--archive", metavar="FILE", type=str, help="Path to archive file containing a list of post urls")
     parser.add_argument("urls", nargs="*", help="URLs to download")
 
     return parser.parse_args()
@@ -52,6 +53,7 @@ def main() -> None:
         output_template=args.output,
         restrict_names=args.restrict_names,
         custom_template_variables=custom_template_variables,
+        archive_file=args.archive,
     )
 
     if args.cookies:
