@@ -35,7 +35,7 @@ def get_sha256_url_content(session: Session, url: str, chunk_size: int = 8192):
     return sha256.hexdigest()
 
 
-def generate_file_path(base_path: str, output_template: str, template_variables: dict):
+def generate_file_path(base_path: str, output_template: str, template_variables: dict, restrict_names: bool) -> str:
     try:
         expanded_path = output_template.format(**template_variables)
     except KeyError as e:
@@ -45,6 +45,9 @@ def generate_file_path(base_path: str, output_template: str, template_variables:
         final_path = expanded_path
     else:
         final_path = os.path.join(base_path, expanded_path)
+
+    if restrict_names:
+        final_path = re.sub(r"[^\x20-\x7E]", "_", str(final_path))
 
     final_path = str(Path(final_path))
 
