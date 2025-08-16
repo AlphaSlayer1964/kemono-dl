@@ -20,15 +20,16 @@ A downloader tool for kemono and coomer websties.
 
 # Command Line Options
 
-| Option                       | Description                                                                                                                                                                            |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--path PATH`                | Set the base path for downloads.                                                                                                                                                       |
-| `--output OUTPUT_TEMPLATE`   | Set the file name pattern for attachments. See [Output Template Variables](https://github.com/AlphaSlayer1964/kemono-dl?tab=readme-ov-file#output-template-variables) for more detail. |
-| `--batch-file FILE`          | Loads urls from file. One url per line.                                                                                                                                                |
-| `--coomer-cookies FILE`      | Provide a cookies file for Coomer. Required for `--favorite-creators-coomer`.                                                                                                          |
-| `--kemono-cookies FILE`      | Provide a cookies file for Kemono. Required for `--favorite-creators-kemono`.                                                                                                          |
-| `--favorite-creators-coomer` | Download all favorite creators from Coomer.                                                                                                                                            |
-| `--favorite-creators-kemono` | Download all favorite creators from Kemono.                                                                                                                                            |
+| Option                             | Description                                                                                                                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--path PATH`                      | Set the base path for downloads.                                                                                                                                                       |
+| `--output OUTPUT_TEMPLATE`         | Set the file name pattern for attachments. See [Output Template Variables](https://github.com/AlphaSlayer1964/kemono-dl?tab=readme-ov-file#output-template-variables) for more detail. |
+| `--batch-file FILE`                | Loads urls from file. One url per line.                                                                                                                                                |
+| `--cookies FILEs`                  | Provide a cookies file(s) for Kemono/Coomer. Required for `--favorite-creators-coomer` and `--favorite-creators-kemono`.                                                               |
+| `--favorite-creators-coomer`       | Download all favorite creators from Coomer.                                                                                                                                            |
+| `--favorite-creators-kemono`       | Download all favorite creators from Kemono.                                                                                                                                            |
+| `--coomer-login USERNAME PASSWORD` | Username and password for Coomer.                                                                                                                                                      |
+| `--kemono-login USERNAME PASSWORD` | Username and password for Kemono.                                                                                                                                                      |
 
 ## Output Template Variables
 
@@ -55,6 +56,7 @@ These placeholders can be used in the `--output` pattern:
 | `{added}`            | DateTime the post was added to kemono/coomer. Use `{added:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)**   |
 | `{published}`        | DateTime the post was published to service. Use `{published:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)** |
 | `{edited}`           | DateTime the post was edited by kemono/coomer. Use `{edited:FORMAT}` to format. See [format codes](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes). **(\*1, \*2, \*3, \*4)** |
+| `{index}`            | The index order of the Posts `File` and `Attachments`. (Starts at 0) **(\*6)**                                                                                                                                   |
 
 > **\*1** If there is an error parsinf `{added}`, `{published}`, or `{edited}` it will default to `January 1, 0001`. This includes if any of those values are `Null` for the post.  
 
@@ -65,6 +67,8 @@ These placeholders can be used in the `--output` pattern:
 > **\*4** In Windows batch files, you must escape `%` with `%%`.  
 
 > **\*5** Be mindful that `{filename}` is not guaranteed to be unique. It is recomended to use `{server_filename}` or `{sha256}` to guaranteed uniqueness.  
+
+> **\*6** If a Post has a Post `File` it will be index 0 followed by the other `Attachments`.
 
 ### Output Template Examples
 ```bash

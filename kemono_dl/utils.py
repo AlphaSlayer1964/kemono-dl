@@ -48,6 +48,4 @@ def generate_file_path(base_path: str, output_template: str, template_variables:
 
     final_path = str(Path(final_path))
 
-    os.makedirs(os.path.dirname(final_path), exist_ok=True)
-
     return final_path
