@@ -9,9 +9,9 @@ from typing import List, Literal
 from requests.exceptions import RequestException
 
 from .downloader import download_file
-from .models import Creator, FavoriteCreator, ParsedUrl, Post, TemplateVaribale
+from .models import Creator, FavoriteCreator, Post, TemplateVaribale
 from .session import CustomSession
-from .utils import generate_file_path, get_sha256_hash, get_sha256_url_content, make_path_safe
+from .utils import generate_file_path, get_sha256_hash, get_sha256_url_content
 
 OverwriteMode = Literal[False, "soft", True]
 # "soft" will not overwrite the file if it has the expected sha256 hash
@@ -31,6 +31,7 @@ class KemonoDL:
         output_template_special: str = "{service}/{creator_id}/{type}_{sha256}.{file_ext}",
         restrict_names: bool = False,
         custom_template_variables: dict = {},
+        archive_file: str | None = None,
         force_overwrite: OverwriteMode = "soft",
         max_retries: int = 3,
     ) -> None:
@@ -45,11 +46,31 @@ class KemonoDL:
         self.force_overwrite = force_overwrite
         self.max_retries = max_retries
 
-    def parse_url(self, url) -> ParsedUrl | None:
+        self.archive_file = archive_file
+        self.archived_posts = []
+        self.load_archive_file()
+
+    def load_archive_file(self) -> None:
+        if self.archive_file and os.path.isfile(self.archive_file):
+            with open(self.archive_file, "r") as f:
+                self.archived_posts.extend(f"{parsed_url['service']}/user/{parsed_url['creator_id']}/post/{parsed_url['post_id']}" for line in f if (parsed_url := self.parse_url(line.strip())))
+
+    def write_archive_file(self, domain: str, service: str, creator_id: str, post_id: str) -> None:
+        archive_data = f"{domain}/{service}/user/{creator_id}/post/{post_id}"
+        self.archived_posts.append(archive_data)
+        if self.archive_file:
+            if os.path.exists(self.archive_file):
+                with open(self.archive_file, "a") as f:
+                    f.write(archive_data + "\n")
+            else:
+                with open(self.archive_file, "w") as f:
+                    f.write(archive_data + "\n")
+
+    def parse_url(self, url) -> dict | None:
         match = re.match(KemonoDL.URL_PARSE_PATTERN, url)
         if match:
             site, service, creator_id, post_id = match.groups()
-            return ParsedUrl(site, service, creator_id, post_id)
+            return {"site": site, "service": service, "creator_id": creator_id, "post_id": post_id}
         return None
 
     def load_cookies(self, cookies_file: str) -> bool:
@@ -118,6 +139,9 @@ class KemonoDL:
         return posts
 
     def get_post(self, domain: str, service: str, creator_id: str, post_id: str) -> Post | None:
+        if f"{service}/user/{creator_id}/post/{post_id}" in self.archived_posts:
+            print(f"[info] Post {post_id!r} already archived. Skipping.")
+            return None
         try:
             url = f"{domain}/api/v1/{service}/user/{creator_id}/post/{post_id}"
             response = self.session.get(url, headers={"accept": "text/css"})
@@ -178,16 +202,16 @@ class KemonoDL:
             print("Invalid URL:" + url)
             return
 
-        domain = KemonoDL.KEMONO_DOMAIN if parsed_url.site == "kemono" else KemonoDL.COOMER_DOMAIN
-        if parsed_url.post_id:
-            post = self.get_post(domain, parsed_url.service, parsed_url.creator_id, parsed_url.post_id)
+        domain = KemonoDL.KEMONO_DOMAIN if parsed_url["site"] == "kemono" else KemonoDL.COOMER_DOMAIN
+        if parsed_url["post_id"]:
+            post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
             if post:
                 self.download_post(domain, post)
         else:
-            post_ids = self.get_all_creator_post_ids(domain, parsed_url.service, parsed_url.creator_id)
+            post_ids = self.get_all_creator_post_ids(domain, parsed_url["service"], parsed_url["creator_id"])
             for post_id in post_ids:
                 time.sleep(0.5)
-                post = self.get_post(domain, parsed_url.service, parsed_url.creator_id, post_id)
+                post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
                 if post:
                     self.download_post(domain, post)
 
@@ -230,8 +254,11 @@ class KemonoDL:
         )
 
     def download_post(self, domain: str, post: Post) -> None:
-        print(f"[downloading] Post: {make_path_safe(post.title)[:100]}")
+        printable_title = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", post.title)[:50]
+        print(f"[downloading] Post: {printable_title}")
         self.download_post_attachments(domain, post)
+
+        self.write_archive_file(domain, post.service, post.user, post.id)
 
     def download_post_attachments(self, domain: str, post: Post) -> None:
         if not post.attachments:
