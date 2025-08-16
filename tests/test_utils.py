@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 
-from kemono_dl.utils import format_bytes, get_sha256_hash, get_sha256_url_content, make_path_safe
+from kemono_dl.utils import format_bytes, get_sha256_hash, get_sha256_url_content
 
 
 def test_get_sha256_hash():
@@ -37,18 +37,6 @@ def test_get_sha256_hash():
 )
 def test_format_bytes(size, expected):
     assert format_bytes(size) == expected
-
-
-@pytest.mark.parametrize(
-    "value,replace,expected",
-    [
-        ("filename<>", "-", "filename--"),
-        ("inva|id:name?.txt", "_", "inva_id_name_.txt"),
-        ("normal", "#", "normal"),
-    ],
-)
-def test_make_path_safe(value, replace, expected):
-    assert make_path_safe(value, replace) == expected
 
 
 def test_get_sha256_url_content():

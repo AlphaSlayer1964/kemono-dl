@@ -1,9 +1,7 @@
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from os.path import splitext
 from typing import List
-
-from .utils import make_path_safe
 
 
 @dataclass
@@ -206,12 +204,6 @@ class TemplateVaribale:
         self.added = post.added
         self.published = post.published
         self.edited = post.edited
-
-        for f in fields(self):
-            if f.type is not str:
-                continue
-            val = getattr(self, f.name)
-            setattr(self, f.name, make_path_safe(val))
 
     def toDict(self) -> dict[str, str]:
         return asdict(self)

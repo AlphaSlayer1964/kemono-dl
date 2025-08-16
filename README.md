@@ -36,6 +36,7 @@ A downloader tool for kemono and coomer websties.
 | `--coomer-login USERNAME PASSWORD` | Username and password for Coomer.                                                                                                                                                      |
 | `--kemono-login USERNAME PASSWORD` | Username and password for Kemono.                                                                                                                                                      |
 | `--restrict-name`                  | Restrict output file to ASCII characters.                                                                                                                                              |
+| `--custom-template-variables`      | Path to a json file with your custom template variables                                                                                                                                |
 
 ## Output Template Variables
 
@@ -91,3 +92,18 @@ patreon/12345/67890_attachment_wm54swsglbfs4583qzp7u880tmglvdqzeg6vqni12s6ywfsk3
 python -m kemono_dl --output "{service}/{creator_id}/[{published:%Y-%m-%d %H-%M-%S}]_{post_id}/{filename}" "https://kemono.cr/patreon/user/12345/post/67890"
 patreon/12345/[2025-08-13 00-00-00]_67890/attachment.png # The post was published on August 13, 2025 at 12:00:00 AM
 ```
+
+### Custom Template Variables
+
+You can define your own template variables in a JSON file, and they will be evaluated as Python expressions.
+Custom variables can also reference built-in template variables using `{...}` syntax.
+
+```json
+{
+   "titleNoDogs": "'{post_title}'.replace('dog', 'cat')",
+   "indexPlusOne": "{index} + 1"
+}
+```
+In your output template, simply use `{titleNoDogs}` or `{indexPlusOne}` to insert their evaluated values.
+
+> Note: You cannot overwrite the default template variables. Custom variables must use unique names that don't conflict with the built-in ones.
