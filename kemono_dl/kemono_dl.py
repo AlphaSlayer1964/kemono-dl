@@ -111,6 +111,7 @@ class KemonoDL:
             if len(posts_chunk) < KemonoDL.POST_STEP_SIZE:
                 break
             offset += KemonoDL.POST_STEP_SIZE
+            time.sleep(0.5)
         return posts
 
     def get_post(self, domain: str, service: str, creator_id: str, post_id: str) -> Post | None:
@@ -256,19 +257,20 @@ class KemonoDL:
                     print(f"[info] File already exists with matching sha256 at {file_path}")
                     continue
 
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
             url = f"{attachment.server}/data{attachment.path}"
 
             for attempt in range(self.max_retries):
                 try:
                     download_file(self.session, url, file_path)
                     break
-                except DDOSGuardError as e:
-                    print(f"[DDOSGuardError] {e}")
                 except Exception as e:
-                    print(f"[Error] {e}")
+                    print(f"[Error] Failed to download attachment from {url!r}: {e}")
             else:
                 print(f"[Error] All {self.max_retries} download reties failed")
                 return
 
-            if expected_sha256 != get_sha256_hash(file_path):
-                raise FileHashError()
+            actual_sha256 = get_sha256_hash(file_path)
+            if expected_sha256 != actual_sha256:
+                print(f"[Error] File downloaded with incorrect SHA-256. Expected: {expected_sha256} Actual: {actual_sha256}")
