@@ -2,6 +2,7 @@ import argparse
 import os
 
 from .kemono_dl import KemonoDL
+from .version import __version__
 
 COOMER_COOKIES = "coomer.st_cookies.txt"
 KEMONO_COOKIES = "kemono.cr_cookies.txt"
@@ -23,18 +24,10 @@ def parse_args():
     # parser.add_argument("--favorite-posts-coomer", action="store_true", help="Download favorite posts from Coomer")
     # parser.add_argument("--favorite-posts-kemono", action="store_true", help="Download favorite posts from Kemono")
     parser.add_argument("--batch-file", type=str, help="Download URLs from a file")
-    parser.add_argument(
-        "--coomer-login",
-        nargs=2,
-        metavar=("USERNAME", "PASSWORD"),
-        help="Login for Coomer",
-    )
-    parser.add_argument(
-        "--kemono-login",
-        nargs=2,
-        metavar=("USERNAME", "PASSWORD"),
-        help="Login for Kemono",
-    )
+    parser.add_argument("--restrict-names", action="store_true", help="Restrict output file to ASCII characters.")
+    parser.add_argument("--version", action="store_true", help="Print program version and exit")
+    parser.add_argument("--coomer-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Coomer")
+    parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
     parser.add_argument("urls", nargs="*", help="URLs to download")
 
     return parser.parse_args()
@@ -43,7 +36,15 @@ def parse_args():
 def main() -> None:
     args = parse_args()
 
-    kemono_dl = KemonoDL(path=args.path, output_template=args.output)
+    if args.version:
+        print(__version__)
+        quit()
+
+    kemono_dl = KemonoDL(
+        path=args.path,
+        output_template=args.output,
+        restrict_names=args.restrict_names,
+    )
 
     if args.cookies:
         for cookie_file in args.cookies:

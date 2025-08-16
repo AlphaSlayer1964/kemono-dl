@@ -9,7 +9,6 @@ from typing import List, Literal
 from requests.exceptions import RequestException
 
 from .downloader import download_file
-from .exceptions import DDOSGuardError, FileHashError
 from .models import Creator, FavoriteCreator, ParsedUrl, Post, TemplateVaribale
 from .session import CustomSession
 from .utils import generate_file_path, get_sha256_hash, get_sha256_url_content, make_path_safe
@@ -30,6 +29,7 @@ class KemonoDL:
         path: str = os.getcwd(),
         output_template: str = "{service}/{creator_id}/{server_filename}",
         output_template_special: str = "{service}/{creator_id}/{type}_{sha256}.{file_ext}",
+        restrict_names: bool = False,
         force_overwrite: OverwriteMode = "soft",
         max_retries: int = 3,
     ) -> None:
@@ -39,6 +39,7 @@ class KemonoDL:
         self.path = path
         self.output_template = output_template
         self.output_template_special = output_template_special
+        self.restrict_names = restrict_names
         self.force_overwrite = force_overwrite
         self.max_retries = max_retries
 
@@ -217,6 +218,7 @@ class KemonoDL:
                 "type": type,
                 "sha256": sha256,
             },
+            self.restrict_names,
         )
 
         download_file(
@@ -241,7 +243,12 @@ class KemonoDL:
 
         for attachment in post.attachments:
             template_variables = TemplateVaribale(creator, post, attachment)
-            file_path = generate_file_path(self.path, self.output_template, template_variables.toDict())
+            file_path = generate_file_path(
+                self.path,
+                self.output_template,
+                template_variables.toDict(),
+                self.restrict_names,
+            )
             expected_sha256 = template_variables.sha256
 
             if os.path.exists(file_path):
