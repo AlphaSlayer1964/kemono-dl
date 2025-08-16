@@ -30,6 +30,7 @@ A downloader tool for kemono and coomer websties.
 | `--favorite-creators-kemono`       | Download all favorite creators from Kemono.                                                                                                                                            |
 | `--coomer-login USERNAME PASSWORD` | Username and password for Coomer.                                                                                                                                                      |
 | `--kemono-login USERNAME PASSWORD` | Username and password for Kemono.                                                                                                                                                      |
+| `--restrict-name`                  | Restrict output file to ASCII characters.                                                                                                                                              |
 
 ## Output Template Variables
 
