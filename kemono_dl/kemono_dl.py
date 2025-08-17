@@ -27,8 +27,8 @@ class KemonoDL:
     def __init__(
         self,
         path: str = os.getcwd(),
-        output_template: str = "{service}/{creator_id}/{server_filename}",
-        output_template_special: str = "{service}/{creator_id}/{type}_{sha256}.{file_ext}",
+        output_template: str = "{service}/{creator_id}/{post_id}/{file_name}",
+        output_template_special: str = "{service}/{creator_id}/{type}.{file_ext}",
         restrict_names: bool = False,
         custom_template_variables: dict = {},
         archive_file: str | None = None,
