@@ -56,7 +56,6 @@ class Attachment:
     path: str
     index: int
     server: str | None
-    count: int = 1
 
 
 @dataclass
@@ -142,16 +141,6 @@ class Post:
                     )
                 )
 
-        seen_pairs = set()
-        name_counts = {}
-
-        for attachment in self.attachments:
-            key = (attachment.name, attachment.path)
-            if key not in seen_pairs:
-                seen_pairs.add(key)
-                name_counts[attachment.name] = name_counts.get(attachment.name, 0) + 1
-            attachment.count = name_counts[attachment.name]
-
         self.captions = post.get("captions", None)
         self.tags = post.get("tags", None)
 
@@ -181,7 +170,7 @@ class TemplateVaribale:
     file_ext: str
     sha256: str
     index: int
-    count: int
+    attachments_count: int
     added: datetime
     published: datetime
     edited: datetime
@@ -193,7 +182,7 @@ class TemplateVaribale:
         self.post_id = post.id
         self.post_title = post.title
         self.index = attachment.index
-        self.count = attachment.count
+        self.attachments_count = len(post.attachments)
         self.server_filename = attachment.path.split("/")[-1]
         self.server_file_name, self.server_file_ext = splitext(self.server_filename)
         self.sha256 = self.server_file_name
