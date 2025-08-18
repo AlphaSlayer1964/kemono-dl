@@ -34,6 +34,8 @@ class KemonoDL:
         archive_file: str | None = None,
         force_overwrite: OverwriteMode = "soft",
         max_retries: int = 3,
+        post_filters: dict = {},
+        attachment_filters: dict = {},
     ) -> None:
         self.domain = KemonoDL.COOMER_DOMAIN
         self.session = CustomSession()
@@ -45,6 +47,8 @@ class KemonoDL:
         self.custom_template_variables = custom_template_variables
         self.force_overwrite = force_overwrite
         self.max_retries = max_retries
+        self.post_filters = post_filters
+        self.attachment_filters = attachment_filters
 
         self.archive_file = archive_file
         self.archived_posts = []
@@ -139,9 +143,6 @@ class KemonoDL:
         return posts
 
     def get_post(self, domain: str, service: str, creator_id: str, post_id: str) -> Post | None:
-        if f"{service}/user/{creator_id}/post/{post_id}" in self.archived_posts:
-            print(f"[info] Post {post_id!r} already archived. Skipping.")
-            return None
         try:
             url = f"{domain}/api/v1/{service}/user/{creator_id}/post/{post_id}"
             response = self.session.get(url, headers={"accept": "text/css"})
@@ -254,8 +255,17 @@ class KemonoDL:
         )
 
     def download_post(self, domain: str, post: Post) -> None:
+        if f"{post.service}/user/{post.user}/post/{post.id}" in self.archived_posts:
+            print(f"[info] Post {post.id!r} already archived. Skipping.")
+            return
+
+        if self.post_matches_filters(post):
+            print("[info] Post matched 1 or more post filters. Skipping.")
+            return
+
         printable_title = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", post.title)[:50]
         print(f"[downloading] Post: {printable_title}")
+
         self.download_post_attachments(domain, post)
 
         self.write_archive_file(domain, post.service, post.user, post.id)
@@ -271,6 +281,10 @@ class KemonoDL:
         print(f"[downloading] Attachments: {len(post.attachments)}")
 
         for attachment in post.attachments:
+            if self.attachment_matches_filters(attachment):
+                print("[info] Attachment matched 1 or more attachment filters. Skipping.")
+                continue
+
             template_variables = TemplateVaribale(creator, post, attachment)
 
             template_variables_dict = template_variables.toDict()
@@ -318,3 +332,29 @@ class KemonoDL:
             actual_sha256 = get_sha256_hash(file_path)
             if expected_sha256 != actual_sha256:
                 print(f"[Error] File downloaded with incorrect SHA-256. Expected: {expected_sha256} Actual: {actual_sha256}")
+
+    def attachment_matches_filters(self, attachment) -> bool:
+        skip_extentions = self.attachment_filters.get("skip_extentions", None)
+        file_ext = os.path.splitext(attachment.name)[-1][1:]
+
+        if skip_extentions and file_ext in skip_extentions:
+            return True
+
+        return False
+
+    def post_matches_filters(self, post: Post) -> bool:
+        date_filter = self.post_filters.get("date", {})
+        datebefore_filter = self.post_filters.get("datebefore", {})
+        dateafter_filter = self.post_filters.get("dateafter", {})
+        date_fields = ("added", "edited", "published")
+
+        for field in date_fields:
+            post_val = getattr(post, field)
+            if (val := date_filter.get(field)) and post_val.date() != val.date():
+                return True
+            if (val := datebefore_filter.get(field)) and post_val.date() > val.date():
+                return True
+            if (val := dateafter_filter.get(field)) and post_val.date() < val.date():
+                return True
+
+        return False
