@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument("--date", metavar="[Type:]DATE", type=str, help="Download only posts uploaded on this date. Format 'YYYYMMDD'")
     parser.add_argument("--datebefore", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or before this date. Format 'YYYYMMDD'")
     parser.add_argument("--dateafter", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or after this date. Format 'YYYYMMDD'")
-    parser.add_argument("--skip-extentions", metavar="EXTs", type=str, help="A comma seperated list of file extentions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
+    parser.add_argument("--skip-extensions", metavar="EXTs", type=str, help="A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
     parser.add_argument("urls", nargs="*", help="URLs to download")
 
     return parser.parse_args()
@@ -91,11 +91,11 @@ def main() -> None:
                 quit()
 
     attachment_filters = {
-        "skip_extentions": [],
+        "skip_extensions": [],
     }
 
-    if args.skip_extentions:
-        attachment_filters["skip_extentions"] = [ext.strip() for ext in args.skip_extentions.split(",")]
+    if args.skip_extensions:
+        attachment_filters["skip_extensions"] = [ext.strip() for ext in args.skip_extensions.split(",")]
 
     kemono_dl = KemonoDL(
         path=args.path,

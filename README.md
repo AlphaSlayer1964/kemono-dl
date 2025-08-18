@@ -40,7 +40,7 @@ A downloader tool for kemono and coomer websties.
 | `--date [Type:]DATE`               | Download only posts published on this date. Format 'YYYYMMDD' **(\*1)**                                                                                                                |
 | `--datebefore [Type:]DATE`         | Download only posts published on or before this date. Format 'YYYYMMDD' **(\*1)**                                                                                                      |
 | `--dateafter [Type:]DATE`          | Download only posts published on or after this date. Format 'YYYYMMDD' **(\*1)**                                                                                                       |
-| `--skip-extentions EXTs`           | A comma seperated list of file extentions to skip (Do not include the period) (Checks the extention of the filename not the server filename).                                          |
+| `--skip-extensions EXTs`           | A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).                                          |
 
 > **\*1** You can apply date filters to different types. The available options are `"added:YYYYMMDD"`, `"edited:YYYYMMDD"`, and `"published:YYYYMMDD"`. If no type is specified, the published date is used by default.
 
