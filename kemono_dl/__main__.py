@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from datetime import datetime
 
 from .kemono_dl import KemonoDL
 from .version import __version__
@@ -31,9 +32,25 @@ def parse_args():
     parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
     parser.add_argument("--custom-template-variables", type=str, help="Path to a json file with your custom template variables")
     parser.add_argument("--archive", metavar="FILE", type=str, help="Path to archive file containing a list of post urls")
+    parser.add_argument("--date", metavar="[Type:]DATE", type=str, help="Download only posts uploaded on this date. Format 'YYYYMMDD'")
+    parser.add_argument("--datebefore", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or before this date. Format 'YYYYMMDD'")
+    parser.add_argument("--dateafter", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or after this date. Format 'YYYYMMDD'")
+    parser.add_argument("--skip-extentions", metavar="EXTs", type=str, help="A comma seperated list of file extentions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
     parser.add_argument("urls", nargs="*", help="URLs to download")
 
     return parser.parse_args()
+
+
+def parse_date_string(s):
+    parts = s.split(":", 1)
+    return parts if len(parts) == 2 else (None, parts[0])
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def main() -> None:
@@ -48,12 +65,46 @@ def main() -> None:
         with open(args.custom_template_variables, "r", encoding="utf-8") as f:
             custom_template_variables = json.load(f)
 
+    post_filters = {
+        "date": {"added": None, "edited": None, "published": None},
+        "datebefore": {"added": None, "edited": None, "published": None},
+        "dateafter": {"added": None, "edited": None, "published": None},
+    }
+
+    for arg, filter in [
+        (args.date, post_filters["date"]),
+        (args.datebefore, post_filters["datebefore"]),
+        (args.dateafter, post_filters["dateafter"]),
+    ]:
+        if arg:
+            date_type, date_string = parse_date_string(arg)
+            if date_type not in filter and date_type is not None:
+                print(f"[Error] Invalid date filter: {arg!r}")
+                quit()
+            try:
+                if date_type is None:
+                    filter["published"] = datetime.strptime(date_string, "%Y%m%d")  # type: ignore
+                else:
+                    filter[date_type] = datetime.strptime(date_string, "%Y%m%d")  # type: ignore
+            except ValueError:
+                print(f"[Error] Invalid date format. {date_string!r} does not match '%Y%m%d'")
+                quit()
+
+    attachment_filters = {
+        "skip_extentions": [],
+    }
+
+    if args.skip_extentions:
+        attachment_filters["skip_extentions"] = [ext.strip() for ext in args.skip_extentions.split(",")]
+
     kemono_dl = KemonoDL(
         path=args.path,
         output_template=args.output,
         restrict_names=args.restrict_names,
         custom_template_variables=custom_template_variables,
         archive_file=args.archive,
+        post_filters=post_filters,
+        attachment_filters=attachment_filters,
     )
 
     if args.cookies:
