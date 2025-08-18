@@ -334,10 +334,10 @@ class KemonoDL:
                 print(f"[Error] File downloaded with incorrect SHA-256. Expected: {expected_sha256} Actual: {actual_sha256}")
 
     def attachment_matches_filters(self, attachment) -> bool:
-        skip_extentions = self.attachment_filters.get("skip_extentions", None)
+        skip_extensions = self.attachment_filters.get("skip_extensions", None)
         file_ext = os.path.splitext(attachment.name)[-1][1:]
 
-        if skip_extentions and file_ext in skip_extentions:
+        if skip_extensions and file_ext in skip_extensions:
             return True
 
         return False
