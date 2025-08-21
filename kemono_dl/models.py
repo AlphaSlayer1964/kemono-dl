@@ -5,14 +5,6 @@ from typing import List
 
 
 @dataclass
-class ParsedUrl:
-    site: str
-    service: str
-    creator_id: str
-    post_id: str | None = None
-
-
-@dataclass
 class Creator:
     id: str
     name: str
@@ -40,14 +32,6 @@ class FavoriteCreator:
     faved_seq: int
     last_imported: str
     has_chats: bool | None = None
-
-
-@dataclass
-class AttachmentPreviews:
-    type: str
-    server: str
-    name: str
-    path: str
 
 
 @dataclass
