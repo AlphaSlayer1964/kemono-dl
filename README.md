@@ -7,26 +7,32 @@ A downloader tool for kemono and coomer websties.
 > Keep in mind that while this template closely mirrors the previous behavior, older versions included logic to truncate file paths and names exceeding 255 characters. This new version does not replicate that trimming exactly, but the template should still work correctly in most cases.
  
 ## How to use
-1. **Install Python 3**  
+1. **Install Python**  
+   Make sure Python 3.8 or later is installed and available in your system PATH.
 
 2. **Download the latest release**  
    Get the source code for the [latest version](https://github.com/AplhaSlayer1964/kemono-dl/releases/latest) and extract it.
 
-3. **Install dependencies**  
+3. **Install with pip**  
+   Open a terminal and **navigate to the root folder of the extracted project** (where `pyproject.toml` is located). Then run:
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
-4.  **Run Python Module**  
+4.  **Run kemono-dl**  
     ```bash
-    python -m kemono_dl "https://kemono.cr/SERVICE/user/CREATOR_ID" 
-    python -m kemono_dl "https://coomer.st/SERVICE/user/CREATOR_ID/post/POST_ID"
+    kemono-dl --version
+    kemono-dl "https://kemono.cr/SERVICE/user/CREATOR_ID" 
+    kemono-dl "https://coomer.st/SERVICE/user/CREATOR_ID/post/POST_ID"
     ```
+
+> **\*** To update, repeat steps 2 and 3 using the latest release.
 
 # Command Line Options
 
 | Option                             | Description                                                                                                                                                                            |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--version`                        | Prints the version then quits.                                                                                                                                                         |
 | `--path PATH`                      | Set the base path for downloads.                                                                                                                                                       |
 | `--output OUTPUT_TEMPLATE`         | Set the file name pattern for attachments. See [Output Template Variables](https://github.com/AlphaSlayer1964/kemono-dl?tab=readme-ov-file#output-template-variables) for more detail. Default Template: `"{service}/{creator_id}/{post_id}/{filename}"` |
 | `--batch-file FILE`                | Loads urls from file. One url per line.                                                                                                                                                |
