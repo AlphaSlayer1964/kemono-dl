@@ -17,7 +17,7 @@ DOWNLOAD_FAVORITE_POSTS_KEMONO = False
 def parse_args():
     parser = argparse.ArgumentParser(description="KemonoDL Downloader")
 
-    parser.add_argument("--path", type=str, default=os.path.join(os.getcwd(), "Downloads"), help="Download directory path")
+    parser.add_argument("--path", type=str, default=os.getcwd(), help="Download directory path")
     parser.add_argument("--output", type=str, default="{service}/{creator_id}/{post_id}/{filename}", help="Post attachments output filename tamplate")
     # parser.add_argument("--output-special", type=str, default="{service}/{creator_id}/{type}_{sha256}.{file_ext}", help="Creator profile picture and banner output filename tamplate")
     parser.add_argument("--cookies", type=str, nargs="+", help="Path(s) to cookies files")
