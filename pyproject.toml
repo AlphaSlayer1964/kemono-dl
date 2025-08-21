@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kemono-dl"
+version = "2025.08.20"
+description = "A simple downloader for kemono/coomer using Python."
+authors = [
+  { name="AlphaSlayer1964" }
+]
+dependencies = [
+  "requests>=2.32.4"
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent"
+]
+
+[tool.setuptools.packages.find]
+include = ["kemono_dl"]
+
+[project.scripts]
+kemono-dl = "kemono_dl.__main__:main"
