@@ -6,8 +6,8 @@ from .utils import format_bytes
 
 
 def download_file(session: CustomSession, url: str, filepath: str, chunk_size: int = 8192) -> None:
-    print("[downloading] Source: " + url)
-    print("[downloading] Destination:" + filepath)
+    print(f"[downloading] Source: {url!r}")
+    print(f"[downloading] Destination: {filepath!r}")
     with session.get(url, stream=True, allow_redirects=True) as response:
         response.raise_for_status()
 
