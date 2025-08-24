@@ -134,5 +134,3 @@ Custom variables can also reference built-in template variables using `{...}` sy
 }
 ```
 In your output template, simply use the variables like the default ones (ie `{titleTrunc}`) to insert their evaluated values.
-
-> Note: You cannot overwrite the default template variables. Custom variables must use unique names that don't conflict with the built-in ones.
