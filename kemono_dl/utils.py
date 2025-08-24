@@ -13,6 +13,11 @@ def get_sha256_hash(file_path: str) -> str:
     return sha256.hexdigest()
 
 
+def compute_sha256(text: str) -> str:
+    sha256_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return sha256_hash
+
+
 def format_bytes(size) -> str:
     for unit in ["B", "KiB", "MiB", "GiB"]:
         if size < 1024.0:
@@ -53,6 +58,9 @@ def generate_file_path(
 
     if not path.is_absolute():
         path = Path(base_path) / path
+
+    if not path.is_absolute():
+        path = Path.cwd() / path
 
     if restrict_names:
         path = Path(re.sub(r"[^\x20-\x7E]", replacement, str(path)))

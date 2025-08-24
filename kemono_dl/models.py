@@ -38,8 +38,8 @@ class FavoriteCreator:
 class Attachment:
     name: str
     path: str
-    index: int
-    server: str | None
+    index: int = 0
+    server: str | None = None
 
 
 @dataclass
@@ -140,12 +140,17 @@ def findSeverFromPath(attachments, previews, path):
 
 
 @dataclass
-class TemplateVaribale:
+class FileTemplateVaribales:
     service: str
     creator_id: str
     creator_name: str
     post_id: str
     post_title: str
+    attachments_count: int
+    added: datetime
+    published: datetime
+    edited: datetime
+
     server_filename: str
     server_file_name: str
     server_file_ext: str
@@ -154,29 +159,39 @@ class TemplateVaribale:
     file_ext: str
     sha256: str
     index: int
-    attachments_count: int
-    added: datetime
-    published: datetime
-    edited: datetime
 
     def __init__(self, creator: Creator, post: Post, attachment: Attachment) -> None:
+        server_filename = attachment.path.split("/")[-1]
+        server_file_name, server_file_ext = splitext(server_filename)
+        sha256 = server_file_name
+        filename = attachment.name
+        file_name, file_ext = splitext(filename)
+        index = attachment.index
+
         self.service = creator.service
         self.creator_id = creator.id
         self.creator_name = creator.name
         self.post_id = post.id
         self.post_title = post.title
-        self.index = attachment.index
-        self.attachments_count = len(post.attachments)
-        self.server_filename = attachment.path.split("/")[-1]
-        self.server_file_name, self.server_file_ext = splitext(self.server_filename)
-        self.sha256 = self.server_file_name
-
-        self.filename = attachment.name
-        self.file_name, self.file_ext = splitext(self.filename)
-
         self.added = post.added
         self.published = post.published
         self.edited = post.edited
+        self.attachments_count = len(post.attachments)
 
-    def toDict(self) -> dict[str, str]:
-        return asdict(self)
+        self.server_filename = server_filename
+        self.server_file_name = server_file_name
+        self.server_file_ext = server_file_ext
+        self.filename = filename
+        self.file_name = file_name
+        self.file_ext = file_ext
+        self.sha256 = sha256
+        self.index = index
+
+    def toDict(self, custom_variables: dict | None = None) -> dict[str, str]:
+        template_variables_dict = asdict(self)
+
+        if custom_variables:
+            for key, value in custom_variables.items():
+                template_variables_dict[key] = eval(value.format(**template_variables_dict))
+
+        return template_variables_dict

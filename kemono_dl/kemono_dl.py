@@ -9,9 +9,9 @@ from typing import List, Literal
 from requests.exceptions import RequestException
 
 from .downloader import download_file
-from .models import Creator, FavoriteCreator, Post, TemplateVaribale
+from .models import Attachment, Creator, FavoriteCreator, FileTemplateVaribales, Post
 from .session import CustomSession
-from .utils import generate_file_path, get_sha256_hash, get_sha256_url_content
+from .utils import compute_sha256, generate_file_path, get_sha256_hash, get_sha256_url_content
 
 OverwriteMode = Literal[False, "soft", True]
 # "soft" will not overwrite the file if it has the expected sha256 hash
@@ -23,12 +23,18 @@ class KemonoDL:
     KEMONO_DOMAIN = "https://kemono.cr"
     POST_STEP_SIZE = 50
     URL_PARSE_PATTERN = r"^https://(kemono|coomer)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
+    DEFAULT_OUTPUT_TEMPLATE = "{service}/{creator_id}/{post_id}/{filename}"
 
     def __init__(
         self,
         path: str = os.getcwd(),
-        output_template: str = "{service}/{creator_id}/{post_id}/{filename}",
-        output_template_special: str = "{service}/{creator_id}/{type}.{file_ext}",
+        output_templates: dict = {
+            "attachments": DEFAULT_OUTPUT_TEMPLATE,
+            # "pfp": DEFAULT_OUTPUT_TEMPLATE,
+            # "banner": DEFAULT_OUTPUT_TEMPLATE,
+            "content": DEFAULT_OUTPUT_TEMPLATE,
+            # "json": DEFAULT_OUTPUT_TEMPLATE,
+        },
         restrict_names: bool = False,
         custom_template_variables: dict = {},
         archive_file: str | None = None,
@@ -36,19 +42,22 @@ class KemonoDL:
         max_retries: int = 3,
         post_filters: dict = {},
         attachment_filters: dict = {},
+        skip_attachments: bool = False,
+        write_content: bool = False,
     ) -> None:
         self.domain = KemonoDL.COOMER_DOMAIN
         self.session = CustomSession()
         self.creators_cache: dict[tuple[str, str], Creator] = {}
         self.path = path
-        self.output_template = output_template
-        self.output_template_special = output_template_special
+        self.output_templates = output_templates
         self.restrict_names = restrict_names
         self.custom_template_variables = custom_template_variables
         self.force_overwrite = force_overwrite
         self.max_retries = max_retries
         self.post_filters = post_filters
         self.attachment_filters = attachment_filters
+        self.skip_attachments = skip_attachments
+        self.write_content = write_content
 
         self.archive_file = archive_file
         self.archived_posts = []
@@ -223,36 +232,37 @@ class KemonoDL:
         self._download_special(domain, service, creator_id, "icon")
 
     def _download_special(self, domain: str, service: str, creator_id: str, type: str) -> None:
-        creator = self.get_creator_profile(domain, service, creator_id)
-        if creator is None:
-            return
-        url = self.domain + f"{type}s/{service}/{creator_id}"
-        response = self.session.head(url, allow_redirects=True)
-        contentType = response.headers.get("Content-Type", "")
-        ext = (mimetypes.guess_extension(contentType) or ".bin")[1:]
+        pass
+        # creator = self.get_creator_profile(domain, service, creator_id)
+        # if creator is None:
+        #     return
+        # url = self.domain + f"{type}s/{service}/{creator_id}"
+        # response = self.session.head(url, allow_redirects=True)
+        # contentType = response.headers.get("Content-Type", "")
+        # ext = (mimetypes.guess_extension(contentType) or ".bin")[1:]
 
-        sha256 = get_sha256_url_content(self.session, url) if "{sha256}" in self.output_template_special else ""
+        # sha256 = get_sha256_url_content(self.session, url) if "{sha256}" in self.output_templates else ""
 
-        file_path = generate_file_path(
-            self.path,
-            self.output_template_special,
-            {
-                "service": creator.service,
-                "creator_id": creator.id,
-                "filename": creator_id + "." + ext,
-                "file_name": creator_id,
-                "file_ext": ext,
-                "type": type,
-                "sha256": sha256,
-            },
-            self.restrict_names,
-        )
+        # file_path = generate_file_path(
+        #     self.path,
+        #     self.output_template_special,
+        #     {
+        #         "service": creator.service,
+        #         "creator_id": creator.id,
+        #         "filename": creator_id + "." + ext,
+        #         "file_name": creator_id,
+        #         "file_ext": ext,
+        #         "type": type,
+        #         "sha256": sha256,
+        #     },
+        #     self.restrict_names,
+        # )
 
-        download_file(
-            session=self.session,
-            url=url,
-            filepath=file_path,
-        )
+        # download_file(
+        #     session=self.session,
+        #     url=url,
+        #     filepath=file_path,
+        # )
 
     def download_post(self, domain: str, post: Post) -> None:
         if f"{post.service}/user/{post.user}/post/{post.id}" in self.archived_posts:
@@ -260,22 +270,28 @@ class KemonoDL:
             return
 
         if self.post_matches_filters(post):
-            print("[info] Post matched 1 or more post filters. Skipping.")
+            print(f"[info] Post {post.id!r} matched 1 or more post filters. Skipping.")
             return
 
         printable_title = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", post.title)[:50]
         print(f"[downloading] Post: {printable_title}")
 
-        self.download_post_attachments(domain, post)
+        creator = self.get_creator_profile(domain, post.service, post.user)
+        if creator is None:
+            return
+
+        if self.skip_attachments:
+            print("[info] Skipping Post attachments.")
+        else:
+            self.download_post_attachments(domain, creator, post)
+
+        if self.write_content:
+            self.write_post_content(creator, post)
 
         self.write_archive_file(domain, post.service, post.user, post.id)
 
-    def download_post_attachments(self, domain: str, post: Post) -> None:
+    def download_post_attachments(self, domain: str, creator: Creator, post: Post) -> None:
         if not post.attachments:
-            return
-
-        creator = self.get_creator_profile(domain, post.service, post.user)
-        if creator is None:
             return
 
         print(f"[downloading] Attachments: {len(post.attachments)}")
@@ -285,19 +301,12 @@ class KemonoDL:
                 print("[info] Attachment matched 1 or more attachment filters. Skipping.")
                 continue
 
-            template_variables = TemplateVaribale(creator, post, attachment)
-
-            template_variables_dict = template_variables.toDict()
-            for key, value in self.custom_template_variables.items():
-                if key in template_variables_dict:
-                    print(f"[Warning] Custom variable key {key!r} conflicts with default variable keys. Skipping.")
-                    continue
-                template_variables_dict[key] = eval(value.format(**template_variables_dict))
+            template_variables = FileTemplateVaribales(creator, post, attachment)
 
             file_path = generate_file_path(
                 self.path,
-                self.output_template,
-                template_variables_dict,
+                self.output_templates.get("attachments", {}),
+                template_variables.toDict(self.custom_template_variables),
                 self.restrict_names,
             )
             expected_sha256 = template_variables.sha256
@@ -332,6 +341,40 @@ class KemonoDL:
             actual_sha256 = get_sha256_hash(file_path)
             if expected_sha256 != actual_sha256:
                 print(f"[Error] File downloaded with incorrect SHA-256. Expected: {expected_sha256} Actual: {actual_sha256}")
+
+    def write_post_content(self, creator: Creator, post: Post) -> None:
+        print("[writing] Post Content")
+
+        sha256 = compute_sha256(post.content)
+        attachment = Attachment(name="content.html", path=f"{sha256}.html")
+        template_variables = FileTemplateVaribales(creator, post, attachment)
+        file_path = generate_file_path(
+            self.path,
+            self.output_templates.get("content", {}),
+            template_variables.toDict(self.custom_template_variables),
+            self.restrict_names,
+        )
+        expected_sha256 = template_variables.sha256
+
+        if os.path.exists(file_path):
+            actual_sha256 = get_sha256_hash(file_path)
+
+            if self.force_overwrite is False:
+                print(f"[info] File already exists at {file_path}")
+                if expected_sha256 != actual_sha256:
+                    print(f'[warning] File sha256 mismatch. Expected "{expected_sha256}" recieved"{actual_sha256}"')
+                return
+
+            elif self.force_overwrite == "soft" and expected_sha256 == actual_sha256:
+                print(f"[info] File already exists with matching sha256 at {file_path}")
+                return
+
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        print(f"[writing] Destination: {file_path!r}")
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(post.content)
 
     def attachment_matches_filters(self, attachment) -> bool:
         skip_extensions = self.attachment_filters.get("skip_extensions", None)
