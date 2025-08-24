@@ -18,9 +18,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="KemonoDL Downloader")
 
     parser.add_argument("--path", type=str, default=os.getcwd(), help="Download directory path")
-    parser.add_argument("--output", type=str, default="{service}/{creator_id}/{post_id}/{filename}", help="Post attachments output filename tamplate")
-    # parser.add_argument("--output-special", type=str, default="{service}/{creator_id}/{type}_{sha256}.{file_ext}", help="Creator profile picture and banner output filename tamplate")
-    parser.add_argument("--cookies", type=str, nargs="+", help="Path(s) to cookies files")
+    parser.add_argument("--output", type=str, action="append", metavar="[Type:]Template", default=[KemonoDL.DEFAULT_OUTPUT_TEMPLATE], help="Post attachments output filename tamplate")
+    parser.add_argument("--cookies", type=str, action="append", help="Path(s) to cookies files")
     parser.add_argument("--favorite-creators-coomer", action="store_true", help="Download favorite creators from Coomer")
     parser.add_argument("--favorite-creators-kemono", action="store_true", help="Download favorite creators from Kemono")
     # parser.add_argument("--favorite-posts-coomer", action="store_true", help="Download favorite posts from Coomer")
@@ -36,14 +35,23 @@ def parse_args():
     parser.add_argument("--datebefore", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or before this date. Format 'YYYYMMDD'")
     parser.add_argument("--dateafter", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or after this date. Format 'YYYYMMDD'")
     parser.add_argument("--skip-extensions", metavar="EXTs", type=str, help="A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
-    parser.add_argument("urls", nargs="*", help="URLs to download")
+    parser.add_argument("--skip-attachments", action="store_true", help="Skip downloading post attachments.")
+    parser.add_argument("--write-content", action="store_true", help="Write Post content to an html file.")
+    parser.add_argument("URL", nargs="*", help="URL(s) to download")
 
     return parser.parse_args()
 
 
-def parse_date_string(s):
-    parts = s.split(":", 1)
-    return parts if len(parts) == 2 else (None, parts[0])
+def parse_value_type(s):
+    inside_braces = 0
+    for i, char in enumerate(s):
+        if char == "{":
+            inside_braces += 1
+        elif char == "}":
+            inside_braces = max(inside_braces - 1, 0)
+        elif char == ":" and inside_braces == 0:
+            return [s[:i], s[i + 1 :]]
+    return [None, s]
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -77,7 +85,7 @@ def main() -> None:
         (args.dateafter, post_filters["dateafter"]),
     ]:
         if arg:
-            date_type, date_string = parse_date_string(arg)
+            date_type, date_string = parse_value_type(arg)
             if date_type not in filter and date_type is not None:
                 print(f"[Error] Invalid date filter: {arg!r}")
                 quit()
@@ -97,14 +105,36 @@ def main() -> None:
     if args.skip_extensions:
         attachment_filters["skip_extensions"] = [ext.strip() for ext in args.skip_extensions.split(",")]
 
+    output_templates = {
+        "attachments": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+        # "pfp": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+        # "banner": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+        "content": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+        # "json": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+    }
+
+    if args.output:
+        for output in args.output:
+            output_type, output_value = parse_value_type(output)
+            if output_type not in output_templates and output_type is not None:
+                print(f"[Error] Invalid output Type {output_type!r} for {output!r}")
+                quit()
+            if output_type is None:
+                for key in output_templates:
+                    output_templates[key] = output_value  # type: ignore
+            else:
+                output_templates[output_type] = output_value  # type: ignore
+
     kemono_dl = KemonoDL(
         path=args.path,
-        output_template=args.output,
+        output_templates=output_templates,
         restrict_names=args.restrict_names,
         custom_template_variables=custom_template_variables,
         archive_file=args.archive,
         post_filters=post_filters,
         attachment_filters=attachment_filters,
+        skip_attachments=args.skip_attachments,
+        write_content=args.write_content,
     )
 
     if args.cookies:
@@ -125,8 +155,8 @@ def main() -> None:
     if args.favorite_creators_kemono:
         kemono_dl.download_favorite_creators(KemonoDL.KEMONO_DOMAIN)
 
-    if args.urls:
-        for url in args.urls:
+    if args.URL:
+        for url in args.URL:
             kemono_dl.download_url(url)
 
     if args.batch_file and os.path.exists(args.batch_file):
