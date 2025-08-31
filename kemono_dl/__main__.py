@@ -6,30 +6,26 @@ from datetime import datetime
 from .kemono_dl import KemonoDL
 from .version import __version__
 
-COOMER_COOKIES = "coomer.st_cookies.txt"
-KEMONO_COOKIES = "kemono.cr_cookies.txt"
-DOWNLOAD_FAVORITE_CREATORS_COOMER = True
-DOWNLOAD_FAVORITE_CREATORS_KEMONO = True
-DOWNLOAD_FAVORITE_POSTS_COOMER = False
-DOWNLOAD_FAVORITE_POSTS_KEMONO = False
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="KemonoDL Downloader")
-
-    parser.add_argument("--path", type=str, default=os.getcwd(), help="Download directory path")
-    parser.add_argument("--output", type=str, action="append", metavar="[Type:]Template", default=[KemonoDL.DEFAULT_OUTPUT_TEMPLATE], help="Post attachments output filename tamplate")
+    # General
+    parser.add_argument("--version", action="store_true", help="Print program version and exit")
     parser.add_argument("--cookies", type=str, action="append", help="Path(s) to cookies files")
+    parser.add_argument("--coomer-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Coomer")
+    parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
     parser.add_argument("--favorite-creators-coomer", action="store_true", help="Download favorite creators from Coomer")
     parser.add_argument("--favorite-creators-kemono", action="store_true", help="Download favorite creators from Kemono")
     # parser.add_argument("--favorite-posts-coomer", action="store_true", help="Download favorite posts from Coomer")
     # parser.add_argument("--favorite-posts-kemono", action="store_true", help="Download favorite posts from Kemono")
-    parser.add_argument("--batch-file", type=str, help="Download URLs from a file")
+    parser.add_argument("--batch-file", type=str, action="append", help="Download URLs from a file")
+    parser.add_argument("URL", nargs="*", help="URL(s) to download")
+    # Output
+    parser.add_argument("--path", type=str, default=os.getcwd(), help="Download directory path")
+    parser.add_argument("--output", type=str, action="append", metavar="[Type:]Template", default=[KemonoDL.DEFAULT_OUTPUT_TEMPLATE], help="Post attachments output filename tamplate")
     parser.add_argument("--restrict-names", action="store_true", help="Restrict output file to ASCII characters.")
-    parser.add_argument("--version", action="store_true", help="Print program version and exit")
-    parser.add_argument("--coomer-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Coomer")
-    parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
     parser.add_argument("--custom-template-variables", type=str, help="Path to a json file with your custom template variables")
+    # Filters
     parser.add_argument("--archive", metavar="FILE", type=str, help="Path to archive file containing a list of post urls")
     parser.add_argument("--date", metavar="[Type:]DATE", type=str, help="Download only posts uploaded on this date. Format 'YYYYMMDD'")
     parser.add_argument("--datebefore", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or before this date. Format 'YYYYMMDD'")
@@ -37,7 +33,6 @@ def parse_args():
     parser.add_argument("--skip-extensions", metavar="EXTs", type=str, help="A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
     parser.add_argument("--skip-attachments", action="store_true", help="Skip downloading post attachments.")
     parser.add_argument("--write-content", action="store_true", help="Write Post content to an html file.")
-    parser.add_argument("URL", nargs="*", help="URL(s) to download")
 
     return parser.parse_args()
 
@@ -52,13 +47,6 @@ def parse_value_type(s):
         elif char == ":" and inside_braces == 0:
             return [s[:i], s[i + 1 :]]
     return [None, s]
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
 
 
 def main() -> None:
@@ -159,12 +147,17 @@ def main() -> None:
         for url in args.URL:
             kemono_dl.download_url(url)
 
-    if args.batch_file and os.path.exists(args.batch_file):
-        with open(args.batch_file, "r", encoding="utf-8") as f:
-            batch_urls = [line.strip() for line in f.readlines() if not line.startswith("#")]
+    if args.batch_file:
+        for batch_file in args.batch_file:
+            if not os.path.exists(batch_file):
+                print(f"[Error] Batch file doesn't exist {batch_file!r}")
+                continue
 
-        for url in batch_urls:
-            kemono_dl.download_url(url)
+            with open(batch_file, "r", encoding="utf-8") as f:
+                batch_urls = [line.strip() for line in f.readlines() if not line.startswith("#")]
+
+            for url in batch_urls:
+                kemono_dl.download_url(url)
 
     print("Complete")
 
