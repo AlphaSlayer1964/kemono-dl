@@ -8,7 +8,7 @@ A downloader tool for kemono and coomer websties.
  
 ## How to use
 1. **Install Python**  
-   Make sure Python 3.8 or later is installed and available in your system PATH.
+   Make sure Python 3.11 or later is installed and available in your system PATH.
 
 2. **Download the latest release**  
    Get the source code for the [latest version](https://github.com/AplhaSlayer1964/kemono-dl/releases/latest) and extract it.
