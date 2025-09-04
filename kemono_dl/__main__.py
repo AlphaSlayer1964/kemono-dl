@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--output", type=str, action="append", metavar="[Type:]Template", default=[KemonoDL.DEFAULT_OUTPUT_TEMPLATE], help="Post attachments output filename tamplate")
     parser.add_argument("--restrict-names", action="store_true", help="Restrict output file to ASCII characters.")
     parser.add_argument("--custom-template-variables", type=str, help="Path to a json file with your custom template variables")
+    parser.add_argument("--no-tmp", action="store_true", help="Do not use .tmp files. Write directly into the output file.")
     # Filters
     parser.add_argument("--archive", metavar="FILE", type=str, help="Path to archive file containing a list of post urls")
     parser.add_argument("--date", metavar="[Type:]DATE", type=str, help="Download only posts uploaded on this date. Format 'YYYYMMDD'")
@@ -123,6 +124,7 @@ def main() -> None:
         attachment_filters=attachment_filters,
         skip_attachments=args.skip_attachments,
         write_content=args.write_content,
+        no_tmp=args.no_tmp,
     )
 
     if args.cookies:
