@@ -49,6 +49,7 @@ A downloader tool for kemono and coomer websties.
 | `--skip-extensions EXTs`           | A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).                 |
 | `--skip-attachments`               | Skip downloading post attachments.                                                                                                                            |
 | `--write-content`                  | Write the post content to a file.                                                                                                                             |
+| `--no-tmp`                         | Do not use `.tmp` files. Write directly into the output file.                                                                                                 |
 
 > **\*1** You can apply date filters to different types. The available options are `"added:YYYYMMDD"`, `"edited:YYYYMMDD"`, and `"published:YYYYMMDD"`. If no type is specified, the published date is used by default.
 
