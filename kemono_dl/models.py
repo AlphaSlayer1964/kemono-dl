@@ -96,32 +96,28 @@ class Post:
         self.attachments = []
 
         file = post.get("file")
-        if file and file.get("name", False) and file.get("path", False):
+        file_name = file.get("name", findNameFromPath(attachments, previews, file.get("path")))
+        file_path = file.get("path", None)
+        if file and file_name and file_path:
             self.attachments.append(
                 Attachment(
-                    name=file.get("name"),
-                    path=file.get("path"),
+                    name=file_name,
+                    path=file_path,
                     index=len(self.attachments),
-                    server=findSeverFromPath(
-                        attachments,
-                        previews,
-                        file.get("path"),
-                    ),
+                    server=findSeverFromPath(attachments, previews, file_path),
                 )
             )
 
         for a in post.get("attachments", []):
-            if a and a.get("name", False) and a.get("path", False):
+            a_name = a.get("name", findNameFromPath(attachments, previews, a.get("path")))
+            a_path = a.get("path", None)
+            if a and a_name and a_path:
                 self.attachments.append(
                     Attachment(
-                        name=a.get("name"),
-                        path=a.get("path"),
+                        name=a_name,
+                        path=a_path,
                         index=len(self.attachments),
-                        server=findSeverFromPath(
-                            attachments,
-                            previews,
-                            a.get("path"),
-                        ),
+                        server=findSeverFromPath(attachments, previews, a_path),
                     )
                 )
 
@@ -136,6 +132,16 @@ def findSeverFromPath(attachments, previews, path):
     for preview in previews:
         if preview.get("path") == path:
             return preview.get("server")
+    return None
+
+
+def findNameFromPath(attachments, previews, path):
+    for attachment in attachments:
+        if attachment.get("path") == path:
+            return attachment.get("name")
+    for preview in previews:
+        if preview.get("path") == path:
+            return preview.get("name")
     return None
 
 

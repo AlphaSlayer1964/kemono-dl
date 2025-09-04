@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kemono-dl"
-version = "2025.08.23"
+version = "2025.09.04"
 description = "A simple downloader for kemono/coomer using Python."
 authors = [
   { name="AlphaSlayer1964" }
@@ -13,7 +13,7 @@ dependencies = [
   "requests>=2.32.4"
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 classifiers = [
   "Programming Language :: Python :: 3",
   "Operating System :: OS Independent"

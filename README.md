@@ -8,7 +8,7 @@ A downloader tool for kemono and coomer websties.
  
 ## How to use
 1. **Install Python**  
-   Make sure Python 3.8 or later is installed and available in your system PATH.
+   Make sure Python 3.11 or later is installed and available in your system PATH.
 
 2. **Download the latest release**  
    Get the source code for the [latest version](https://github.com/AplhaSlayer1964/kemono-dl/releases/latest) and extract it.
@@ -49,6 +49,7 @@ A downloader tool for kemono and coomer websties.
 | `--skip-extensions EXTs`           | A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).                 |
 | `--skip-attachments`               | Skip downloading post attachments.                                                                                                                            |
 | `--write-content`                  | Write the post content to a file.                                                                                                                             |
+| `--no-tmp`                         | Do not use `.tmp` files. Write directly into the output file.                                                                                                 |
 
 > **\*1** You can apply date filters to different types. The available options are `"added:YYYYMMDD"`, `"edited:YYYYMMDD"`, and `"published:YYYYMMDD"`. If no type is specified, the published date is used by default.
 
