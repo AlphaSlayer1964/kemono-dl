@@ -44,6 +44,7 @@ class KemonoDL:
         attachment_filters: dict = {},
         skip_attachments: bool = False,
         write_content: bool = False,
+        no_tmp: bool = False,
     ) -> None:
         self.domain = KemonoDL.COOMER_DOMAIN
         self.session = CustomSession()
@@ -58,6 +59,7 @@ class KemonoDL:
         self.attachment_filters = attachment_filters
         self.skip_attachments = skip_attachments
         self.write_content = write_content
+        self.no_tmp = no_tmp
 
         self.archive_file = archive_file
         self.archived_posts = []
@@ -330,7 +332,7 @@ class KemonoDL:
 
             for attempt in range(self.max_retries):
                 try:
-                    download_file(self.session, url, file_path)
+                    download_file(self.session, url, file_path, temp_file=not self.no_tmp)
                     break
                 except Exception as e:
                     print(f"[Error] Failed to download attachment from {url!r}: {e}")
