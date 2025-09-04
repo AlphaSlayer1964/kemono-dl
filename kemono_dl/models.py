@@ -94,12 +94,12 @@ class Post:
         self.embed = post.get("embed", {})
 
         self.attachments = []
-
         file = post.get("file")
-        if file and file.get("name", False) and file.get("path", False):
+        
+        if file and file.get("path", False):
             self.attachments.append(
                 Attachment(
-                    name=file.get("name"),
+                    name=file.get("name",file.get("path").split("/")[-1]),
                     path=file.get("path"),
                     index=len(self.attachments),
                     server=findSeverFromPath(
@@ -109,12 +109,11 @@ class Post:
                     ),
                 )
             )
-
         for a in post.get("attachments", []):
-            if a and a.get("name", False) and a.get("path", False):
+            if a and a.get("path", False):
                 self.attachments.append(
                     Attachment(
-                        name=a.get("name"),
+                        name=a.get("name",a.get("path").split("/")[-1]),
                         path=a.get("path"),
                         index=len(self.attachments),
                         server=findSeverFromPath(
