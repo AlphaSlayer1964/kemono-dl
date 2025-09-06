@@ -1,0 +1,14 @@
+services:
+  kemono-dl:
+    build: 
+      context: .          
+      dockerfile: Dockerfile
+    image: alphaslayer1964/kemono-dl:latest
+    container_name: kemono-dl
+    volumes:
+      - ./downloads:/media
+    # - ./appdata:/appdata # Uncomment to mount a local 'appdata' folder for passing cookies/batch files
+    command:
+      - --path
+      - /media
+      - "YOUR_URL"
