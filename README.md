@@ -7,6 +7,7 @@ A downloader tool for kemono and coomer websties.
 > Keep in mind that while this template closely mirrors the previous behavior, older versions included logic to truncate file paths and names exceeding 255 characters. This new version does not replicate that trimming exactly, but the template should still work correctly in most cases.
  
 ## How to use
+### Local Installation
 1. **Install Python**  
    Make sure Python 3.11 or later is installed and available in your system PATH.
 
@@ -27,6 +28,24 @@ A downloader tool for kemono and coomer websties.
     ```
 
 > **\*** To update, repeat steps 2 and 3 using the latest release.
+
+### Docker
+You can also use the docker image from github registry which is useful when running the scraper on a NAS or server. An example docker compose file could look like the follwing. This example uses a batch file `URLs.txt` located within the output folder and creates a folder for every creator and service combination. Please mind to change the `PATH_TO_LOCAL_FOLDER` to the folder on your machine.
+```yaml
+services:
+    scraper:
+        image: ghcr.io/AlphaSlayer1964/kemono-dl:main
+        volumes:
+            - "PATH_TO_LOCAL_FOLDER:/out"
+        command:
+            - --output 
+            - "{creator_name}_{service}/{published:%Y%m%d_%H%M%S}_{index}_{filename}"
+            - --batch-file
+            - out/URLs.txt
+            - --path
+            - out
+            - --restrict-name
+```
 
 # Command Line Options
 
