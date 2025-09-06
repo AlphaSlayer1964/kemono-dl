@@ -1,6 +1,11 @@
 FROM python:3
 
-COPY . .
-RUN pip install .
+COPY requirements.txt ./
 
-ENTRYPOINT [ "kemono-dl" ]
+RUN pip install --no-cache-dir --upgrade pip \
+  && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN pip install --no-cache-dir .
+
+CMD ["kemono-dl"]
