@@ -1,10 +1,8 @@
 FROM python:3
 
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+COPY . ./src
 
-COPY . .
-
-RUN pip install .
+RUN pip install --no-cache-dir -r ./src/requirements.txt
+RUN pip install --no-cache-dir --compile -e ./src && pip cache purge
 
 ENTRYPOINT [ "kemono-dl" ]
