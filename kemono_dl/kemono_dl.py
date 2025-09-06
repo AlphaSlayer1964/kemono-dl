@@ -200,9 +200,7 @@ class KemonoDL:
             post_ids = self.get_all_creator_post_ids(domain, creator.service, creator.id)
             for post_id in post_ids:
                 time.sleep(0.5)
-                post = self.get_post(domain, creator.service, creator.id, post_id)
-                if post:
-                    self.download_post(domain, post)
+                self.download_post(domain, creator.service, creator.id, post_id)
 
     def download_favorite_posts(self, domain: str):
         pass
@@ -216,16 +214,12 @@ class KemonoDL:
 
         domain = KemonoDL.KEMONO_DOMAIN if parsed_url["site"] == "kemono" else KemonoDL.COOMER_DOMAIN
         if parsed_url["post_id"]:
-            post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
-            if post:
-                self.download_post(domain, post)
+            self.download_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
         else:
             post_ids = self.get_all_creator_post_ids(domain, parsed_url["service"], parsed_url["creator_id"])
             for post_id in post_ids:
                 time.sleep(0.5)
-                post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
-                if post:
-                    self.download_post(domain, post)
+                self.download_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
 
     def download_creator_banner(self, domain: str, service: str, creator_id: str) -> None:
         self._download_special(domain, service, creator_id, "banner")
@@ -266,9 +260,14 @@ class KemonoDL:
         #     filepath=file_path,
         # )
 
-    def download_post(self, domain: str, post: Post) -> None:
-        if f"{post.service}/user/{post.user}/post/{post.id}" in self.archived_posts:
-            print(f"[info] Post {post.id!r} already archived. Skipping.")
+    def download_post(self, domain: str, service: str, creator_id: str, post_id: str) -> None:
+        if f"{service}/user/{creator_id}/post/{post_id}" in self.archived_posts:
+            print(f"[info] Post {post_id!r} already archived. Skipping.")
+            return
+
+        post = self.get_post(domain, service, creator_id, post_id)
+
+        if post is None:
             return
 
         if self.post_matches_filters(post):
