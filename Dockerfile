@@ -3,6 +3,6 @@ FROM python:3
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY ./kemono-dl/ .
 
-ENTRYPOINT [ "python", "./kemono-dl/__main__.py" ]
+ENTRYPOINT [ "python", ".__main__.py" ]
