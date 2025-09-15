@@ -1,5 +1,6 @@
 import http.cookiejar
-import mimetypes
+
+# import mimetypes
 import os
 import re
 import time
@@ -11,7 +12,7 @@ from requests.exceptions import RequestException
 from .downloader import download_file
 from .models import Attachment, Creator, FavoriteCreator, FileTemplateVaribales, Post
 from .session import CustomSession
-from .utils import compute_sha256, generate_file_path, get_sha256_hash, get_sha256_url_content
+from .utils import compute_sha256, generate_file_path, get_sha256_hash  # , get_sha256_url_content
 
 OverwriteMode = Literal[False, "soft", True]
 # "soft" will not overwrite the file if it has the expected sha256 hash
