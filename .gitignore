@@ -202,11 +202,4 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-*cookies.txt
-test.py
-run.bat
-config.json
-test.txt
-.coverage
-customVars.json
-archive.txt
+dev/

@@ -186,10 +186,10 @@ class FileTemplateVaribales:
 
         self.server_filename = server_filename
         self.server_file_name = server_file_name
-        self.server_file_ext = server_file_ext
+        self.server_file_ext = server_file_ext[1:]
         self.filename = filename
         self.file_name = file_name
-        self.file_ext = file_ext
+        self.file_ext = file_ext[1:]
         self.sha256 = sha256
         self.index = index
 
