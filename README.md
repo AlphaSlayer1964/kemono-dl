@@ -6,7 +6,7 @@ A downloader tool for kemono and coomer websties.
 > ```
 > Keep in mind that while this template closely mirrors the previous behavior, older versions included logic to truncate file paths and names exceeding 255 characters. This new version does not replicate that trimming exactly, but the template should still work correctly in most cases.
  
-## How to use
+## Installation
 1. **Install Python**  
    Make sure Python 3.11 or later is installed and available in your system PATH.
 
