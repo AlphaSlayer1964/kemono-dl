@@ -34,6 +34,8 @@ def parse_args():
     parser.add_argument("--skip-extensions", metavar="EXTs", type=str, help="A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
     parser.add_argument("--skip-attachments", action="store_true", help="Skip downloading post attachments.")
     parser.add_argument("--write-content", action="store_true", help="Write Post content to an html file.")
+    parser.add_argument("--cyberdrop-dl-appdata", type=str, help="Cyberdrop-dl pip module appdata folder path.")
+
 
     return parser.parse_args()
 
@@ -96,6 +98,7 @@ def main() -> None:
 
     output_templates = {
         "attachments": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
+        "links": KemonoDL.LINK_TEMPLATE,
         # "pfp": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
         # "banner": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
         "content": KemonoDL.DEFAULT_OUTPUT_TEMPLATE,
@@ -140,14 +143,14 @@ def main() -> None:
         print(kemono_dl.isLoggedin(KemonoDL.KEMONO_DOMAIN))
 
     if args.favorite_creators_coomer:
-        kemono_dl.download_favorite_creators(KemonoDL.COOMER_DOMAIN)
+        kemono_dl.download_favorite_creators(KemonoDL.COOMER_DOMAIN, args.cyberdrop_dl_appdata)
 
     if args.favorite_creators_kemono:
-        kemono_dl.download_favorite_creators(KemonoDL.KEMONO_DOMAIN)
+        kemono_dl.download_favorite_creators(KemonoDL.KEMONO_DOMAIN, args.cyberdrop_dl_appdata)
 
     if args.URL:
         for url in args.URL:
-            kemono_dl.download_url(url)
+            kemono_dl.download_url(url, args.cyberdrop_dl_appdata)
 
     if args.batch_file:
         for batch_file in args.batch_file:
@@ -159,7 +162,7 @@ def main() -> None:
                 batch_urls = [line.strip() for line in f.readlines() if not line.startswith("#")]
 
             for url in batch_urls:
-                kemono_dl.download_url(url)
+                kemono_dl.download_url(url, args.cyberdrop_dl_appdata)
 
     print("Complete")
 
