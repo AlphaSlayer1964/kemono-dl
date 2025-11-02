@@ -2,8 +2,11 @@ import http.cookiejar
 import mimetypes
 import os
 import re
+import subprocess
 import time
+from bs4 import BeautifulSoup
 from http.cookiejar import LoadError
+from pathlib import Path
 from typing import List, Literal
 
 from requests.exceptions import RequestException
@@ -24,12 +27,13 @@ class KemonoDL:
     POST_STEP_SIZE = 50
     URL_PARSE_PATTERN = r"^https://(kemono|coomer)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
     DEFAULT_OUTPUT_TEMPLATE = "{service}/{creator_id}/{post_id}/{filename}"
-
+    LINK_TEMPLATE = "{service}/{creator_id}/{post_id}"
     def __init__(
         self,
         path: str = os.getcwd(),
         output_templates: dict = {
             "attachments": DEFAULT_OUTPUT_TEMPLATE,
+            "links": LINK_TEMPLATE,
             # "pfp": DEFAULT_OUTPUT_TEMPLATE,
             # "banner": DEFAULT_OUTPUT_TEMPLATE,
             "content": DEFAULT_OUTPUT_TEMPLATE,
@@ -186,7 +190,7 @@ class KemonoDL:
             print(f"[Error] Failed to fetch favorite posts from {url!r}: {e}")
             return None
 
-    def download_favorite_creators(self, domain: str) -> None:
+    def download_favorite_creators(self, domain: str, cyberdrop_dl_appdata: None) -> None:
         if not self.isLoggedin(domain):
             print(f"[Error] You are not logged into {domain!r}")
             return
@@ -202,12 +206,12 @@ class KemonoDL:
                 time.sleep(0.5)
                 post = self.get_post(domain, creator.service, creator.id, post_id)
                 if post:
-                    self.download_post(domain, post)
+                    self.download_post(domain, post, cyberdrop_dl_appdata)
 
     def download_favorite_posts(self, domain: str):
         pass
 
-    def download_url(self, url: str) -> None:
+    def download_url(self, url: str, cyberdrop_dl_appdata: None) -> None:
         parsed_url = self.parse_url(url)
 
         if parsed_url is None:
@@ -218,14 +222,14 @@ class KemonoDL:
         if parsed_url["post_id"]:
             post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
             if post:
-                self.download_post(domain, post)
+                self.download_post(domain, post, cyberdrop_dl_appdata)
         else:
             post_ids = self.get_all_creator_post_ids(domain, parsed_url["service"], parsed_url["creator_id"])
             for post_id in post_ids:
                 time.sleep(0.5)
                 post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
                 if post:
-                    self.download_post(domain, post)
+                    self.download_post(domain, post, cyberdrop_dl_appdata)
 
     def download_creator_banner(self, domain: str, service: str, creator_id: str) -> None:
         self._download_special(domain, service, creator_id, "banner")
@@ -265,8 +269,12 @@ class KemonoDL:
         #     url=url,
         #     filepath=file_path,
         # )
+    def get_links(self, content:str) -> List:
+        soup = BeautifulSoup(content, 'html.parser')
+        links = [a['href'] for a in soup.find_all('a', href=True)]
+        return links
 
-    def download_post(self, domain: str, post: Post) -> None:
+    def download_post(self, domain: str, post: Post, cyberdrop_dl_appdata: None) -> None:
         if f"{post.service}/user/{post.user}/post/{post.id}" in self.archived_posts:
             print(f"[info] Post {post.id!r} already archived. Skipping.")
             return
@@ -286,6 +294,27 @@ class KemonoDL:
             print("[info] Skipping Post attachments.")
         else:
             self.download_post_attachments(domain, creator, post)
+
+        if cyberdrop_dl_appdata is not None:
+            # Download URLs that may be in the post content.
+            links = self.get_links(post.content)
+            for link in links:
+                appdata_folder = Path(cyberdrop_dl_appdata)
+                template_variables = FileTemplateVaribales(creator, post, None)
+                file_path = generate_file_path(
+                    self.path,
+                    self.output_templates.get("links", {}),
+                    template_variables.toDict(self.custom_template_variables),
+                    self.restrict_names,
+                )
+                result = subprocess.run(['cyberdrop-dl ', '--appdata-folder', appdata_folder.resolve(), link, '--download-folder', file_path, '--download', '--ui', 'DISABLED'], capture_output=True, text=True)
+                time.sleep(1.2)
+                print("[CYBERDROP-DL] START")
+                print("[STDOUT]")
+                print(result.stdout)
+                print("[STDERR]")
+                print(result.stderr)
+                print("[CYBERDROP-DL] END")
 
         if self.write_content:
             self.write_post_content(creator, post)

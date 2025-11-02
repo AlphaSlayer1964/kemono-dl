@@ -167,12 +167,22 @@ class FileTemplateVaribales:
     index: int
 
     def __init__(self, creator: Creator, post: Post, attachment: Attachment) -> None:
-        server_filename = attachment.path.split("/")[-1]
-        server_file_name, server_file_ext = splitext(server_filename)
-        sha256 = server_file_name
-        filename = attachment.name
-        file_name, file_ext = splitext(filename)
-        index = attachment.index
+        if attachment is not None:
+            server_filename = attachment.path.split("/")[-1]
+            filename = attachment.name
+            index = attachment.index
+            server_file_name, server_file_ext = splitext(server_filename)
+            sha256 = server_file_name
+            file_name, file_ext = splitext(filename)
+        else:
+            server_filename = ""
+            filename = ""
+            index = None
+            server_file_name = ""
+            server_file_ext = ""
+            sha256 = ""
+            file_name = ""
+            file_ext = ""
 
         self.service = creator.service
         self.creator_id = creator.id
