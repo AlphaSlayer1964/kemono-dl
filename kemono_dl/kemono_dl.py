@@ -22,8 +22,9 @@ OverwriteMode = Literal[False, "soft", True]
 class KemonoDL:
     COOMER_DOMAIN = "https://coomer.st"
     KEMONO_DOMAIN = "https://kemono.cr"
+    PAWCHIVE_DOMAIN = "https://pawchive.st"
     POST_STEP_SIZE = 50
-    URL_PARSE_PATTERN = r"^https://(kemono|coomer)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
+    URL_PARSE_PATTERN = r"^https://(kemono|coomer|pawchive)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
     DEFAULT_OUTPUT_TEMPLATE = "{service}/{creator_id}/{post_id}/{filename}"
 
     def __init__(
@@ -213,7 +214,13 @@ class KemonoDL:
             print("Invalid URL:" + url)
             return
 
-        domain = KemonoDL.KEMONO_DOMAIN if parsed_url["site"] == "kemono" else KemonoDL.COOMER_DOMAIN
+        if parsed_url["site"] == "kemono":
+            domain = KemonoDL.KEMONO_DOMAIN
+        elif parsed_url["site"] == "coomer":
+            domain = KemonoDL.COOMER_DOMAIN
+        elif parsed_url["site"] == "pawchive":
+            domain = KemonoDL.PAWCHIVE_DOMAIN
+
         if parsed_url["post_id"]:
             self.download_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
         else:
@@ -328,7 +335,10 @@ class KemonoDL:
 
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            url = f"{attachment.server}/data{attachment.path}"
+            if domain == KemonoDL.PAWCHIVE_DOMAIN:
+                url = f"https://fox.pawchive.st/data{attachment.path}?f={attachment.name}"
+            else:
+                url = f"{attachment.server}/data{attachment.path}"
 
             for attempt in range(self.max_retries):
                 try:
