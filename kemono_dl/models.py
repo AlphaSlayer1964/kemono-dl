@@ -13,11 +13,14 @@ class Creator:
     updated: int
     public_id: str
     relation_id: str | None
-    post_count: int | None
-    dm_count: int | None
-    share_count: int | None
-    chat_count: int | None
+    post_count: int | None = None
+    dm_count: int | None = None
+    share_count: int | None = None
+    chat_count: int | None = None
     has_chats: bool | None = None
+    ever_imported: bool | None = None
+    kemono_favorited: int | None = None
+    import_size_cap_gb: int | None = None
 
 
 @dataclass
@@ -61,9 +64,9 @@ class Post:
     tags: List[str] | None
 
     def __init__(self, post_api: dict) -> None:
-        post = post_api.get("post", {})
-        attachments = post_api.get("attachments")
-        previews = post_api.get("previews")
+        post = post_api.get("post", post_api)
+        attachments = post_api.get("attachments", [])
+        previews = post_api.get("previews", [])
 
         self.id = post.get("id", "")
         self.user = post.get("user", "")
@@ -95,18 +98,19 @@ class Post:
 
         self.attachments = []
 
-        file = post.get("file")
-        file_name = file.get("name", findNameFromPath(attachments, previews, file.get("path")))
-        file_path = file.get("path", None)
-        if file and file_name and file_path:
-            self.attachments.append(
-                Attachment(
-                    name=file_name,
-                    path=file_path,
-                    index=len(self.attachments),
-                    server=findSeverFromPath(attachments, previews, file_path),
+        file = post.get("file", None)
+        if file is not None:
+            file_name = file.get("name", findNameFromPath(attachments, previews, file.get("path")))
+            file_path = file.get("path", None)
+            if file and file_name and file_path:
+                self.attachments.append(
+                    Attachment(
+                        name=file_name,
+                        path=file_path,
+                        index=len(self.attachments),
+                        server=findSeverFromPath(attachments, previews, file_path),
+                    )
                 )
-            )
 
         for a in post.get("attachments", []):
             a_name = a.get("name", findNameFromPath(attachments, previews, a.get("path")))

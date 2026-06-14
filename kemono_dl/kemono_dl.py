@@ -1,5 +1,6 @@
 import http.cookiejar
-import mimetypes
+
+# import mimetypes
 import os
 import re
 import time
@@ -11,7 +12,7 @@ from requests.exceptions import RequestException
 from .downloader import download_file
 from .models import Attachment, Creator, FavoriteCreator, FileTemplateVaribales, Post
 from .session import CustomSession
-from .utils import compute_sha256, generate_file_path, get_sha256_hash, get_sha256_url_content
+from .utils import compute_sha256, generate_file_path, get_sha256_hash  # , get_sha256_url_content
 
 OverwriteMode = Literal[False, "soft", True]
 # "soft" will not overwrite the file if it has the expected sha256 hash
@@ -21,8 +22,9 @@ OverwriteMode = Literal[False, "soft", True]
 class KemonoDL:
     COOMER_DOMAIN = "https://coomer.st"
     KEMONO_DOMAIN = "https://kemono.cr"
+    PAWCHIVE_DOMAIN = "https://pawchive.st"
     POST_STEP_SIZE = 50
-    URL_PARSE_PATTERN = r"^https://(kemono|coomer)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
+    URL_PARSE_PATTERN = r"^https://(kemono|coomer|pawchive)\.\w+/([^/]+)/user/([^/]+)(?:/post/([^/]+))?$"
     DEFAULT_OUTPUT_TEMPLATE = "{service}/{creator_id}/{post_id}/{filename}"
 
     def __init__(
@@ -200,9 +202,7 @@ class KemonoDL:
             post_ids = self.get_all_creator_post_ids(domain, creator.service, creator.id)
             for post_id in post_ids:
                 time.sleep(0.5)
-                post = self.get_post(domain, creator.service, creator.id, post_id)
-                if post:
-                    self.download_post(domain, post)
+                self.download_post(domain, creator.service, creator.id, post_id)
 
     def download_favorite_posts(self, domain: str):
         pass
@@ -214,18 +214,20 @@ class KemonoDL:
             print("Invalid URL:" + url)
             return
 
-        domain = KemonoDL.KEMONO_DOMAIN if parsed_url["site"] == "kemono" else KemonoDL.COOMER_DOMAIN
+        if parsed_url["site"] == "kemono":
+            domain = KemonoDL.KEMONO_DOMAIN
+        elif parsed_url["site"] == "coomer":
+            domain = KemonoDL.COOMER_DOMAIN
+        elif parsed_url["site"] == "pawchive":
+            domain = KemonoDL.PAWCHIVE_DOMAIN
+
         if parsed_url["post_id"]:
-            post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
-            if post:
-                self.download_post(domain, post)
+            self.download_post(domain, parsed_url["service"], parsed_url["creator_id"], parsed_url["post_id"])
         else:
             post_ids = self.get_all_creator_post_ids(domain, parsed_url["service"], parsed_url["creator_id"])
             for post_id in post_ids:
                 time.sleep(0.5)
-                post = self.get_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
-                if post:
-                    self.download_post(domain, post)
+                self.download_post(domain, parsed_url["service"], parsed_url["creator_id"], post_id)
 
     def download_creator_banner(self, domain: str, service: str, creator_id: str) -> None:
         self._download_special(domain, service, creator_id, "banner")
@@ -266,9 +268,14 @@ class KemonoDL:
         #     filepath=file_path,
         # )
 
-    def download_post(self, domain: str, post: Post) -> None:
-        if f"{post.service}/user/{post.user}/post/{post.id}" in self.archived_posts:
-            print(f"[info] Post {post.id!r} already archived. Skipping.")
+    def download_post(self, domain: str, service: str, creator_id: str, post_id: str) -> None:
+        if f"{service}/user/{creator_id}/post/{post_id}" in self.archived_posts:
+            print(f"[info] Post {post_id!r} already archived. Skipping.")
+            return
+
+        post = self.get_post(domain, service, creator_id, post_id)
+
+        if post is None:
             return
 
         if self.post_matches_filters(post):
@@ -328,7 +335,10 @@ class KemonoDL:
 
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            url = f"{attachment.server}/data{attachment.path}"
+            if domain == KemonoDL.PAWCHIVE_DOMAIN:
+                url = f"https://fox.pawchive.st/data{attachment.path}?f={attachment.name}"
+            else:
+                url = f"{attachment.server}/data{attachment.path}"
 
             for attempt in range(self.max_retries):
                 try:
