@@ -1,5 +1,8 @@
 # kemono-dl
-A downloader tool for kemono and coomer websties.
+A downloader tool for kemono and coomer and pawchive websties.
+> ⚠️ Kemono and Coomer file servers are dead and attempting to download from them will fail. Kemono-dl has been updated to support pawchive a Kemono alternative using the same api layout.
+
+
 > ⚠️ Starting from version `2025.08.13`, kemonod-dl is no longer fully backward compatible with earlier releases. If you prefer the default download template used in older versions, you can manually specify it using:
 > ```bash
 > --output "{service}/{creator_name} [{creator_id}]/[{published:%Y%m%d}] [{post_id}] {post_title}/{index}_{filename}"
