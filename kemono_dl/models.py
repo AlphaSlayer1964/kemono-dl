@@ -35,6 +35,9 @@ class FavoriteCreator:
     faved_seq: int
     last_imported: str
     has_chats: bool | None = None
+    ever_imported: bool | None = None
+    kemono_favorited: int | None = None
+    import_size_cap_gb: int | None = None
 
 
 @dataclass
