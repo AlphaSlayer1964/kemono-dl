@@ -14,8 +14,10 @@ def parse_args():
     parser.add_argument("--cookies", type=str, action="append", help="Path(s) to cookies files")
     parser.add_argument("--coomer-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Coomer")
     parser.add_argument("--kemono-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Kemono")
+    parser.add_argument("--pawchive-login", nargs=2, metavar=("USERNAME", "PASSWORD"), help="Login for Pawchive")
     parser.add_argument("--favorite-creators-coomer", action="store_true", help="Download favorite creators from Coomer")
     parser.add_argument("--favorite-creators-kemono", action="store_true", help="Download favorite creators from Kemono")
+    parser.add_argument("--favorite-creators-pawchive", action="store_true", help="Download favorite creators from Pawchive")
     # parser.add_argument("--favorite-posts-coomer", action="store_true", help="Download favorite posts from Coomer")
     # parser.add_argument("--favorite-posts-kemono", action="store_true", help="Download favorite posts from Kemono")
     parser.add_argument("--batch-file", type=str, action="append", help="Download URLs from a file")
@@ -139,11 +141,18 @@ def main() -> None:
         kemono_dl.login(KemonoDL.KEMONO_DOMAIN, args.kemono_login[0], args.kemono_login[1])
         print(kemono_dl.isLoggedin(KemonoDL.KEMONO_DOMAIN))
 
+    if args.pawchive_login:
+        kemono_dl.login(KemonoDL.PAWCHIVE_DOMAIN, args.pawchive_login[0], args.pawchive_login[1])
+        print(kemono_dl.isLoggedin(KemonoDL.PAWCHIVE_DOMAIN))
+
     if args.favorite_creators_coomer:
         kemono_dl.download_favorite_creators(KemonoDL.COOMER_DOMAIN)
 
     if args.favorite_creators_kemono:
         kemono_dl.download_favorite_creators(KemonoDL.KEMONO_DOMAIN)
+
+    if args.favorite_creators_pawchive:
+        kemono_dl.download_favorite_creators(KemonoDL.PAWCHIVE_DOMAIN)
 
     if args.URL:
         for url in args.URL:
