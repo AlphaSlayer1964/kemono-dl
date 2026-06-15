@@ -103,18 +103,29 @@ class KemonoDL:
 
     def login(self, domain: str, username: str, password: str) -> bool:
         try:
-            url = f"{domain}/api/v1/authentication/login"
-            response = self.session.post(url, json={"username": username, "password": password})
-            response.raise_for_status()
-            return True
+            if KemonoDL.PAWCHIVE_DOMAIN:
+                url = f"{domain}/account/login"
+                response = self.session.post(url, data={"location": "/artists", "username": "jtkdlsptinla", "password": "E8Dr7ojipEm3ZRV46bQa"})
+                response.raise_for_status()
+                return True
+            else:
+                url = f"{domain}/api/v1/authentication/login"
+                response = self.session.post(url, json={"username": username, "password": password})
+                response.raise_for_status()
+                return True
         except RequestException as e:
             print(f"[Error] Unable to login: {e}")
             return False
 
     def isLoggedin(self, domain: str) -> bool:
-        url = f"{domain}/api/v1/account"
-        response = self.session.get(url, headers={"accept": "text/css"})
-        return response.ok
+        if KemonoDL.PAWCHIVE_DOMAIN:
+            url = f"{domain}/account"
+            response = self.session.get(url)
+            return response.ok
+        else:
+            url = f"{domain}/api/v1/account"
+            response = self.session.get(url, headers={"accept": "text/css"})
+            return response.ok
 
     def get_creator_profile(self, domain: str, service: str, creator_id: str) -> Creator | None:
         try:
@@ -269,6 +280,8 @@ class KemonoDL:
         # )
 
     def download_post(self, domain: str, service: str, creator_id: str, post_id: str) -> None:
+        print(f"[downloading] Post URL: {domain}/{service}/user/{creator_id}/post/{post_id}")
+
         if f"{service}/user/{creator_id}/post/{post_id}" in self.archived_posts:
             print(f"[info] Post {post_id!r} already archived. Skipping.")
             return
@@ -336,7 +349,7 @@ class KemonoDL:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             if domain == KemonoDL.PAWCHIVE_DOMAIN:
-                url = f"https://fox.pawchive.st/data{attachment.path}?f={attachment.name}"
+                url = f"https://file.pawchive.st/data{attachment.path}?f={attachment.name}"
             else:
                 url = f"{attachment.server}/data{attachment.path}"
 
