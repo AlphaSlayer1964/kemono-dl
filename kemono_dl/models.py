@@ -21,6 +21,7 @@ class Creator:
     ever_imported: bool | None = None
     kemono_favorited: int | None = None
     import_size_cap_gb: int | None = None
+    last_import_favs: bool | None = None
 
 
 @dataclass
