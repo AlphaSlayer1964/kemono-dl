@@ -349,7 +349,7 @@ class KemonoDL:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             if domain == KemonoDL.PAWCHIVE_DOMAIN:
-                url = f"https://file.pawchive.pw/data{attachment.path}?f={attachment.name}"
+                url = f"https://img.pawchive.pw/thumbnail/data{attachment.path}?f={attachment.name}"
             else:
                 url = f"{attachment.server}/data{attachment.path}"
 

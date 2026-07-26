@@ -6,7 +6,7 @@ import pytest
 from requests import HTTPError
 
 from kemono_dl import KemonoDL
-from kemono_dl.models import Creator, FavoriteCreator, ParsedUrl, Post
+from kemono_dl.models import Creator, FavoriteCreator, Post
 
 TEST_DATA_PATH = "tests/data"
 
@@ -227,3 +227,45 @@ def test_load_cookies_exception(mock_cookiejar_cls, kemono_dl: KemonoDL, capsys)
     mock_jar.load.assert_called_once_with("cookies.txt")
     captured = capsys.readouterr().out
     assert "[Error] Failed to load cookies from cookies.txt" in captured
+
+
+@patch("kemono_dl.kemono_dl.get_sha256_hash")
+@patch("kemono_dl.kemono_dl.download_file")
+def test_pawchive_attachment_url_uses_img_host(mock_download, mock_sha256, kemono_dl: KemonoDL, tmp_path) -> None:
+    """Pawchive attachments should download from img.pawchive.pw, not file.pawchive.pw.
+
+    Regression test for #260: file.pawchive.pw returns 404; the correct
+    host is img.pawchive.pw/thumbnail/data.
+    """
+    from kemono_dl.models import Creator
+
+    kemono_dl.path = str(tmp_path)
+    mock_sha256.return_value = "abc123"
+
+    post_api = {
+        "post": {
+            "id": "123",
+            "user": "user1",
+            "service": "fanbox",
+            "title": "t",
+            "content": "",
+            "attachments": [{"name": "img.jpeg", "path": "/f6/bb/abc.jpg", "server": "https://example.com"}],
+        },
+    }
+    post = Post(post_api)
+    creator = Creator(
+        id="user1",
+        name="user1",
+        service="fanbox",
+        indexed=0,
+        updated=0,
+        public_id="user1",
+        relation_id=None,
+    )
+
+    kemono_dl.download_post_attachments(KemonoDL.PAWCHIVE_DOMAIN, creator, post)
+
+    mock_download.assert_called_once()
+    called_url = mock_download.call_args[0][1]
+    assert called_url == "https://img.pawchive.pw/thumbnail/data/f6/bb/abc.jpg?f=img.jpeg"
+    assert "file.pawchive.pw" not in called_url
