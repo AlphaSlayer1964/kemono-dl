@@ -336,8 +336,19 @@ class KemonoDL:
         print(f"[downloading] Attachments: {len(post.attachments)}")
 
         attachment_errors = 0
+        is_pawchive = domain == KemonoDL.PAWCHIVE_DOMAIN
+        seen_paths = set()
 
         for attachment in post.attachments:
+            if is_pawchive:
+                if attachment.path in seen_paths:
+                    print(f"[info] Duplicate attachment path {attachment.path!r}. Skipping.")
+                    continue
+                seen_paths.add(attachment.path)
+                if attachment.preview_only:
+                    print(f"[info] Preview-only file {attachment.name!r}. Skipping.")
+                    continue
+
             if self.attachment_matches_filters(attachment):
                 print("[info] Attachment matched 1 or more attachment filters. Skipping.")
                 continue

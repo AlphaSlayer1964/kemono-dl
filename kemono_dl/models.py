@@ -61,6 +61,7 @@ class Attachment:
     path: str
     index: int = 0
     server: str | None = None
+    preview_only: bool = False  # Pawchive preview images have no full file
 
 
 @ignore_extra_kwargs
@@ -130,6 +131,7 @@ class Post:
                         path=file_path,
                         index=len(self.attachments),
                         server=findSeverFromPath(attachments, previews, file_path),
+                        preview_only=file.get("preview_only", False),
                     )
                 )
 
@@ -143,6 +145,7 @@ class Post:
                         path=a_path,
                         index=len(self.attachments),
                         server=findSeverFromPath(attachments, previews, a_path),
+                        preview_only=a.get("preview_only", False),
                     )
                 )
 
