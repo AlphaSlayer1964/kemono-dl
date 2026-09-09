@@ -49,6 +49,7 @@ class KemonoDL:
         write_content: bool = False,
         write_json: bool = False,
         no_tmp: bool = False,
+        pawchive_include_previews: bool = False,
     ) -> None:
         self.domain = KemonoDL.COOMER_DOMAIN
         self.session = CustomSession()
@@ -65,6 +66,7 @@ class KemonoDL:
         self.write_content = write_content
         self.write_json = write_json
         self.no_tmp = no_tmp
+        self.pawchive_include_previews = pawchive_include_previews
 
         self.archive_file = archive_file
         self.archived_posts = []
@@ -340,25 +342,34 @@ class KemonoDL:
         seen_paths = set()
 
         for attachment in post.attachments:
+            is_preview = False
             if is_pawchive:
                 if attachment.path in seen_paths:
                     print(f"[info] Duplicate attachment path {attachment.path!r}. Skipping.")
                     continue
                 seen_paths.add(attachment.path)
                 if attachment.preview_only:
-                    print(f"[info] Preview-only file {attachment.name!r}. Skipping.")
-                    continue
+                    if not self.pawchive_include_previews:
+                        print(f"[info] Preview-only file {attachment.name!r}. Skipping.")
+                        continue
+                    print(f"[downloading] Preview thumbnail {attachment.name!r}.")
+                    is_preview = True
 
             if self.attachment_matches_filters(attachment):
                 print("[info] Attachment matched 1 or more attachment filters. Skipping.")
                 continue
 
             template_variables = FileTemplateVaribales(creator, post, attachment)
+            template_dict = template_variables.toDict(self.custom_template_variables)
+            if is_preview:
+                # Thumbnails are not full files, mark the filename
+                template_dict["file_name"] += "-preview"
+                template_dict["filename"] = template_dict["file_name"] + ("." + template_dict["file_ext"] if template_dict["file_ext"] else "")
 
             file_path = generate_file_path(
                 self.path,
                 self.output_templates.get("attachments", self.DEFAULT_OUTPUT_TEMPLATE),
-                template_variables.toDict(self.custom_template_variables),
+                template_dict,
                 self.restrict_names,
             )
             expected_sha256 = template_variables.sha256
@@ -379,7 +390,10 @@ class KemonoDL:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             if domain == KemonoDL.PAWCHIVE_DOMAIN:
-                url = f"https://file.pawchive.pw/data{attachment.path}?f={attachment.name}"
+                if is_preview:
+                    url = f"https://img.pawchive.pw/thumbnail/data{attachment.path}"
+                else:
+                    url = f"https://file.pawchive.pw/data{attachment.path}?f={attachment.name}"
             else:
                 url = f"{attachment.server}/data{attachment.path}"
 
@@ -395,8 +409,9 @@ class KemonoDL:
                 attachment_errors += 1
                 continue
 
+            # Thumbnails differ from full files, skip hash check for previews
             actual_sha256 = get_sha256_hash(file_path)
-            if expected_sha256 != actual_sha256:
+            if not is_preview and expected_sha256 != actual_sha256:
                 print(f"[Error] File downloaded with incorrect SHA-256. Expected: {expected_sha256} Actual: {actual_sha256}")
                 attachment_errors += 1
 

@@ -36,6 +36,7 @@ def parse_args():
     parser.add_argument("--dateafter", metavar="[Type:]DATE", type=str, help="Download only videos uploaded on or after this date. Format 'YYYYMMDD'")
     parser.add_argument("--skip-extensions", metavar="EXTs", type=str, help="A comma seperated list of file extensions to skip (Do not include the period) (Checks the extention of the filename not the server filename).")
     parser.add_argument("--skip-attachments", action="store_true", help="Skip downloading post attachments.")
+    parser.add_argument("--pawchive-include-previews", action="store_true", help="Download Pawchive preview-only thumbnails.")
     parser.add_argument("--write-content", action="store_true", help="Write Post content to an html file.")
     parser.add_argument("--write-json", action="store_true", help="Write Post api json response to an json file.")
 
@@ -130,6 +131,7 @@ def main() -> None:
         write_content=args.write_content,
         write_json=args.write_json,
         no_tmp=args.no_tmp,
+        pawchive_include_previews=args.pawchive_include_previews,
     )
 
     if args.cookies:
